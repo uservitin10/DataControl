@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAudit } from "@/src/hooks/useAudit";
 import { supabase } from "@/src/lib/supabase";
 
-type Role = "admin" | "editor" | "viewer";
+type Role = "admin" | "desenvolvedor" | "viewer";
 
 const roleConfig = {
   admin: { label: "Administrador", color: "bg-red-100 text-red-700" },
-  editor: { label: "Editor", color: "bg-blue-100 text-blue-700" },
+  desenvolvedor: { label: "Desenvolvedor", color: "bg-blue-100 text-blue-700" },
   viewer: { label: "Apenas Leitura", color: "bg-slate-100 text-slate-600" },
 };
 
@@ -23,6 +24,8 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const { logAction } = useAudit();
 
   useEffect(() => {
     const load = async () => {
@@ -91,7 +94,20 @@ export default function ProfilePage() {
         setSaving(false);
         return;
       }
+
+      // Log de auditoria - mudança de senha
+      await logAction("change_password", "user", userId, {
+        user_id: userId,
+        email: email
+      });
     }
+
+    // Log de auditoria - atualização de perfil
+    await logAction("update_profile", "profile", userId, {
+      display_name: displayName,
+      user_id: userId,
+      email: email
+    });
 
     setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
     setNewPassword("");

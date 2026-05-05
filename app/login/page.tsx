@@ -2,15 +2,15 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/src/components/Logo";
 import { supabase } from "@/src/lib/supabase";
 
 type Mode = "login" | "register";
-type Role = "viewer" | "editor" | "admin";
+type Role = "viewer" | "desenvolvedor";
 
 const roleLabels: Record<Role, string> = {
   viewer: "Apenas Leitura",
-  editor: "Editor",
-  admin: "Administrador",
+  desenvolvedor: "Desenvolvedor",
 };
 
 export default function LoginPage() {
@@ -27,9 +27,7 @@ export default function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        router.replace("/dashboard");
-      }
+      if (data.session) router.replace("/dashboard");
     };
     void checkSession();
   }, [router]);
@@ -38,19 +36,9 @@ export default function LoginPage() {
     event.preventDefault();
     setError("");
     setLoading(true);
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-
-    if (signInError) {
-      setError(signInError.message);
-      return;
-    }
-
+    if (signInError) { setError(signInError.message); return; }
     router.push("/dashboard");
   };
 
@@ -59,30 +47,15 @@ export default function LoginPage() {
     setError("");
     setSuccess("");
     setLoading(true);
-
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          display_name: displayName,
-          role: role,
-        },
-      },
+      options: { data: { display_name: displayName, role } },
     });
-
     setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
-    }
-
+    if (signUpError) { setError(signUpError.message); return; }
     setSuccess("Cadastro realizado! Verifique seu email para confirmar a conta.");
-    setEmail("");
-    setPassword("");
-    setDisplayName("");
-    setRole("viewer");
+    setEmail(""); setPassword(""); setDisplayName(""); setRole("viewer");
   };
 
   const switchMode = (newMode: Mode) => {
@@ -92,171 +65,165 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-900 to-slate-700 px-4">
-      <section className="w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur">
+    <main className="flex min-h-screen items-center justify-center px-4" style={{ backgroundColor: "#1a2744" }}>
+      <div className="w-full max-w-md">
 
-        {/* Tabs */}
-        <div className="mb-6 flex rounded-lg bg-white/10 p-1">
-          <button
-            type="button"
-            onClick={() => switchMode("login")}
-            className={`flex-1 rounded-md py-2 text-sm font-semibold transition ${
-              mode === "login"
-                ? "bg-white text-slate-900 shadow"
-                : "text-slate-300 hover:text-white"
-            }`}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode("register")}
-            className={`flex-1 rounded-md py-2 text-sm font-semibold transition ${
-              mode === "register"
-                ? "bg-white text-slate-900 shadow"
-                : "text-slate-300 hover:text-white"
-            }`}
-          >
-            Cadastrar
-          </button>
+        {/* Logo */}
+        <div className="mb-6">
+          <Logo width={48} height={48} alt="Data Control" />
         </div>
 
-        {mode === "login" ? (
-          <>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Entrar</h1>
-            <p className="mt-2 text-sm text-slate-200">
-              Acesse sua conta para visualizar o dashboard.
-            </p>
+        {/* Card */}
+        <div className="rounded-2xl bg-white p-8 shadow-2xl">
 
-            <form onSubmit={handleLogin} className="mt-6 space-y-4">
-              <div>
-                <label htmlFor="email" className="mb-1 block text-sm text-slate-200">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
-                  placeholder="voce@exemplo.com"
-                />
-              </div>
+          {/* Tabs */}
+          <div className="mb-6 flex rounded-lg p-1" style={{ backgroundColor: "#f1f5f9" }}>
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className="flex-1 rounded-md py-2 text-sm font-medium transition"
+              style={mode === "login" ? { backgroundColor: "#1a2744", color: "white" } : { color: "#64748b" }}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("register")}
+              className="flex-1 rounded-md py-2 text-sm font-medium transition"
+              style={mode === "register" ? { backgroundColor: "#1a2744", color: "white" } : { color: "#64748b" }}
+            >
+              Cadastrar
+            </button>
+          </div>
 
-              <div>
-                <label htmlFor="password" className="mb-1 block text-sm text-slate-200">
-                  Senha
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
-                  placeholder="••••••••"
-                />
-              </div>
+          {mode === "login" ? (
+            <>
+              <p className="mb-1 text-xl font-medium" style={{ color: "#1a2744" }}>Bem-vindo</p>
+              <p className="mb-6 text-sm" style={{ color: "#64748b" }}>Acesse sua conta para continuar</p>
 
-              {error && (
-                <p className="rounded-lg border border-red-300/30 bg-red-500/20 p-2 text-sm text-red-100">
-                  {error}
-                </p>
-              )}
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                    placeholder="voce@empresa.com"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Senha</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                    placeholder="••••••••"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-sky-500 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-70"
-              >
-                {loading ? "Entrando..." : "Entrar"}
-              </button>
-            </form>
-          </>
-        ) : (
-          <>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Cadastrar</h1>
-            <p className="mt-2 text-sm text-slate-200">
-              Crie sua conta para acessar o dashboard.
-            </p>
+                {error && (
+                  <p className="rounded-lg border p-2.5 text-sm" style={{ borderColor: "#fecaca", backgroundColor: "#fef2f2", color: "#dc2626" }}>
+                    {error}
+                  </p>
+                )}
 
-            <form onSubmit={handleRegister} className="mt-6 space-y-4">
-              <div>
-                <label className="mb-1 block text-sm text-slate-200">Nome</label>
-                <input
-                  type="text"
-                  required
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
-                  placeholder="Seu nome"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-200">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
-                  placeholder="voce@exemplo.com"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-200">Senha</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-slate-200">Categoria</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                  className="w-full rounded-lg border border-slate-300/30 bg-white/90 px-3 py-2 text-slate-900 outline-none ring-sky-400 transition focus:ring-2"
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-lg py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  style={{ backgroundColor: "#1a2744" }}
                 >
-                  {(Object.entries(roleLabels) as [Role, string][]).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {loading ? "Entrando..." : "Entrar"}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="mb-1 text-xl font-medium" style={{ color: "#1a2744" }}>Criar conta</p>
+              <p className="mb-6 text-sm" style={{ color: "#64748b" }}>Preencha os dados para se cadastrar</p>
 
-              {error && (
-                <p className="rounded-lg border border-red-300/30 bg-red-500/20 p-2 text-sm text-red-100">
-                  {error}
-                </p>
-              )}
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Nome</label>
+                  <input
+                    type="text"
+                    required
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                    placeholder="voce@empresa.com"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Senha</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Nível de acesso</label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as Role)}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition"
+                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                  >
+                    {(Object.entries(roleLabels) as [Role, string][]).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {success && (
-                <p className="rounded-lg border border-green-300/30 bg-green-500/20 p-2 text-sm text-green-100">
-                  {success}
-                </p>
-              )}
+                {error && (
+                  <p className="rounded-lg border p-2.5 text-sm" style={{ borderColor: "#fecaca", backgroundColor: "#fef2f2", color: "#dc2626" }}>
+                    {error}
+                  </p>
+                )}
+                {success && (
+                  <p className="rounded-lg border p-2.5 text-sm" style={{ borderColor: "#bbf7d0", backgroundColor: "#f0fdf4", color: "#16a34a" }}>
+                    {success}
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-sky-500 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-70"
-              >
-                {loading ? "Cadastrando..." : "Criar Conta"}
-              </button>
-            </form>
-          </>
-        )}
-      </section>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-lg py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  style={{ backgroundColor: "#1a2744" }}
+                >
+                  {loading ? "Cadastrando..." : "Criar Conta"}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
