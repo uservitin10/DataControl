@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { supabase } from "@/src/lib/supabase";
 
 export type AuditAction =
   | "login"
@@ -38,21 +39,19 @@ export function useAudit() {
     details?: Record<string, any>
   ) => {
     try {
-      // Obter IP do cliente (se disponível)
-      const ipResponse = await fetch("https://api.ipify.org?format=json");
-      const ipData = await ipResponse.json().catch(() => ({ ip: null }));
-      const ipAddress = ipData.ip;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) return;
 
       const response = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: null, // Será preenchido pelo middleware de autenticação
+          user_id: userId,
           action,
           resource_type: resourceType,
           resource_id: resourceId,
           details,
-          ip_address: ipAddress,
         }),
       });
 

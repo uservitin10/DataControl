@@ -6,12 +6,6 @@ import { Logo } from "@/src/components/Logo";
 import { supabase } from "@/src/lib/supabase";
 
 type Mode = "login" | "register";
-type Role = "viewer" | "desenvolvedor";
-
-const roleLabels: Record<Role, string> = {
-  viewer: "Apenas Leitura",
-  desenvolvedor: "Desenvolvedor",
-};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +13,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<Role>("viewer");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,13 +25,22 @@ export default function LoginPage() {
     void checkSession();
   }, [router]);
 
+  const errorTranslator: Record<string, string> = {
+    "Invalid login credentials": "Email ou senha incorretos.",
+    "Email not confirmed": "Confirme seu email antes de entrar.",
+    "User already registered": "Este email já está cadastrado.",
+    "Password should be at least 6 characters": "A senha precisa ter pelo menos 6 caracteres.",
+  };
+
+  const translateError = (message: string) => errorTranslator[message] ?? message;
+
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setLoading(true);
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (signInError) { setError(signInError.message); return; }
+    if (signInError) { setError(translateError(signInError.message)); return; }
     router.push("/dashboard");
   };
 
@@ -50,12 +52,12 @@ export default function LoginPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName, role } },
+      options: { data: { display_name: displayName, role: "viewer" } },
     });
     setLoading(false);
-    if (signUpError) { setError(signUpError.message); return; }
+    if (signUpError) { setError(translateError(signUpError.message)); return; }
     setSuccess("Cadastro realizado! Verifique seu email para confirmar a conta.");
-    setEmail(""); setPassword(""); setDisplayName(""); setRole("viewer");
+    setEmail(""); setPassword(""); setDisplayName("");
   };
 
   const switchMode = (newMode: Mode) => {
@@ -187,17 +189,9 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium" style={{ color: "#475569" }}>Nível de acesso</label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as Role)}
-                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition"
-                    style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
-                  >
-                    {(Object.entries(roleLabels) as [Role, string][]).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
+                  <p className="text-sm text-slate-500">
+                    O cadastro será criado como usuário padrão. Roles de administrador devem ser definidas por um administrador.
+                  </p>
                 </div>
 
                 {error && (

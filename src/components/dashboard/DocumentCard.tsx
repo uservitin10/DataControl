@@ -12,6 +12,9 @@ type DocumentCardProps = {
   onEdit: (registro: Registro) => void;
   onDelete: (id: string, arquivoPath?: string, previewPath?: string, nome?: string) => void;
   onVisualizarArquivo: (arquivoPath: string, nome: string) => void;
+  isViewer?: boolean;
+  viewerPublicLink?: string;
+  viewerPreviewImage?: string;
 };
 
 export function DocumentCard({
@@ -24,18 +27,37 @@ export function DocumentCard({
   onEdit,
   onDelete,
   onVisualizarArquivo,
+  isViewer = false,
+  viewerPublicLink,
+  viewerPreviewImage,
 }: DocumentCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  const isBIMunis = registro.categoria === "BI Munis" || /munis/i.test(registro.nome || "") || /munis/i.test(registro.link ?? "");
+  const shouldShowLink = (!isViewer && Boolean(registro.link)) || (isViewer && (isBIMunis || Boolean(registro.link)));
+  const linkHref = isViewer && isBIMunis ? viewerPublicLink || registro.link : registro.link;
+  const linkText = isViewer
+    ? isBIMunis
+      ? "Abrir site público do gov.br"
+      : "Abrir painel"
+    : "Abrir painel";
+
   useEffect(() => {
     const loadPreview = async () => {
+      if (isViewer && viewerPreviewImage && isBIMunis) {
+        setPreviewUrl(viewerPreviewImage);
+        return;
+      }
+
       const url = await getPreviewUrl(registro.preview_path);
       setPreviewUrl(url);
     };
     loadPreview();
-  }, [getPreviewUrl, registro.preview_path]);
+  }, [getPreviewUrl, registro.preview_path, isBIMunis, isViewer, viewerPreviewImage]);
 
   const tipo = getFileTipo(registro.arquivo_path);
+  const fonteLink = registro.fonte_dados?.match(/https?:\/\/[^\s]+/)?.[0] ?? null;
+  const fonteText = fonteLink ? registro.fonte_dados?.replace(fonteLink, "").trim() : registro.fonte_dados;
 
   return (
     <div className="rounded-2xl border bg-white overflow-hidden transition-all duration-200 hover-lift shadow-soft hover:shadow-medium" style={{ borderColor: "#e2e8f0" }}>
@@ -56,17 +78,17 @@ export function DocumentCard({
 
       <div className="p-5">
         <div className="mb-3 flex flex-wrap gap-1.5">
-          {tipo && (
+          {!isViewer && tipo && (
             <span className="rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: tipo.bg, color: tipo.text }}>
               {tipo.label}
             </span>
           )}
-          {registro.tipo_acesso === "restrito" && (
+          {!isViewer && registro.tipo_acesso === "restrito" && (
             <span className="rounded-full px-3 py-1 text-xs font-medium bg-red-50 text-red-700">
               🔒 Restrito
             </span>
           )}
-          {registro.dados_sensiveis && (
+          {!isViewer && registro.dados_sensiveis && (
             <span className="rounded-full px-3 py-1 text-xs font-medium bg-orange-50 text-orange-700">
               ⚠️ Sensível
             </span>
@@ -77,27 +99,50 @@ export function DocumentCard({
         {registro.descricao && <p className="text-sm line-clamp-2 text-slate-600 mb-3 leading-relaxed">{registro.descricao}</p>}
 
         <div className="space-y-1.5 mb-4">
-          {registro.secretaria && <p className="text-sm text-slate-600 flex items-center gap-2"><span>🏛️</span> {registro.secretaria}</p>}
-          {registro.responsavel && <p className="text-sm text-slate-600 flex items-center gap-2"><span>👤</span> {registro.responsavel}</p>}
-          {registro.fonte_dados && <p className="text-sm text-slate-600 flex items-center gap-2"><span>🗄️</span> {registro.fonte_dados}</p>}
-          {registro.link && (
+          {!isViewer && registro.secretaria && <p className="text-sm text-slate-600 flex items-center gap-2"><span>🏛️</span> {registro.secretaria}</p>}
+          {!isViewer && registro.responsavel && <p className="text-sm text-slate-600 flex items-center gap-2"><span>👤</span> {registro.responsavel}</p>}
+          {!isViewer && registro.fonte_dados && (
+            <p className="text-sm text-slate-600 flex items-center gap-2 break-all">
+              <span>🗄️</span>
+              {fonteLink ? (
+                <a href={fonteLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">
+                  Abrir fonte de dados
+                </a>
+              ) : (
+                registro.fonte_dados
+              )}
+            </p>
+          )}
+          {shouldShowLink && linkHref && (
             <p className="text-sm text-slate-600 break-all">
-              <span>🔗</span> <a href={registro.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">Abrir painel</a>
+              <span>🔗</span>{' '}
+              <a
+                href={linkHref}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                {linkText}
+              </a>
             </p>
           )}
         </div>
 
         <div className="flex items-center justify-between border-t pt-4" style={{ borderColor: "#f1f5f9" }}>
-          {registro.arquivo_path ? (
-            <button
-              type="button"
-              onClick={() => onVisualizarArquivo(registro.arquivo_path!, registro.nome)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-            >
-              Visualizar
-            </button>
+          {!isViewer ? (
+            registro.arquivo_path ? (
+              <button
+                type="button"
+                onClick={() => onVisualizarArquivo(registro.arquivo_path!, registro.nome)}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                Visualizar
+              </button>
+            ) : (
+              <span className="text-sm text-slate-400">Sem arquivo</span>
+            )
           ) : (
-            <span className="text-sm text-slate-400">Sem arquivo</span>
+            <span className="text-sm text-slate-400">Acesso restrito a documentos</span>
           )}
 
           {canEdit && (

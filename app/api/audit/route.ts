@@ -1,5 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/src/lib/supabase-server";
+
+const getRequestIp = (request: NextRequest) => {
+  const forwarded = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip");
+  return forwarded ? forwarded.split(",")[0].trim() : null;
+};
+
+const getAuthToken = (request: NextRequest) => {
+  const header = request.headers.get("authorization");
+  if (!header) return null;
+  return header.startsWith("Bearer ") ? header.replace("Bearer ", "") : null;
+};
+
+const isAuditTableMissing = (error: unknown) => {
+  if (!error) return false;
+
+  const message =
+    typeof error === "string"
+      ? error
+      : error instanceof Error
+      ? error.message
+      : JSON.stringify(error);
+
+  const maybeCode =
+    typeof error === "object" && error !== null && "code" in error
+      ? (error as { code?: string }).code
+      : undefined;
+
+  return (
+    maybeCode === "PGRST205" ||
+    (typeof message === "string" && message.includes("Could not find the table 'public.audit_logs'"))
+  );
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,6 +64,11 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
+      if (isAuditTableMissing(error)) {
+        console.warn("Audit logging não configurado: tabela audit_logs não encontrada.");
+        return NextResponse.json([], { status: 200 });
+      }
+
       console.error("Erro ao buscar logs de auditoria:", error);
       return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
     }
@@ -46,10 +83,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { user_id, action, resource_type, resource_id, details, ip_address } = body;
+    let { user_id, action, resource_type, resource_id, details } = body;
+    const ip_address = getRequestIp(request);
+
+    if (!user_id) {
+      const token = getAuthToken(request);
+      if (token) {
+        const { data: userData } = await supabaseServer.auth.getUser(token);
+        user_id = userData?.user?.id || user_id;
+      }
+    }
 
     if (!user_id || !action) {
-      return NextResponse.json({ error: "user_id e action são obrigatórios" }, { status: 400 });
+      return NextResponse.json({ error: "user_id e action sao obrigatorios" }, { status: 400 });
     }
 
     const { data, error } = await supabaseServer
@@ -60,13 +106,38 @@ export async function POST(request: NextRequest) {
         resource_type: resource_type || null,
         resource_id: resource_id || null,
         details: details || null,
-        ip_address: ip_address || null,
+        ip_address,
       })
       .select()
       .single();
 
     if (error) {
-      console.error("Erro ao criar log de auditoria:", error);
+      if (isAuditTableMissing(error)) {
+        console.warn("Audit logging não configurado: tabela audit_logs não encontrada.", {
+          payload: { user_id, action, resource_type, resource_id, details, ip_address },
+        });
+        return NextResponse.json(
+          { message: "Audit logging não está configurado. Crie a tabela audit_logs no Supabase." },
+          { status: 200 }
+        );
+      }
+
+      const supabaseError = error as {
+        code?: string;
+        message?: string;
+        details?: unknown;
+        hint?: string;
+      };
+
+      console.error("Erro ao criar log de auditoria:", {
+        code: supabaseError.code,
+        message: supabaseError.message,
+        details: supabaseError.details,
+        hint: supabaseError.hint,
+        data,
+        payload: { user_id, action, resource_type, resource_id, details, ip_address },
+      });
+
       return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
     }
 

@@ -11,7 +11,7 @@ import type { Role } from "@/src/types/dashboard";
 export default function AuditoriaPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<Role>("viewer");
+  const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,37 +26,44 @@ export default function AuditoriaPage() {
 
       setUser(sessionUser);
 
-      // Verificar role do usuário
       const profileRes = await fetch(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`, {
         cache: "no-store",
       });
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
-        if (profileData?.role) setRole(profileData.role as Role);
-      }
-
-      // Só admin pode acessar auditoria
-      if (role !== "admin") {
+      if (!profileRes.ok) {
         router.replace("/dashboard");
         return;
       }
 
+      const profileData = await profileRes.json();
+      if (profileData?.role !== "admin") {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setAuthorized(true);
       setLoading(false);
     };
 
     loadData();
-  }, [router, role]);
+  }, [router]);
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#f8fafc" }}>
-        <p style={{ color: "#64748b" }}>Carregando...</p>
+      <main className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="space-y-3 rounded-3xl bg-white px-8 py-10 shadow-soft">
+          <div className="h-6 w-48 rounded-full bg-slate-200"></div>
+          <div className="h-4 w-64 rounded-full bg-slate-200"></div>
+          <div className="grid gap-4 pt-6">
+            <div className="h-24 rounded-3xl bg-slate-200"></div>
+            <div className="h-24 rounded-3xl bg-slate-200"></div>
+          </div>
+        </div>
       </main>
     );
   }
 
-  if (role !== "admin") {
-    return null; // Redirecionamento já foi feito
+  if (!authorized) {
+    return null;
   }
 
   return (
@@ -88,17 +95,6 @@ export default function AuditoriaPage() {
               className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
             >
               ← Voltar ao Dashboard
-            </button>
-
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push("/login");
-              }}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-            >
-              Sair
             </button>
           </div>
         </div>

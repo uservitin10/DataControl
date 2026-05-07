@@ -13,6 +13,20 @@ export function Logo({
   height = 40,
   alt = "Data Control",
 }: LogoProps) {
+  if (className) {
+    return (
+      <div className={`relative ${className}`}>
+        <Image
+          src="/LogoDataControl.png"
+          alt={alt}
+          fill
+          sizes="40px"
+          style={{ objectFit: 'contain' }}
+        />
+      </div>
+    );
+  }
+
   return (
     <Image
       src="/LogoDataControl.png"

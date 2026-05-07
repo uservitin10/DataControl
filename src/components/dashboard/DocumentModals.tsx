@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { DashboardForm } from "@/src/types/dashboard";
 import { AREAS, SECRETARIAS } from "@/src/lib/dashboard";
+import { PREVIEW_ACCEPT, DOCUMENT_ACCEPT } from "@/src/lib/storage";
 
 type DocumentFormModalProps = {
   editingId: string | null;
@@ -8,6 +9,8 @@ type DocumentFormModalProps = {
   setForm: Dispatch<SetStateAction<DashboardForm>>;
   setArquivo: Dispatch<SetStateAction<File | null>>;
   setPreview: Dispatch<SetStateAction<File | null>>;
+  arquivoFileName?: string;
+  previewFileName?: string;
   formError: string;
   saving: boolean;
   onClose: () => void;
@@ -27,6 +30,8 @@ export function DocumentFormModal({
   setForm,
   setArquivo,
   setPreview,
+  arquivoFileName,
+  previewFileName,
   formError,
   saving,
   onClose,
@@ -166,10 +171,13 @@ export function DocumentFormModal({
             </label>
             <input
               type="file"
-              accept="image/*"
+              accept={PREVIEW_ACCEPT}
               onChange={(e) => setPreview(e.target.files?.[0] ?? null)}
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none border-slate-300"
             />
+            {previewFileName && (
+              <p className="mt-1 text-xs text-slate-500">Arquivo selecionado: {previewFileName}</p>
+            )}
             <p className="mt-1 text-xs text-slate-400">PNG, JPG ou JPEG. Aparece como thumbnail no card.</p>
           </div>
 
@@ -179,9 +187,14 @@ export function DocumentFormModal({
             </label>
             <input
               type="file"
+              accept={DOCUMENT_ACCEPT}
               onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none border-slate-300"
             />
+            {arquivoFileName && (
+              <p className="mt-1 text-xs text-slate-500">Arquivo selecionado: {arquivoFileName}</p>
+            )}
+            <p className="mt-1 text-xs text-slate-400">PDF, Excel, Word, PowerPoint ou PBIX.</p>
           </div>
 
           {formError && (

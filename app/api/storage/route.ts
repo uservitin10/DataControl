@@ -3,6 +3,14 @@ import { supabaseServer } from "@/src/lib/supabase-server";
 
 const badRequest = (message: string) => NextResponse.json({ error: message }, { status: 400 });
 
+const formatStorageError = (error: any, bucket: string) => {
+  const message = error?.message || "Erro no storage.";
+  if (message.toLowerCase().includes("bucket not found")) {
+    return `Bucket '${bucket}' não encontrado. Verifique se o bucket existe no Supabase.`;
+  }
+  return message;
+};
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const type = url.searchParams.get("type");
@@ -22,7 +30,7 @@ export async function GET(req: NextRequest) {
   if (type === "signed") {
     const { data, error } = await supabaseServer.storage.from(bucket).createSignedUrl(path, expires);
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: formatStorageError(error, bucket) }, { status: 500 });
     }
     return NextResponse.json({ signedUrl: data.signedUrl });
   }
@@ -45,7 +53,7 @@ export async function POST(req: Request) {
 
   const { error } = await supabaseServer.storage.from(String(bucket)).upload(String(path), fileData, { upsert: true });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: formatStorageError(error, String(bucket)) }, { status: 500 });
   }
 
   return NextResponse.json({ bucket, path }, { status: 201 });
@@ -62,7 +70,7 @@ export async function DELETE(req: Request) {
 
   const { error } = await supabaseServer.storage.from(bucket).remove([path]);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: formatStorageError(error, bucket) }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

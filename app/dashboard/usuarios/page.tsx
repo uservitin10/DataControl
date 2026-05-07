@@ -124,10 +124,6 @@ export default function UsuariosPage() {
             className="rounded-md px-3 py-1.5 text-xs font-medium text-white/80" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
             Meu Perfil
           </button>
-          <button type="button" onClick={async () => { await supabase.auth.signOut(); router.push("/login"); }}
-            className="rounded-md px-3 py-1.5 text-xs font-medium text-white/80" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
-            Sair
-          </button>
         </div>
       </nav>
 

@@ -1,0 +1,26 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#016937" />
+      <stop offset="100%" stop-color="#009cde" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" rx="40" fill="url(#bg)" />
+  <rect x="60" y="60" width="1080" height="180" rx="24" fill="#ffffff" opacity="0.9" />
+  <text x="100" y="140" fill="#012169" font-family="Inter, sans-serif" font-size="56" font-weight="700">Plataforma Munis</text>
+  <text x="100" y="210" fill="#012169" font-family="Inter, sans-serif" font-size="28">Governo Federal - Ministério do Planejamento</text>
+  <rect x="60" y="270" width="1080" height="310" rx="24" fill="#ffffff" opacity="0.15" />
+  <rect x="80" y="290" width="240" height="240" rx="20" fill="#f8fafc" opacity="0.85" />
+  <path d="M100 320h200v140H100z" fill="#d1d5db" rx="16" />
+  <circle cx="200" cy="380" r="34" fill="#37b24d" />
+  <path d="M290 320h160v24H290zM290 360h120v24H290zM290 400h80v24H290z" fill="#cbd5e1" />
+  <text x="340" y="340" fill="#ffffff" font-family="Inter, sans-serif" font-size="24" font-weight="700">WebApp</text>
+  <text x="340" y="380" fill="#f1f5f9" font-family="Inter, sans-serif" font-size="20">Relatórios</text>
+  <line x1="340" y1="400" x2="730" y2="400" stroke="#f1f5f9" stroke-width="3" opacity="0.5" />
+  <rect x="340" y="420" width="560" height="120" rx="20" fill="#ffffff" opacity="0.12" />
+  <path d="M380 460h140v20H380zM380 500h320v20H380zM380 540h240v20H380z" fill="#e2e8f0" opacity="0.65" />
+  <rect x="100" y="590" width="220" height="50" rx="25" fill="#ffd300" />
+  <text x="130" y="628" fill="#012169" font-family="Inter, sans-serif" font-size="24" font-weight="700">gov.br</text>
+  <rect x="880" y="590" width="220" height="50" rx="25" fill="#012169" />
+  <text x="910" y="628" fill="#ffffff" font-family="Inter, sans-serif" font-size="20">Preview</text>
+</svg>

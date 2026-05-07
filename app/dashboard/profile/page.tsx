@@ -130,14 +130,25 @@ export default function ProfilePage() {
       <div className="mx-auto w-full max-w-lg rounded-2xl bg-white p-6 shadow-lg">
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold text-slate-900">Meu Perfil</h1>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-sm text-slate-500 hover:text-slate-700"
-          >
-            ← Voltar
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            >
+              ← Voltar
+            </button>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/login");
+              }}
+              className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-medium text-white hover:bg-rose-600"
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
         {/* Avatar placeholder */}

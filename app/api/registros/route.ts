@@ -9,6 +9,26 @@ const validateRegistroBody = (body: any) => {
   return null;
 };
 
+const cleanRegistroBody = (body: any) => {
+  const allowed = [
+    "nome",
+    "categoria",
+    "link",
+    "descricao",
+    "tipo_acesso",
+    "responsavel",
+    "desenvolvedor",
+    "fonte_dados",
+    "dados_sensiveis",
+    "secretaria",
+    "criado_por",
+    "arquivo_path",
+    "preview_path",
+    "updated_at",
+  ];
+  return Object.fromEntries(Object.entries(body || {}).filter(([key]) => allowed.includes(key)));
+};
+
 export async function GET() {
   const { data, error } = await supabaseServer
     .from("registros")
@@ -29,7 +49,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
-  const { data, error } = await supabaseServer.from("registros").insert(body);
+  const cleanBody = cleanRegistroBody(body);
+  const { data, error } = await supabaseServer.from("registros").insert(cleanBody);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
