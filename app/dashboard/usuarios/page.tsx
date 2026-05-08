@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/src/components/Logo";
-import { useAudit } from "@/src/hooks/useAudit";
 import { supabase } from "@/src/lib/supabase";
 
 type Role = "admin" | "editor" | "viewer";
@@ -32,8 +31,6 @@ export default function UsuariosPage() {
   const [editingRole, setEditingRole] = useState<Role>("viewer");
   const [saving, setSaving] = useState(false);
   const [busca, setBusca] = useState("");
-
-  const { logAction } = useAudit();
 
   const fetchUsuarios = async () => {
     const { data, error: fetchError } = await supabase
@@ -84,13 +81,6 @@ export default function UsuariosPage() {
       setSuccess("Role atualizada com sucesso!");
       setEditingId(null);
       await fetchUsuarios();
-
-      // Log de auditoria - alteração de role
-      await logAction("admin_action", "profile", id, {
-        action_type: "update_user_role",
-        new_role: editingRole,
-        user_id: id
-      });
     }
     setSaving(false);
   };
@@ -219,4 +209,4 @@ export default function UsuariosPage() {
       </div>
     </main>
   );
-} 
+}

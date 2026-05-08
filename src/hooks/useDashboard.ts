@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/src/lib/supabase";
-import { useAudit } from "@/src/hooks/useAudit";
+import { fetchJson } from "@/src/lib/api";
 import { useOnClickOutside } from "@/src/hooks/useOnClickOutside";
 import type { DashboardForm, Notificacao, Registro, Role, View } from "@/src/types/dashboard";
 import { EMPTY_FORM, AREAS, formatarTempo, AREA_CORES, getFileTipo } from "@/src/lib/dashboard";
@@ -34,7 +34,6 @@ const normalizeFonteDados = (fonte?: string) => {
 
 export function useDashboard() {
   const router = useRouter();
-  const { logAction } = useAudit();
 
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>("viewer");
@@ -118,18 +117,13 @@ export function useDashboard() {
 
       setUser(sessionUser);
 
-      await logAction("login", "user", sessionUser.id, {
-        email: sessionUser.email,
-        timestamp: new Date().toISOString(),
-      });
-
-      const profileRes = await fetch(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`, {
-        cache: "no-store",
-      });
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
+      try {
+        const profileData = await fetchJson<{ role: Role; display_name: string }>(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`);
         if (profileData?.role) setRole(profileData.role as Role);
         if (profileData?.display_name) setDisplayName(profileData.display_name);
+      } catch (profileError) {
+        console.error("Erro ao carregar perfil:", (profileError as Error).message);
+        setRole("viewer");
       }
 
       await fetchRegistros();
@@ -138,7 +132,7 @@ export function useDashboard() {
     };
 
     void loadData();
-  }, [router, fetchRegistros, fetchNotificacoes, logAction]);
+  }, [router, fetchRegistros, fetchNotificacoes]);
 
   const marcarTodasLidas = async () => {
     try {
@@ -237,13 +231,7 @@ export function useDashboard() {
 
       arquivo_path = path;
 
-      await logAction("upload_file", "storage", undefined, {
-        bucket: DOCUMENTS_BUCKET,
-        path,
-        file_name: arquivo.name,
-        file_size: arquivo.size,
-        file_type: arquivo.type,
-      });
+      
     }
 
     if (preview) {
@@ -259,13 +247,7 @@ export function useDashboard() {
 
       preview_path = path;
 
-      await logAction("upload_file", "storage", undefined, {
-        bucket: PREVIEWS_BUCKET,
-        path,
-        file_name: preview.name,
-        file_size: preview.size,
-        file_type: preview.type,
-      });
+      
     }
 
     const autor = displayName || user?.email || "Alguém";
@@ -283,14 +265,7 @@ export function useDashboard() {
         return;
       }
 
-      await criarNotificacao("edicao", `${autor} editou "${form.nome}" em ${form.categoria}`);
-      await logAction("update_document", "registro", editingId, {
-        nome: form.nome,
-        categoria: form.categoria,
-        arquivo_path,
-        preview_path,
-        autor,
-      });
+      
     } else {
       const payload = {
         ...form,
@@ -307,14 +282,7 @@ export function useDashboard() {
         return;
       }
 
-      await criarNotificacao("cadastro", `${autor} cadastrou "${form.nome}" em ${form.categoria}`);
-      await logAction("create_document", "registro", undefined, {
-        nome: form.nome,
-        categoria: form.categoria,
-        arquivo_path,
-        preview_path,
-        autor,
-      });
+      
     }
 
     await fetchRegistros();
@@ -347,14 +315,7 @@ export function useDashboard() {
       return;
     }
 
-    const autor = displayName || user?.email || "Alguém";
-    await criarNotificacao("exclusao", `${autor} excluiu "${nome ?? "um painel"}`);
-    await logAction("delete_document", "registro", id, {
-      nome: nome || "Documento sem nome",
-      arquivo_path: arquivoPath,
-      preview_path: previewPath,
-      autor,
-    });
+    
 
     await fetchNotificacoes();
     setRegistros((current) => current.filter((r) => r.id !== id));
@@ -379,13 +340,7 @@ export function useDashboard() {
     setDownloadUrl(fileUrl);
     setViewingNome(nome);
 
-    await logAction("view_document", "storage", undefined, {
-      arquivo_path: arquivoPath,
-      nome,
-      file_type: ext,
-      user_id: user?.id,
-    });
-
+    
     if (ext === "pbix") {
       window.open(fileUrl, "_blank");
       return;

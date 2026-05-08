@@ -1,0 +1,172 @@
+/**
+ * Validadores reutilizáveis para consolidar validações
+ */
+
+interface ValidationRule {
+  required?: boolean;
+  type?: string;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  enum?: (string | number | boolean)[];
+  custom?: (value: any) => boolean | string;
+}
+
+interface ValidationSchema {
+  [key: string]: ValidationRule;
+}
+
+/**
+ * Valida um objeto contra um schema
+ */
+export function validateObject(obj: any, schema: ValidationSchema): string | null {
+  if (!obj || typeof obj !== "object") {
+    return "Payload inválido.";
+  }
+
+  for (const [field, rules] of Object.entries(schema)) {
+    const value = obj[field];
+
+    // Verificar se é obrigatório
+    if (rules.required && (value === undefined || value === null || value === "")) {
+      return `O campo '${field}' é obrigatório.`;
+    }
+
+    // Se não é obrigatório e está vazio, pular validação de tipo
+    if (!rules.required && (value === undefined || value === null || value === "")) {
+      continue;
+    }
+
+    // Verificar tipo
+    if (rules.type && typeof value !== rules.type) {
+      return `O campo '${field}' deve ser do tipo '${rules.type}'.`;
+    }
+
+    // Verificar comprimento mínimo
+    if (rules.minLength && typeof value === "string" && value.length < rules.minLength) {
+      return `O campo '${field}' deve ter no mínimo ${rules.minLength} caracteres.`;
+    }
+
+    // Verificar comprimento máximo
+    if (rules.maxLength && typeof value === "string" && value.length > rules.maxLength) {
+      return `O campo '${field}' deve ter no máximo ${rules.maxLength} caracteres.`;
+    }
+
+    // Verificar pattern (regex)
+    if (rules.pattern && typeof value === "string" && !rules.pattern.test(value)) {
+      return `O campo '${field}' não está em um formato válido.`;
+    }
+
+    // Verificar enum
+    if (rules.enum && !rules.enum.includes(value)) {
+      return `O campo '${field}' deve ser um dos valores: ${rules.enum.join(", ")}.`;
+    }
+
+    // Validação customizada
+    if (rules.custom) {
+      const result = rules.custom(value);
+      if (result !== true) {
+        return typeof result === "string" ? result : `O campo '${field}' é inválido.`;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Limpa um objeto mantendo apenas os campos permitidos
+ */
+export function sanitizeObject(obj: any, allowedFields: string[]): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(obj || {}).filter(([key]) => allowedFields.includes(key))
+  );
+}
+
+/**
+ * Schemas de validação reutilizáveis
+ */
+export const VALIDATION_SCHEMAS = {
+  // Schema para criar registro
+  criarRegistro: {
+    nome: { required: true, type: "string", minLength: 1 },
+    categoria: { required: true, type: "string" },
+    criado_por: { required: true, type: "string" },
+    link: { type: "string" },
+    descricao: { type: "string" },
+    tipo_acesso: { type: "string", enum: ["publico", "restrito"] },
+    responsavel: { type: "string" },
+    desenvolvedor: { type: "string" },
+    fonte_dados: { type: "string" },
+    dados_sensiveis: { type: "boolean" },
+    secretaria: { type: "string" },
+    arquivo_path: { type: "string" },
+    preview_path: { type: "string" },
+  } as ValidationSchema,
+
+  // Schema para atualizar registro (tudo opcional)
+  atualizarRegistro: {
+    nome: { type: "string", minLength: 1 },
+    categoria: { type: "string" },
+    link: { type: "string" },
+    descricao: { type: "string" },
+    tipo_acesso: { type: "string", enum: ["publico", "restrito"] },
+    responsavel: { type: "string" },
+    desenvolvedor: { type: "string" },
+    fonte_dados: { type: "string" },
+    dados_sensiveis: { type: "boolean" },
+    secretaria: { type: "string" },
+    arquivo_path: { type: "string" },
+    preview_path: { type: "string" },
+    updated_at: { type: "string" },
+  } as ValidationSchema,
+
+  // Schema para criar notificação
+  criarNotificacao: {
+    tipo: { required: true, type: "string" },
+    mensagem: { required: true, type: "string" },
+    lida: { type: "boolean" },
+  } as ValidationSchema,
+
+  // Schema para upload de storage
+  uploadStorage: {
+    bucket: { required: true, type: "string" },
+    path: { required: true, type: "string" },
+    file: { required: true },
+  } as ValidationSchema,
+
+  // Schema para exclusão de storage
+  excluirStorage: {
+    bucket: { required: true, type: "string" },
+    path: { required: true, type: "string" },
+  } as ValidationSchema,
+};
+
+/**
+ * Campos permitidos em operações de registro
+ */
+export const ALLOWED_REGISTRO_FIELDS = [
+  "nome",
+  "categoria",
+  "link",
+  "descricao",
+  "tipo_acesso",
+  "responsavel",
+  "desenvolvedor",
+  "fonte_dados",
+  "dados_sensiveis",
+  "secretaria",
+  "criado_por",
+  "arquivo_path",
+  "preview_path",
+  "updated_at",
+];
+
+/**
+ * Campos permitidos em operações de notificação
+ */
+export const ALLOWED_NOTIFICACAO_FIELDS = [
+  "tipo",
+  "mensagem",
+  "lida",
+];

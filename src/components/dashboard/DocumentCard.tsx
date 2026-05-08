@@ -34,6 +34,9 @@ export function DocumentCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isBIMunis = registro.categoria === "BI Munis" || /munis/i.test(registro.nome || "") || /munis/i.test(registro.link ?? "");
+  const ext = registro.arquivo_path?.split('.').pop()?.toLowerCase();
+  const isExcelOrPowerBI = ['xlsx', 'xls', 'pbix', 'ppt', 'pptx'].includes(ext || '');
+  
   const shouldShowLink = (!isViewer && Boolean(registro.link)) || (isViewer && (isBIMunis || Boolean(registro.link)));
   const linkHref = isViewer && isBIMunis ? viewerPublicLink || registro.link : registro.link;
   const linkText = isViewer
@@ -44,8 +47,10 @@ export function DocumentCard({
 
   useEffect(() => {
     const loadPreview = async () => {
-      if (isViewer && viewerPreviewImage && isBIMunis) {
-        setPreviewUrl(viewerPreviewImage);
+      // Se for BI Munis e arquivo for Excel/PowerBI, usar preview padrão
+      if (isBIMunis && isExcelOrPowerBI) {
+        const previewImage = isViewer && viewerPreviewImage ? viewerPreviewImage : "/bimunis.png";
+        setPreviewUrl(previewImage);
         return;
       }
 
@@ -53,7 +58,7 @@ export function DocumentCard({
       setPreviewUrl(url);
     };
     loadPreview();
-  }, [getPreviewUrl, registro.preview_path, isBIMunis, isViewer, viewerPreviewImage]);
+  }, [getPreviewUrl, registro.preview_path, isBIMunis, isExcelOrPowerBI, isViewer, viewerPreviewImage]);
 
   const tipo = getFileTipo(registro.arquivo_path);
   const fonteLink = registro.fonte_dados?.match(/https?:\/\/[^\s]+/)?.[0] ?? null;

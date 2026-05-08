@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/src/lib/supabase-server";
+import { withAuth } from "@/src/lib/api-guard";
 
 const sanitizeRegistroPatch = (body: any) => {
   const allowedFields = [
@@ -40,59 +41,65 @@ const validateRegistroPatch = (body: any) => {
 };
 
 export async function GET(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  return withAuth(request, async () => {
+    const { id } = await params;
 
-  const { data, error } = await supabaseServer
-    .from("registros")
-    .select("*")
-    .eq("id", id)
-    .single();
+    const { data, error } = await supabaseServer
+      .from("registros")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
-  return NextResponse.json(data);
+    return NextResponse.json(data);
+  });
 }
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const body = await req.json();
-  const validationError = validateRegistroPatch(body);
-  if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 });
-  }
+  return withAuth(req, async () => {
+    const { id } = await params;
+    const body = await req.json();
+    const validationError = validateRegistroPatch(body);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
 
-  const patchBody = sanitizeRegistroPatch(body);
+    const patchBody = sanitizeRegistroPatch(body);
 
-  const { data, error } = await supabaseServer
-    .from("registros")
-    .update(patchBody)
-    .eq("id", id);
+    const { data, error } = await supabaseServer
+      .from("registros")
+      .update(patchBody)
+      .eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  }, ["admin", "editor"]
 
   return NextResponse.json(data);
 }
-
-export async function DELETE(
-  _req: NextRequest,
+req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const { error } = await supabaseServer.from("registros").delete().eq("id", id);
+  return withAuth(req, async () => {
+    const { id } = await params;
+    const { error } = await supabaseServer.from("registros").delete().eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  }, ["admin"]
 
   return NextResponse.json({ success: true });
 }

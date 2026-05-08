@@ -6,6 +6,7 @@ export const PREVIEWS_BUCKET = "previews";
 export const VIEWER_PUBLIC_GOV_LINK =
   "https://www.gov.br/planejamento/pt-br/assuntos/articulacao-institucional/pataforma-munis";
 export const VIEWER_PUBLIC_PREVIEW_IMAGE = "/gov-preview.svg";
+export const BIMUNIS_PREVIEW_IMAGE = "/bimunis.png";
 
 export const ALLOWED_PREVIEW_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 export const ALLOWED_DOCUMENT_EXTENSIONS = [

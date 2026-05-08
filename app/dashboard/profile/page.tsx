@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAudit } from "@/src/hooks/useAudit";
 import { supabase } from "@/src/lib/supabase";
 
 type Role = "admin" | "desenvolvedor" | "viewer";
@@ -24,8 +23,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const { logAction } = useAudit();
 
   useEffect(() => {
     const load = async () => {
@@ -71,7 +68,6 @@ export default function ProfilePage() {
 
     if (!userId) return;
 
-    // Atualiza display_name na tabela profiles
     const { error: profileError } = await supabase
       .from("profiles")
       .update({ display_name: displayName })
@@ -83,7 +79,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // Atualiza senha se preenchida
     if (newPassword) {
       const { error: passwordError } = await supabase.auth.updateUser({
         password: newPassword,
@@ -94,20 +89,7 @@ export default function ProfilePage() {
         setSaving(false);
         return;
       }
-
-      // Log de auditoria - mudança de senha
-      await logAction("change_password", "user", userId, {
-        user_id: userId,
-        email: email
-      });
     }
-
-    // Log de auditoria - atualização de perfil
-    await logAction("update_profile", "profile", userId, {
-      display_name: displayName,
-      user_id: userId,
-      email: email
-    });
 
     setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
     setNewPassword("");
