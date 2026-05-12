@@ -1,3 +1,4 @@
+import { supabase } from "@/src/lib/supabase";
 const STORAGE_API = "/api/storage";
 
 export const DOCUMENTS_BUCKET = "documentos";
@@ -39,6 +40,13 @@ const parseStorageError = async (res: Response) => {
 };
 
 export const uploadToStorage = async (bucket: string, path: string, file: File) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+  if (!token) throw new Error("Token não fornecido");
+
   const formData = new FormData();
   formData.append("bucket", bucket);
   formData.append("path", path);
@@ -46,6 +54,9 @@ export const uploadToStorage = async (bucket: string, path: string, file: File) 
 
   const res = await fetch(STORAGE_API, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     body: formData,
   });
 
@@ -57,9 +68,19 @@ export const uploadToStorage = async (bucket: string, path: string, file: File) 
 };
 
 export const deleteFromStorage = async (bucket: string, path: string) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+  if (!token) throw new Error("Token não fornecido");
+
   const res = await fetch(STORAGE_API, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ bucket, path }),
   });
 
@@ -70,28 +91,57 @@ export const deleteFromStorage = async (bucket: string, path: string) => {
   return true;
 };
 
-export const fetchSignedUrl = async (bucket: string, path: string, expires = 3600) => {
+export const fetchSignedUrl = async (
+  bucket: string,
+  path: string,
+  expires = 3600
+) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
   const res = await fetch(
-    `${STORAGE_API}?type=signed&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}&expires=${expires}`
+    `${STORAGE_API}?type=signed&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}&expires=${expires}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!res.ok) {
     throw new Error(await parseStorageError(res));
   }
 
-  const data = await res.json();
-  return data.signedUrl as string | null;
+  const response = await res.json();
+  return response.data?.signedUrl as string | null;
 };
 
-export const fetchPublicUrl = async (bucket: string, path: string) => {
+export const fetchPublicUrl = async (
+  bucket: string,
+  path: string
+) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
   const res = await fetch(
-    `${STORAGE_API}?type=public&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`
+    `${STORAGE_API}?type=public&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!res.ok) {
     throw new Error(await parseStorageError(res));
   }
 
-  const data = await res.json();
-  return data.publicUrl as string | null;
+  const response = await res.json();
+  return response.data?.publicUrl as string | null;
 };

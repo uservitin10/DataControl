@@ -54,7 +54,6 @@ export function useDashboard() {
   const [viewingNome, setViewingNome] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
-  const [filtroAcesso, setFiltroAcesso] = useState("");
   const [filtroSensivel, setFiltroSensivel] = useState("");
   const [filtroFonte, setFiltroFonte] = useState(true); // default: mostrar apenas com fonte disponível
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
@@ -152,7 +151,6 @@ export function useDashboard() {
   const abrirCategoria = (area: string) => {
     setAreaAtiva(area);
     setBusca("");
-    setFiltroAcesso("");
     setFiltroSensivel("");
     setFiltroFonte(true);
     setView("documentos");
@@ -162,7 +160,6 @@ export function useDashboard() {
     setView("categorias");
     setAreaAtiva("");
     setBusca("");
-    setFiltroAcesso("");
     setFiltroSensivel("");
     setFiltroFonte(true);
   };
@@ -181,7 +178,6 @@ export function useDashboard() {
     setForm({
       nome: registro.nome,
       categoria: registro.categoria,
-      link: registro.link ?? "",
       descricao: registro.descricao,
       tipo_acesso: registro.tipo_acesso ?? "publico",
       responsavel: registro.responsavel ?? "",
@@ -371,20 +367,45 @@ export function useDashboard() {
   };
 
   const documentosFiltrados = useMemo(() => {
+    const temFonteDados = (fonte?: string) => fonte && fonte.trim().length > 0;
+
     return registros
       .filter((r) => r.categoria === areaAtiva)
-      .filter((r) =>
-        !busca || r.nome.toLowerCase().includes(busca.toLowerCase()) || r.descricao?.toLowerCase().includes(busca.toLowerCase())
-      )
-      .filter((r) => !filtroAcesso || r.tipo_acesso === filtroAcesso)
-      .filter((r) =>
-        filtroSensivel === "" ? true : filtroSensivel === "sim" ? r.dados_sensiveis : !r.dados_sensiveis
-      )
-      .filter((r) => !filtroFonte || (r.fonte_dados && r.fonte_dados.trim() !== ""));
-  }, [registros, areaAtiva, busca, filtroAcesso, filtroSensivel, filtroFonte]);
+      
+      // Viewers só não veem dados SENSÍVEIS (não relacionado a fonte_dados)
+      .filter((r) => {
+        if (isViewer && r.dados_sensiveis) {
+          return false;
+        }
+        return true;
+      })
 
+      .filter((r) =>
+        !busca ||
+        r.nome.toLowerCase().includes(busca.toLowerCase()) ||
+        r.descricao?.toLowerCase().includes(busca.toLowerCase())
+      )
+
+      .filter((r) =>
+        filtroSensivel === ""
+          ? true
+          : filtroSensivel === "sim"
+          ? r.dados_sensiveis
+          : !r.dados_sensiveis
+      )
+
+      // Filtrar por fonte de dados apenas se filtroFonte está ativo
+      .filter((r) => !filtroFonte || temFonteDados(r.fonte_dados));
+  }, [
+    registros,
+    areaAtiva,
+    busca,
+    filtroSensivel,
+    filtroFonte,
+    isViewer,
+  ]);
   const totalDocumentos = registros.length;
-  const temFiltroAtivo = Boolean(busca || filtroAcesso || filtroSensivel || filtroFonte);
+  const temFiltroAtivo = Boolean(busca || filtroSensivel || filtroFonte === false);
 
   return {
     user,
@@ -406,7 +427,6 @@ export function useDashboard() {
     viewingNome,
     downloadUrl,
     busca,
-    filtroAcesso,
     filtroSensivel,
     filtroFonte,
     notificacoes,
@@ -433,7 +453,6 @@ export function useDashboard() {
     setArquivo,
     setPreview,
     setBusca,
-    setFiltroAcesso,
     setFiltroSensivel,
     setFiltroFonte,
     setShowModal,

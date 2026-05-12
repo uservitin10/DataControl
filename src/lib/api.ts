@@ -1,5 +1,11 @@
 import { supabase } from "@/src/lib/supabase";
 
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 const parseJsonResponse = async (res: Response) => {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
@@ -31,10 +37,23 @@ const createAuthHeaders = async (headers: HeadersInit = {}): Promise<HeadersInit
   return headersObj;
 };
 
+/**
+ * Extrai dados da resposta padronizada da API
+ */
+const extractApiData = <T>(response: any): T => {
+  // Se a resposta tem a estrutura padronizada { success, data }
+  if (response && typeof response === "object" && "success" in response) {
+    return response.data ?? response;
+  }
+  // Caso contrário, retorna como está
+  return response;
+};
+
 export const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> => {
   const headers = await createAuthHeaders(init?.headers);
   const res = await fetch(input, { ...init, headers });
-  return await parseJsonResponse(res);
+  const data = await parseJsonResponse(res);
+  return extractApiData<T>(data);
 };
 
 export const postJson = async <T>(input: RequestInfo, body: unknown): Promise<T> => {
@@ -44,7 +63,8 @@ export const postJson = async <T>(input: RequestInfo, body: unknown): Promise<T>
     headers,
     body: JSON.stringify(body),
   });
-  return await parseJsonResponse(res);
+  const data = await parseJsonResponse(res);
+  return extractApiData<T>(data);
 };
 
 export const patchJson = async <T>(input: RequestInfo, body: unknown): Promise<T> => {
@@ -54,5 +74,6 @@ export const patchJson = async <T>(input: RequestInfo, body: unknown): Promise<T
     headers,
     body: JSON.stringify(body),
   });
-  return await parseJsonResponse(res);
+  const data = await parseJsonResponse(res);
+  return extractApiData<T>(data);
 };

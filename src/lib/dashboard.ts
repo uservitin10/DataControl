@@ -44,7 +44,6 @@ export const AREA_CORES: Record<string, { bg: string; text: string }> = {
 export const EMPTY_FORM: DashboardForm = {
   nome: "",
   categoria: AREAS[0],
-  link: "",
   descricao: "",
   tipo_acesso: "publico",
   responsavel: "",

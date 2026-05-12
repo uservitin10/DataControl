@@ -33,17 +33,13 @@ export function DocumentCard({
 }: DocumentCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const isBIMunis = registro.categoria === "BI Munis" || /munis/i.test(registro.nome || "") || /munis/i.test(registro.link ?? "");
+  const isBIMunis = registro.categoria === "BI Munis" || /munis/i.test(registro.nome || "");
   const ext = registro.arquivo_path?.split('.').pop()?.toLowerCase();
   const isExcelOrPowerBI = ['xlsx', 'xls', 'pbix', 'ppt', 'pptx'].includes(ext || '');
   
-  const shouldShowLink = (!isViewer && Boolean(registro.link)) || (isViewer && (isBIMunis || Boolean(registro.link)));
-  const linkHref = isViewer && isBIMunis ? viewerPublicLink || registro.link : registro.link;
-  const linkText = isViewer
-    ? isBIMunis
-      ? "Abrir site público do gov.br"
-      : "Abrir painel"
-    : "Abrir painel";
+  const shouldShowLink = !isViewer || isBIMunis;
+  const linkHref = isViewer && isBIMunis ? viewerPublicLink : null;
+  const linkText = "Abrir site público do gov.br";
 
   useEffect(() => {
     const loadPreview = async () => {

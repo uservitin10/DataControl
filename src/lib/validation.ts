@@ -140,6 +140,37 @@ export const VALIDATION_SCHEMAS = {
     bucket: { required: true, type: "string" },
     path: { required: true, type: "string" },
   } as ValidationSchema,
+
+  // Schema para criar sistema
+  criarSistema: {
+    sigla: { required: true, type: "string", minLength: 1, maxLength: 20 },
+    nome: { required: true, type: "string", minLength: 1 },
+    descricao: { required: true, type: "string" },
+    gestores: { required: true, type: "string" },
+    sustentacao: { required: true, type: "string" },
+    url_producao: { type: "string" },
+    url_homologacao: { type: "string" },
+    gestao_dados: { required: true, type: "string" },
+    acesso_bd: { required: true, type: "string" },
+    tipo_acesso: { type: "string", enum: ["publico", "restrito"] },
+    secretaria: { type: "string" },
+  } as ValidationSchema,
+
+  // Schema para atualizar sistema (tudo opcional)
+  atualizarSistema: {
+    sigla: { type: "string", minLength: 1, maxLength: 20 },
+    nome: { type: "string", minLength: 1 },
+    descricao: { type: "string" },
+    gestores: { type: "string" },
+    sustentacao: { type: "string" },
+    url_producao: { type: "string" },
+    url_homologacao: { type: "string" },
+    gestao_dados: { type: "string" },
+    acesso_bd: { type: "string" },
+    tipo_acesso: { type: "string", enum: ["publico", "restrito"] },
+    secretaria: { type: "string" },
+    updated_at: { type: "string" },
+  } as ValidationSchema,
 };
 
 /**
@@ -169,4 +200,22 @@ export const ALLOWED_NOTIFICACAO_FIELDS = [
   "tipo",
   "mensagem",
   "lida",
+];
+
+/**
+ * Campos permitidos em operações de sistema
+ */
+export const ALLOWED_SISTEMA_FIELDS = [
+  "sigla",
+  "nome",
+  "descricao",
+  "gestores",
+  "sustentacao",
+  "url_producao",
+  "url_homologacao",
+  "gestao_dados",
+  "acesso_bd",
+  "tipo_acesso",
+  "secretaria",
+  "updated_at",
 ];

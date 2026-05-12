@@ -5,8 +5,6 @@ import { useOnClickOutside } from "@/src/hooks/useOnClickOutside";
 type DocumentFiltersProps = {
   busca: string;
   setBusca: Dispatch<SetStateAction<string>>;
-  filtroAcesso: string;
-  setFiltroAcesso: Dispatch<SetStateAction<string>>;
   filtroSensivel: string;
   setFiltroSensivel: Dispatch<SetStateAction<string>>;
   filtroFonte: boolean;
@@ -18,8 +16,6 @@ type DocumentFiltersProps = {
 export function DocumentFilters({
   busca,
   setBusca,
-  filtroAcesso,
-  setFiltroAcesso,
   filtroSensivel,
   setFiltroSensivel,
   filtroFonte,
@@ -34,7 +30,6 @@ export function DocumentFilters({
 
   const contarFiltrosAtivos = () => {
     let count = 0;
-    if (filtroAcesso) count++;
     if (filtroSensivel) count++;
     if (filtroFonte) count++;
     return count;
@@ -82,50 +77,6 @@ export function DocumentFilters({
             style={{ borderColor: "#e2e8f0" }}
           >
             <div className="space-y-4">
-              {/* Filtro de Acesso */}
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: "#1e293b" }}>
-                  Acesso
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="acesso"
-                      checked={filtroAcesso === ""}
-                      onChange={() => setFiltroAcesso("")}
-                      className="w-4 h-4"
-                      style={{ borderColor: "#cbd5e1" }}
-                    />
-                    <span style={{ color: "#475569" }}>Todos os acessos</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="acesso"
-                      checked={filtroAcesso === "publico"}
-                      onChange={() => setFiltroAcesso("publico")}
-                      className="w-4 h-4"
-                      style={{ borderColor: "#cbd5e1" }}
-                    />
-                    <span style={{ color: "#475569" }}>Público</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="acesso"
-                      checked={filtroAcesso === "restrito"}
-                      onChange={() => setFiltroAcesso("restrito")}
-                      className="w-4 h-4"
-                      style={{ borderColor: "#cbd5e1" }}
-                    />
-                    <span style={{ color: "#475569" }}>Restrito</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Divisor */}
-              <div style={{ borderTop: "1px solid #e2e8f0" }} />
 
               {/* Filtro de Dados Sensíveis */}
               <div>
@@ -190,24 +141,23 @@ export function DocumentFilters({
               <div style={{ borderTop: "1px solid #e2e8f0" }} />
 
               {/* Botões de ação */}
-              <div className="flex gap-2 pt-2">
-                {temFiltroAtivo && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClear();
-                      setShowFilterPanel(false);
-                    }}
-                    className="flex-1 rounded-lg px-3 py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: "#ef4444" }}
-                  >
-                    Limpar tudo
-                  </button>
-                )}
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClear();
+                    setShowFilterPanel(false);
+                  }}
+                  disabled={!temFiltroAtivo}
+                  className="flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: "#ef4444" }}
+                >
+                  Limpar tudo
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowFilterPanel(false)}
-                  className="flex-1 rounded-lg px-3 py-2 text-xs font-medium border hover:bg-slate-50 transition-colors"
+                  className="flex-1 rounded-lg px-3 py-2 text-sm font-medium border hover:bg-slate-50 transition-colors"
                   style={{ borderColor: "#cbd5e1", color: "#475569" }}
                 >
                   Fechar

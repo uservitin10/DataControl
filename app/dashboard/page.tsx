@@ -34,7 +34,6 @@ export default function DashboardPage() {
     viewingNome,
     downloadUrl,
     busca,
-    filtroAcesso,
     filtroSensivel,
     filtroFonte,
     notificacoes,
@@ -62,7 +61,6 @@ export default function DashboardPage() {
     setArquivo,
     setPreview,
     setBusca,
-    setFiltroAcesso,
     setFiltroSensivel,
     setFiltroFonte,
     setShowModal,
@@ -124,6 +122,14 @@ export default function DashboardPage() {
                 + Novo Painel
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => router.push("/sistemas")}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              Sistemas
+            </button>
 
             {isAdmin && (
               <button
@@ -196,8 +202,6 @@ export default function DashboardPage() {
             <DocumentFilters
               busca={busca}
               setBusca={setBusca}
-              filtroAcesso={filtroAcesso}
-              setFiltroAcesso={setFiltroAcesso}
               filtroSensivel={filtroSensivel}
               setFiltroSensivel={setFiltroSensivel}
               filtroFonte={filtroFonte}
@@ -205,7 +209,6 @@ export default function DashboardPage() {
               temFiltroAtivo={temFiltroAtivo}
               onClear={() => {
                 setBusca("");
-                setFiltroAcesso("");
                 setFiltroSensivel("");
                 setFiltroFonte(true);
               }}
@@ -251,8 +254,8 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => {
                       setBusca("");
-                      setFiltroAcesso("");
                       setFiltroSensivel("");
+                      setFiltroFonte(true);
                     }}
                     className="mt-4 text-sm font-medium text-blue-600 hover:underline"
                   >

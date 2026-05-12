@@ -2,7 +2,6 @@ export type Registro = {
   id?: string;
   nome: string;
   categoria: string;
-  link?: string;
   descricao: string;
   arquivo_path?: string;
   preview_path?: string;
@@ -31,7 +30,6 @@ export type View = "categorias" | "documentos";
 export type DashboardForm = {
   nome: string;
   categoria: string;
-  link: string;
   descricao: string;
   tipo_acesso: string;
   responsavel: string;
@@ -39,4 +37,35 @@ export type DashboardForm = {
   fonte_dados: string;
   dados_sensiveis: boolean;
   secretaria: string;
+};
+
+export type Sistema = {
+  id?: string;
+  sigla: string;
+  nome: string;
+  descricao: string;
+  gestores: string;
+  sustentacao: string;
+  url_producao?: string;
+  url_homologacao?: string;
+  gestao_dados: string;
+  acesso_bd: string;
+  created_at?: string;
+  updated_at?: string;
+  tipo_acesso?: string;
+  secretaria?: string;
+};
+
+export type SistemaForm = {
+  sigla: string;
+  nome: string;
+  descricao: string;
+  gestores: string;
+  sustentacao: string;
+  url_producao: string;
+  url_homologacao: string;
+  gestao_dados: string;
+  acesso_bd: string;
+  tipo_acesso?: string;
+  secretaria?: string;
 };

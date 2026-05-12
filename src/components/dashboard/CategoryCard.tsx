@@ -1,4 +1,5 @@
 import type { MouseEventHandler } from "react";
+import { COLORS } from "@/src/lib/ui-constants";
 
 type CategoryCardProps = {
   categoria: string;
@@ -13,7 +14,7 @@ export function CategoryCard({ categoria, count, color, onClick }: CategoryCardP
       type="button"
       onClick={onClick}
       className="text-left rounded-2xl border bg-white p-6 transition-all duration-200 hover-lift shadow-soft hover:shadow-medium"
-      style={{ borderColor: "#e2e8f0" }}
+      style={{ borderColor: COLORS.cardBg }}
     >
       <div className="mb-4 flex items-center justify-between">
         <div
@@ -26,10 +27,10 @@ export function CategoryCard({ categoria, count, color, onClick }: CategoryCardP
             <path d="M12 1v5h4" stroke={color.text} strokeWidth="1.3" />
           </svg>
         </div>
-        <span className="text-3xl font-bold" style={{ color: "#1a2744" }}>{count}</span>
+        <span className="text-3xl font-bold" style={{ color: COLORS.primary }}>{count}</span>
       </div>
 
-      <p className="text-base font-semibold mb-1" style={{ color: "#1a2744" }}>{categoria}</p>
+      <p className="text-base font-semibold mb-1" style={{ color: COLORS.primary }}>{categoria}</p>
       <p className="text-sm text-slate-600 mb-4">
         {count} painel{count !== 1 ? "s" : ""} disponível{count !== 1 ? "s" : ""}
       </p>
