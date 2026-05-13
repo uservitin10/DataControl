@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Rotas públicas que não precisam de autenticação
@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Páginas protegidas - redirecionar para login se não autenticado
-  const protectedPages = ["/dashboard"];
+  const protectedPages = ["/dashboard", "/sistemas"];
   const isProtectedPage = protectedPages.some((route) => pathname.startsWith(route));
 
   if (isProtectedPage) {

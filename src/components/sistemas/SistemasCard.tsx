@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { Sistema } from "@/src/types/dashboard";
 import { COLORS, UI_CLASSES } from "@/src/lib/ui-constants";
 
@@ -16,7 +17,22 @@ export function SistemasCard({
   onEdit,
   onDelete,
 }: SistemasCardProps) {
-  const urlPrincipal = sistema.url_producao || sistema.url_homologacao;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    const element = descriptionRef.current;
+    if (!element) return;
+
+    const checkOverflow = () => {
+      setHasOverflow(element.scrollHeight > element.clientHeight + 1);
+    };
+
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [sistema.descricao, isExpanded]);
 
   return (
     <div 
@@ -44,9 +60,33 @@ export function SistemasCard({
           {sistema.nome}
         </p>
         {sistema.descricao && (
-          <p className="text-sm line-clamp-2 text-slate-600 mb-4 leading-relaxed">
-            {sistema.descricao}
-          </p>
+          <div className="mb-4">
+            <p
+              ref={descriptionRef}
+              className="text-sm text-slate-600 leading-relaxed"
+              style={
+                !isExpanded
+                  ? {
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }
+                  : undefined
+              }
+            >
+              {sistema.descricao}
+            </p>
+            {(hasOverflow || isExpanded) && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                {isExpanded ? "Ver menos" : "Ver mais"}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Informações principais */}

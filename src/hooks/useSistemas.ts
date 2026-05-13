@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/src/lib/supabase";
-import type { Sistema, SistemaForm, Role } from "@/src/types/dashboard";
+import { useOnClickOutside } from "@/src/hooks/useOnClickOutside";
+import type { Notificacao, Sistema, SistemaForm, Role } from "@/src/types/dashboard";
+import { fetchNotificacoesApi, markNotificacoesLidasApi } from "@/src/lib/notificacoes";
 import { fetchSistemasApi, createSistemaApi, updateSistemaApi, deleteSistemaApi } from "@/src/lib/sistemas";
 
 const EMPTY_FORM: SistemaForm = {
@@ -46,6 +48,11 @@ export function useSistemas() {
   const [form, setForm] = useState<SistemaForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [showNotif, setShowNotif] = useState(false);
+  const notifRef = useRef<HTMLDivElement | null>(null);
+
+  useOnClickOutside(notifRef, () => setShowNotif(false));
 
   // Estados de filtro
   const [busca, setBusca] = useState("");
@@ -58,6 +65,30 @@ export function useSistemas() {
   const isEditor = role === "editor";
   const canEdit = isAdmin || isEditor;
   const canDelete = isAdmin;
+
+  const fetchNotificacoes = useCallback(async () => {
+    if (!isAdmin) {
+      setNotificacoes([]);
+      return;
+    }
+
+    try {
+      const data = await fetchNotificacoesApi();
+      setNotificacoes(data ?? []);
+    } catch (fetchError) {
+      setError((fetchError as Error).message || "Erro ao carregar notificações.");
+    }
+  }, [isAdmin]);
+
+  const marcarTodasLidas = async () => {
+    try {
+      await markNotificacoesLidasApi();
+    } catch (markError) {
+      console.error((markError as Error).message || "Erro ao marcar notificações lidas.");
+    }
+
+    setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
+  };
 
   // Verificar se há filtro ativo
   const temFiltroAtivo = busca !== "" || filtroHomologados || filtroAcessiveis || filtroTipoAcesso !== "" || filtroSecretaria !== "";
@@ -100,6 +131,8 @@ export function useSistemas() {
             setFiltroHomologados(true);
             setFiltroAcessiveis(true);
           }
+
+          await fetchNotificacoes();
         }
       } catch (err) {
         console.error("Erro ao inicializar usuário:", err);
@@ -109,7 +142,7 @@ export function useSistemas() {
     };
 
     initUser();
-  }, []);
+  }, [fetchNotificacoes]);
 
   // Carregar sistemas
   const fetchSistemas = useCallback(async () => {
@@ -254,6 +287,11 @@ export function useSistemas() {
     isEditor,
     canEdit,
     canDelete,
+    notificacoes,
+    showNotif,
+    setShowNotif,
+    notifRef,
+    marcarTodasLidas,
     // Filtros
     busca,
     setBusca,

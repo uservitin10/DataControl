@@ -6,13 +6,14 @@ import { useSistemas } from "@/src/hooks/useSistemas";
 import { SistemasCard } from "@/src/components/sistemas/SistemasCard";
 import { SistemasModal } from "@/src/components/sistemas/SistemasModals";
 import { SistemasFilters } from "@/src/components/sistemas/SistemasFilters";
+import { NotificationsDropdown } from "@/src/components/dashboard/NotificationsDropdown";
 import { COLORS, ROLE_LABELS } from "@/src/lib/ui-constants";
+import { formatarTempo } from "@/src/lib/dashboard";
 
 export default function SistemasPage() {
   const router = useRouter();
 
   const {
-    user,
     role,
     displayName,
     sistemas,
@@ -26,6 +27,11 @@ export default function SistemasPage() {
     canEdit,
     canDelete,
     isAdmin,
+    notificacoes,
+    showNotif,
+    setShowNotif,
+    notifRef,
+    marcarTodasLidas,
     busca,
     setBusca,
     filtroHomologados,
@@ -80,6 +86,17 @@ export default function SistemasPage() {
                 {ROLE_LABELS[role]}
               </span>
             </div>
+
+            {isAdmin && (
+              <NotificationsDropdown
+                notificacoes={notificacoes}
+                showNotif={showNotif}
+                onToggle={() => setShowNotif((prev) => !prev)}
+                onMarkAllRead={marcarTodasLidas}
+                formatarTempo={formatarTempo}
+                containerRef={notifRef}
+              />
+            )}
 
             <button
               type="button"
