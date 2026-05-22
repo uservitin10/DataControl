@@ -1,6 +1,6 @@
-import type { SistemaForm } from "@/src/types/dashboard";
-import { UI_CLASSES, COLORS } from "@/src/lib/ui-constants";
-import { SECRETARIAS } from "@/src/lib/dashboard";
+import type { SistemaForm } from "@/types/dashboard";
+import { UI_CLASSES, COLORS } from "@/lib/ui-constants";
+import { SECRETARIAS } from "@/lib/dashboard";
 
 type SistemasFormProps = {
   form: SistemaForm;

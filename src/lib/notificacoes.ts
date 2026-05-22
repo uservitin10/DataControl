@@ -1,5 +1,5 @@
-import type { Notificacao } from "@/src/types/dashboard";
-import { fetchJson, postJson } from "@/src/lib/api";
+import type { Notificacao } from "@/types/dashboard";
+import { fetchJson, postJson } from "@/lib/api";
 
 export const fetchNotificacoesApi = async () => fetchJson<Notificacao[]>("/api/notificacoes");
 

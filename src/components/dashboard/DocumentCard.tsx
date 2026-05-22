@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import type { Registro } from "@/src/types/dashboard";
+import type { Registro } from "@/types/dashboard";
 
 type DocumentCardProps = {
   registro: Registro;

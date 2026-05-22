@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { useOnClickOutside } from "@/src/hooks/useOnClickOutside";
-import { SECRETARIAS } from "@/src/lib/dashboard";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import { SECRETARIAS } from "@/lib/dashboard";
 
 type SistemasFiltersProps = {
   busca: string;
   setBusca: Dispatch<SetStateAction<string>>;
+  filtroAmbiente: "producao" | "homologacao" | "ambos";
+  setFiltroAmbiente: Dispatch<SetStateAction<"producao" | "homologacao" | "ambos">>;
   filtroHomologados: boolean;
   setFiltroHomologados: Dispatch<SetStateAction<boolean>>;
   filtroAcessiveis: boolean;
@@ -16,11 +18,14 @@ type SistemasFiltersProps = {
   setFiltroSecretaria: Dispatch<SetStateAction<string>>;
   temFiltroAtivo: boolean;
   onClear: () => void;
+  mostrarHomologadosProducao?: boolean;
 };
 
 export function SistemasFilters({
   busca,
   setBusca,
+  filtroAmbiente,
+  setFiltroAmbiente,
   filtroHomologados,
   setFiltroHomologados,
   filtroAcessiveis,
@@ -31,6 +36,7 @@ export function SistemasFilters({
   setFiltroSecretaria,
   temFiltroAtivo,
   onClear,
+  mostrarHomologadosProducao = false,
 }: SistemasFiltersProps) {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -88,19 +94,41 @@ export function SistemasFilters({
             style={{ borderColor: "#e2e8f0" }}
           >
             <div className="space-y-4">
-              {/* Filtro de Homologados */}
+              {/* Filtro de Ambiente */}
               <div>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filtroHomologados}
-                    onChange={(e) => setFiltroHomologados(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                    style={{ borderColor: "#cbd5e1" }}
-                  />
-                  <span style={{ color: "#1e293b", fontWeight: 500 }}>Homologados</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: "#1e293b" }}>
+                  Ambiente
                 </label>
+                <select
+                  value={filtroAmbiente}
+                  onChange={(e) => setFiltroAmbiente(e.target.value as "producao" | "homologacao" | "ambos")}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
+                >
+                  <option value="ambos">Ambos (Padrão)</option>
+                  {mostrarHomologadosProducao && <option value="producao">Produção</option>}
+                  {mostrarHomologadosProducao && <option value="homologacao">Homologação</option>}
+                </select>
               </div>
+
+              {/* Divisor */}
+              <div style={{ borderTop: "1px solid #e2e8f0" }} />
+
+              {/* Filtro de Homologados (visível apenas para perfis específicos) */}
+              {mostrarHomologadosProducao && (
+                <div>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filtroHomologados}
+                      onChange={(e) => setFiltroHomologados(e.target.checked)}
+                      className="w-4 h-4 rounded"
+                      style={{ borderColor: "#cbd5e1" }}
+                    />
+                    <span style={{ color: "#1e293b", fontWeight: 500 }}>Homologados</span>
+                  </label>
+                </div>
+              )}
 
               {/* Filtro de Acessíveis */}
               <div>

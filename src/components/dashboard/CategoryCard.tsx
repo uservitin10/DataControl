@@ -1,5 +1,5 @@
 import type { MouseEventHandler } from "react";
-import { COLORS } from "@/src/lib/ui-constants";
+import { COLORS } from "@/lib/ui-constants";
 
 type CategoryCardProps = {
   categoria: string;

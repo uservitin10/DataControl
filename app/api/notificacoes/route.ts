@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/src/lib/supabase-server";
-import { withAuth } from "@/src/lib/api-guard";
-import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_NOTIFICACAO_FIELDS } from "@/src/lib/validation";
-import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/src/lib/api-response";
+import { supabaseServer } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/api-guard";
+import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_NOTIFICACAO_FIELDS } from "@/lib/validation";
+import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async () => {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  });
+  }, { module: "notificacoes", action: "view" });
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin", "editor"]);
+  }, { module: "notificacoes", action: "edit" });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -66,5 +66,5 @@ export async function PATCH(request: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  });
+  }, { module: "notificacoes", action: "edit" });
 }

@@ -1,4 +1,4 @@
-import { supabase } from "@/src/lib/supabase";
+import { supabase } from "@/lib/supabase";
 const STORAGE_API = "/api/storage";
 
 export const DOCUMENTS_BUCKET = "documentos";

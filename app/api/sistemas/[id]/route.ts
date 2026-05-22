@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/src/lib/supabase-server";
-import { withAuth } from "@/src/lib/api-guard";
-import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/src/lib/validation";
-import { apiSuccess, apiValidationError, apiNotFound, apiInternalError } from "@/src/lib/api-response";
+import { supabaseServer } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/api-guard";
+import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/lib/validation";
+import { apiSuccess, apiValidationError, apiNotFound, apiInternalError } from "@/lib/api-response";
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +26,7 @@ export async function GET(
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  });
+  }, { module: "sistemas", action: "view" });
 }
 
 export async function PATCH(
@@ -62,7 +62,7 @@ export async function PATCH(
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin", "editor"]);
+  }, { module: "sistemas", action: "edit" });
 }
 
 export async function DELETE(
@@ -83,5 +83,5 @@ export async function DELETE(
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin"]);
+  }, { module: "sistemas", action: "delete" });
 }

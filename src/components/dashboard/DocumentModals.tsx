@@ -1,8 +1,8 @@
 import type { Dispatch, SetStateAction, ReactNode } from "react";
-import type { DashboardForm } from "@/src/types/dashboard";
-import { AREAS, SECRETARIAS } from "@/src/lib/dashboard";
-import { PREVIEW_ACCEPT, DOCUMENT_ACCEPT } from "@/src/lib/storage";
-import { COLORS, UI_CLASSES } from "@/src/lib/ui-constants";
+import type { DashboardForm } from "@/types/dashboard";
+import { AREAS, SECRETARIAS } from "@/lib/dashboard";
+import { PREVIEW_ACCEPT, DOCUMENT_ACCEPT } from "@/lib/storage";
+import { COLORS, UI_CLASSES } from "@/lib/ui-constants";
 
 type DocumentFormModalProps = {
   editingId: string | null;

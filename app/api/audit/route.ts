@@ -1,9 +1,31 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/src/lib/supabase-server";
+import { supabaseServer } from "@/lib/supabase-server";
 
 const getRequestIp = (request: NextRequest) => {
-  const forwarded = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip");
-  return forwarded ? forwarded.split(",")[0].trim() : null;
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    return xForwardedFor.trim();
+  }
+
+  const headerCandidates = [
+    "x-real-ip",
+    "cf-connecting-ip",
+    "fastly-client-ip",
+    "true-client-ip",
+    "x-client-ip",
+    "x-forwarded",
+    "forwarded-for",
+    "forwarded",
+  ];
+
+  for (const h of headerCandidates) {
+    const value = request.headers.get(h);
+    if (value) {
+      return value.split(",")[0].trim();
+    }
+  }
+
+  return null;
 };
 
 const getAuthToken = (request: NextRequest) => {
@@ -40,6 +62,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const userId = searchParams.get("user_id");
     const action = searchParams.get("action");
+    const resourceType = searchParams.get("resource_type");
+    const resourceId = searchParams.get("resource_id");
 
     let query = supabaseServer
       .from("audit_logs")
@@ -61,6 +85,14 @@ export async function GET(request: NextRequest) {
       query = query.eq("action", action);
     }
 
+    if (resourceType) {
+      query = query.eq("resource_type", resourceType);
+    }
+
+    if (resourceId) {
+      query = query.eq("resource_id", resourceId);
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -73,7 +105,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
     }
 
-    return NextResponse.json(data || []);
+    return NextResponse.json({ data: data || [], missingTable: false });
   } catch (error) {
     console.error("Erro na API de auditoria:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
@@ -94,14 +126,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!user_id || !action) {
-      return NextResponse.json({ error: "user_id e action sao obrigatorios" }, { status: 400 });
+    if (!action) {
+      return NextResponse.json({ error: "action é obrigatório" }, { status: 400 });
     }
 
     const { data, error } = await supabaseServer
       .from("audit_logs")
       .insert({
-        user_id,
+        user_id: user_id || null,
         action,
         resource_type: resource_type || null,
         resource_id: resource_id || null,
@@ -117,7 +149,10 @@ export async function POST(request: NextRequest) {
           payload: { user_id, action, resource_type, resource_id, details, ip_address },
         });
         return NextResponse.json(
-          { message: "Audit logging não está configurado. Crie a tabela audit_logs no Supabase." },
+          {
+            message: "Audit logging não está configurado. Crie a tabela audit_logs no Supabase.",
+            missingTable: true,
+          },
           { status: 200 }
         );
       }

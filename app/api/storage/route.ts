@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/src/lib/supabase-server";
-import { withAuth } from "@/src/lib/api-guard";
-import { apiSuccess, apiValidationError, apiInternalError } from "@/src/lib/api-response";
+import { supabaseServer } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/api-guard";
+import { apiSuccess, apiValidationError, apiInternalError } from "@/lib/api-response";
 
 const formatStorageError = (error: any, bucket: string) => {
   const message = error?.message || "Erro no storage.";
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  });
+  }, { module: "registros", action: "view" });
 }
 
 export async function POST(req: NextRequest) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin", "editor"]);
+  }, { module: "registros", action: "edit" });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -91,5 +91,5 @@ export async function DELETE(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin", "editor"]);
+  }, { module: "registros", action: "delete" });
 }

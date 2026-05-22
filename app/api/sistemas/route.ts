@@ -1,16 +1,26 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/src/lib/supabase-server";
-import { withAuth } from "@/src/lib/api-guard";
-import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/src/lib/validation";
-import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/src/lib/api-response";
+import { supabaseServer } from "@/lib/supabase-server";
+import { withAuth, withOptionalAuth } from "@/lib/api-guard";
+import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/lib/validation";
+import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
-  return withAuth(request, async () => {
+  return withOptionalAuth(request, async (user) => {
     try {
-      const { data, error } = await supabaseServer
+      let query = supabaseServer
         .from("sistemas")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Para visitantes e viewers, mostrar apenas sistemas públicos com produção disponível
+      if (!user.id || user.role === "viewer") {
+        query = query
+          .eq("tipo_acesso", "publico")
+          .not("url_producao", "is", null)
+          .neq("url_producao", "");
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         return apiInternalError(error.message);
@@ -46,5 +56,5 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, ["admin", "editor"]);
+  }, { module: "sistemas", action: "edit" });
 }

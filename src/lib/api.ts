@@ -1,4 +1,4 @@
-import { supabase } from "@/src/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -76,4 +76,26 @@ export const patchJson = async <T>(input: RequestInfo, body: unknown): Promise<T
   });
   const data = await parseJsonResponse(res);
   return extractApiData<T>(data);
+};
+
+export type AuditLogPayload = {
+  user_id: string | null;
+  action: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  details?: string | null;
+  ip_address?: string | null;
+};
+
+export const logAuditEvent = async (payload: AuditLogPayload): Promise<unknown> => {
+  const res = await fetch("/api/audit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    throw new Error(errorBody?.error || `Erro ao gravar log de auditoria (${res.status}).`);
+  }
+  return await res.json();
 };

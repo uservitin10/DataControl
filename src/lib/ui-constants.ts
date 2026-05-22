@@ -51,10 +51,13 @@ export const UI_CLASSES = {
 };
 
 // Role Labels
-export const ROLE_LABELS: Record<"admin" | "editor" | "viewer", string> = {
+export const ROLE_LABELS: Record<"admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor", string> = {
   admin: "Admin",
   editor: "Desenvolvedor",
   viewer: "Viewer",
+  painel_editor: "Editor de Painel",
+  sistema_editor: "Editor de Sistemas",
+  inventario_editor: "Editor de Inventário",
 };
 
 // Role Config for Profile
@@ -62,4 +65,7 @@ export const ROLE_CONFIG = {
   admin: { label: "Administrador", color: "bg-red-100 text-red-700" },
   editor: { label: "Desenvolvedor", color: "bg-blue-100 text-blue-700" },
   viewer: { label: "Apenas Leitura", color: "bg-slate-100 text-slate-600" },
+  painel_editor: { label: "Editor em Painel", color: "bg-blue-100 text-blue-700" },
+  sistema_editor: { label: "Editor de Sistemas", color: "bg-purple-100 text-purple-700" },
+  inventario_editor: { label: "Editor de Inventário", color: "bg-green-100 text-green-700" },
 };

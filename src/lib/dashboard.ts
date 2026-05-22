@@ -1,4 +1,4 @@
-import type { DashboardForm } from "@/src/types/dashboard";
+import type { DashboardForm } from "@/types/dashboard";
 
 export const AREAS = [
   "BI Munis", "Congresso/Senado/Câmara", "Contabilidade",

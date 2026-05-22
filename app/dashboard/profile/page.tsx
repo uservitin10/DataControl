@@ -1,28 +1,58 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/src/components/Logo";
-import { supabase } from "@/src/lib/supabase";
+import { Logo } from "@/components/Logo";
+import { supabase } from "@/lib/supabase";
+import { logAuditEvent } from "@/lib/api";
 
-type Role = "admin" | "editor" | "viewer";
+type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
-const roleLabel = {
+const roleLabel: Record<Role, string> = {
   admin: "Admin",
   editor: "Desenvolvedor",
   viewer: "Viewer",
+  painel_editor: "Editor de Painel",
+  sistema_editor: "Editor de Sistemas",
+  inventario_editor: "Editor de Inventário",
 };
 
-const roleConfig = {
+const roleConfig: Record<Role, { label: string; color: string }> = {
   admin: { label: "Administrador", color: "bg-red-100 text-red-700" },
   editor: { label: "Desenvolvedor", color: "bg-blue-100 text-blue-700" },
   viewer: { label: "Apenas Leitura", color: "bg-slate-100 text-slate-600" },
+  painel_editor: { label: "Editor de Painel", color: "bg-amber-100 text-amber-700" },
+  sistema_editor: { label: "Editor de Sistemas", color: "bg-purple-100 text-purple-700" },
+  inventario_editor: { label: "Editor de Inventário", color: "bg-emerald-100 text-emerald-700" },
 };
 
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const handleLogout = async () => {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id;
+
+    if (userId) {
+      try {
+        await logAuditEvent({
+          user_id: userId,
+          action: "logout",
+          resource_type: "auth",
+          details: "Logout via botão de perfil",
+        });
+      } catch (auditError) {
+        console.warn("Falha ao gravar log de auditoria de logout:", auditError);
+      }
+    }
+
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+  const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [email, setEmail] = useState("");
@@ -86,13 +116,18 @@ export default function ProfilePage() {
       return;
     }
 
+    const authUpdates: { email?: string; password?: string } = {};
+    if (email) {
+      authUpdates.email = email;
+    }
     if (newPassword) {
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      authUpdates.password = newPassword;
+    }
 
-      if (passwordError) {
-        setMessage({ type: "error", text: passwordError.message });
+    if (Object.keys(authUpdates).length > 0) {
+      const { error: authError } = await supabase.auth.updateUser(authUpdates);
+      if (authError) {
+        setMessage({ type: "error", text: authError.message });
         setSaving(false);
         return;
       }
@@ -101,62 +136,49 @@ export default function ProfilePage() {
     setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
     setNewPassword("");
     setConfirmPassword("");
+    setIsEditing(false);
     setSaving(false);
   };
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#f8fafc" }}>
-        <p style={{ color: "#64748b" }}>Carregando perfil...</p>
+      <main className="gov-page-bg flex min-h-screen items-center justify-center">
+        <p className="text-gov-muted">Carregando perfil...</p>
       </main>
     );
   }
 
-  const { label, color } = roleConfig[role];
+  const rc = (roleConfig as Record<string, { label: string; color: string }>)[role] ?? {
+    label: (roleLabel as Record<string, string>)[role] ?? role,
+    color: "bg-slate-100 text-slate-600",
+  };
+  const { label, color } = rc;
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#f8fafc" }}>
-      <nav className="px-6 py-4 shadow-soft" style={{ background: "linear-gradient(135deg, #1a2744 0%, #2d3a5c 100%)" }}>
+    <main className="gov-page-bg min-h-screen">
+      <nav className="gov-header px-6 py-4 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.65)] bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border-b border-slate-800/20">
         <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
+            aria-label="Ir para o Dashboard"
+          >
             <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
             <div>
               <h1 className="text-lg font-semibold text-white">Data Control</h1>
-              <p className="text-xs text-white/70">Portal de Gestão de Documentos</p>
+              <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
-          </div>
+          </Link>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm ring-1 ring-white/10">
               <span className="text-sm text-white/90">{displayName || "Usuário"}</span>
-              <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 text-white">
-                {roleLabel[role]}
-              </span>
+              <span className="gov-badge rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white ring-1 ring-white/20">{(roleLabel as Record<string, string>)[role] ?? role}</span>
             </div>
-
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-            >
-              Painéis
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/sistemas")}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-            >
-              Sistemas
-            </button>
-
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push("/login");
-              }}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-red-500/20 transition-all duration-200"
+              onClick={handleLogout}
+              className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-medium bg-white/10 shadow-lg shadow-slate-950/10 hover:bg-red-500/10"
             >
               Sair
             </button>
@@ -165,113 +187,137 @@ export default function ProfilePage() {
       </nav>
 
       <div className="mx-auto max-w-2xl px-6 py-8">
-        <div className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor: "#e2e8f0" }}>
-          {/* Header */}
-          <div className="border-b px-6 py-6" style={{ borderColor: "#e2e8f0" }}>
-            <h1 className="text-2xl font-bold" style={{ color: "#1a2744" }}>
-              Meu Perfil
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Gerenciar informações da sua conta
-            </p>
+        <div className="gov-card overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.12)]">
+          <div className="border-b border-slate-200/80 px-6 py-6">
+            <h1 className="text-2xl font-bold text-gov-heading">Meu Perfil</h1>
+            <p className="mt-1 text-sm text-gov-muted">Gerenciar informações da sua conta</p>
           </div>
 
           <div className="p-6">
-            {/* Avatar e Informações */}
-            <div className="mb-6 flex flex-col items-center gap-4 pb-6 border-b" style={{ borderColor: "#e2e8f0" }}>
-              <div className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white" style={{ backgroundColor: "#3b82f6" }}>
+            <div className="mb-6 flex flex-col items-center gap-4 border-b border-slate-200/80 pb-6">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gov-primary text-2xl font-bold text-white">
                 {displayName ? displayName[0].toUpperCase() : email[0]?.toUpperCase()}
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold" style={{ color: "#1a2744" }}>
-                  {displayName || "Usuário"}
-                </p>
-                <p className="text-sm text-slate-600">{email}</p>
+                <p className="text-lg font-semibold text-gov-heading">{displayName || "Usuário"}</p>
+                <p className="text-sm text-gov-muted">{email}</p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${color}`}>
                 {label}
               </span>
             </div>
 
-            {/* Mensagem de feedback */}
             {message && (
-              <p className={`mb-4 rounded-lg p-3 text-sm ${
+              <div className={`mb-4 rounded-xl p-3 text-sm ${
                 message.type === "success"
-                  ? "border border-green-200 bg-green-50 text-green-700"
-                  : "border border-red-200 bg-red-50 text-red-700"
+                  ? "gov-status-success"
+                  : "gov-status-error"
               }`}>
                 {message.text}
-              </p>
+              </div>
             )}
 
-            {/* Campos */}
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  disabled
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-500 cursor-not-allowed"
-                />
+            {!isEditing ? (
+              <div className="space-y-6">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gov-heading">Nome</p>
+                  <p className="text-lg font-semibold text-gov-heading">{displayName || "Usuário"}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gov-heading">Email</p>
+                  <p className="text-sm text-slate-600">{email}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gov-heading">Nível de Acesso</p>
+                  <p className="text-sm text-slate-600">{label}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="gov-button mt-4 w-full"
+                >
+                  Editar Perfil
+                </button>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gov-heading">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="gov-input"
+                  />
+                </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Nome de Exibição</label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Seu nome"
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
-                />
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gov-heading">Nome de Exibição</label>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Seu nome"
+                    className="gov-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gov-heading">Nível de Acesso</label>
+                  <input
+                    type="text"
+                    value={label}
+                    disabled
+                    className="gov-input bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <hr className="border-slate-200/80" />
+
+                <p className="text-sm font-medium text-gov-heading">
+                  Trocar Senha <span className="text-gov-muted font-normal">(opcional)</span>
+                </p>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gov-heading">Nova Senha</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="gov-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gov-heading">Confirmar Nova Senha</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="gov-input"
+                  />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="gov-button mt-2 w-full disabled:opacity-50"
+                  >
+                    {saving ? "Salvando..." : "Salvar Alterações"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="gov-button-secondary mt-2 w-full"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Nível de Acesso</label>
-                <input
-                  type="text"
-                  value={label}
-                  disabled
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-500 cursor-not-allowed"
-                />
-              </div>
-
-              <hr className="border-slate-200" />
-
-              <p className="text-sm font-medium text-slate-700">Trocar Senha <span className="text-slate-400 font-normal">(opcional)</span></p>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Nova Senha</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Confirmar Nova Senha</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="mt-6 w-full rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-              style={{ backgroundColor: "#3b82f6" }}
-            >
-              {saving ? "Salvando..." : "Salvar Alterações"}
-            </button>
+            )}
           </div>
         </div>
       </div>

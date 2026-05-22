@@ -1,6 +1,6 @@
-import type { Notificacao } from "@/src/types/dashboard";
+import type { Notificacao } from "@/types/dashboard";
 import type { RefObject } from "react";
-import { tipoIcon } from "@/src/lib/dashboard";
+import { tipoIcon } from "@/lib/dashboard";
 
 type NotificationsDropdownProps = {
   notificacoes: Notificacao[];
@@ -29,7 +29,20 @@ export function NotificationsDropdown({
         className="relative rounded-md px-3 py-2 text-white/80 hover:bg-white/10"
         aria-label="Notificações"
       >
-        <span className="text-lg" aria-hidden="true">🔔</span>
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9a6 6 0 10-12 0v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+          />
+        </svg>
         {naoLidas > 0 && (
           <span
             className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -61,7 +74,25 @@ export function NotificationsDropdown({
                   className="flex gap-3 px-4 py-3 border-b last:border-0 transition"
                   style={{ borderColor: "#f1f5f9", backgroundColor: n.lida ? "white" : "#eff6ff" }}
                 >
-                  <span className="text-base mt-0.5">{tipoIcon[n.tipo] ?? "🔔"}</span>
+                  <span className="text-base mt-0.5">
+                    {tipoIcon[n.tipo] ? (
+                      tipoIcon[n.tipo]
+                    ) : (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9a6 6 0 10-12 0v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                        />
+                      </svg>
+                    )}
+                  </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-slate-700 leading-snug">{n.mensagem}</p>
                     <p className="mt-1 text-xs text-slate-400">{formatarTempo(n.created_at)}</p>

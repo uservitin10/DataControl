@@ -1,5 +1,5 @@
-import type { Registro } from "@/src/types/dashboard";
-import { fetchJson, postJson, patchJson } from "@/src/lib/api";
+import type { Registro } from "@/types/dashboard";
+import { fetchJson, postJson, patchJson } from "@/lib/api";
 
 export const fetchRegistrosApi = async () => fetchJson<Registro[]>("/api/registros");
 

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "update-inventario": "node ./scripts/update-inventario.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

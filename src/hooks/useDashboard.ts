@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/src/lib/supabase";
-import { fetchJson } from "@/src/lib/api";
-import { useOnClickOutside } from "@/src/hooks/useOnClickOutside";
-import type { DashboardForm, Notificacao, Registro, Role, View } from "@/src/types/dashboard";
-import { EMPTY_FORM, AREAS, formatarTempo, AREA_CORES, getFileTipo } from "@/src/lib/dashboard";
+import { supabase } from "@/lib/supabase";
+import { fetchJson } from "@/lib/api";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import type { DashboardForm, Notificacao, Registro, Role, View } from "@/types/dashboard";
+import { EMPTY_FORM, AREAS, formatarTempo, AREA_CORES, getFileTipo } from "@/lib/dashboard";
+import { DEFAULT_PERMISSIONS, resolvePermissions, type Permissions } from "@/lib/permissions";
 import {
   DOCUMENTS_BUCKET,
   PREVIEWS_BUCKET,
@@ -18,9 +19,9 @@ import {
   generateStoragePath,
   ALLOWED_PREVIEW_TYPES,
   ALLOWED_DOCUMENT_EXTENSIONS,
-} from "@/src/lib/storage";
-import { fetchRegistrosApi, createRegistroApi, updateRegistroApi, deleteRegistroApi } from "@/src/lib/registros";
-import { fetchNotificacoesApi, createNotificacaoApi, markNotificacoesLidasApi } from "@/src/lib/notificacoes";
+} from "@/lib/storage";
+import { fetchRegistrosApi, createRegistroApi, updateRegistroApi, deleteRegistroApi } from "@/lib/registros";
+import { fetchNotificacoesApi, createNotificacaoApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
 
 const GOV_LINK_PATTERN =
   "https://www.gov.br/planejamento/pt-br/assuntos/articulacao-institucional/pataforma-munis";
@@ -38,6 +39,7 @@ export function useDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>("viewer");
   const [displayName, setDisplayName] = useState("");
+  const [permissions, setPermissions] = useState<Permissions>(DEFAULT_PERMISSIONS.viewer);
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,8 +65,11 @@ export function useDashboard() {
   const isAdmin = role === "admin";
   const isEditor = role === "editor";
   const isViewer = role === "viewer";
-  const canEdit = isAdmin || isEditor;
-  const canDelete = isAdmin;
+  const canView = permissions.dashboard.view;
+  const canEdit = isAdmin || permissions.dashboard.edit;
+  const canCreate = isAdmin || permissions.dashboard.create;
+  const canDelete = isAdmin || permissions.dashboard.delete;
+  const isViewerDashboard = !canEdit && canView;
 
   useOnClickOutside(notifRef, () => setShowNotif(false));
 
@@ -72,7 +77,7 @@ export function useDashboard() {
     try {
       const data = await fetchRegistrosApi();
       setRegistros(
-        (data ?? []).map((registro) => ({
+        (data ?? []).map((registro: Registro) => ({
           ...registro,
           fonte_dados: normalizeFonteDados(registro.fonte_dados),
         }))
@@ -109,20 +114,25 @@ export function useDashboard() {
       const { data: sessionData } = await supabase.auth.getSession();
       const sessionUser = sessionData.session?.user ?? null;
 
-      if (!sessionUser) {
-        router.replace("/login");
-        return;
-      }
-
       setUser(sessionUser);
 
-      try {
-        const profileData = await fetchJson<{ role: Role; display_name: string }>(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`);
-        if (profileData?.role) setRole(profileData.role as Role);
-        if (profileData?.display_name) setDisplayName(profileData.display_name);
-      } catch (profileError) {
-        console.error("Erro ao carregar perfil:", (profileError as Error).message);
+      if (sessionUser) {
+        // Usuário autenticado - carregar perfil
+        try {
+          const profileData = await fetchJson<{ role: Role; display_name: string; permissions?: Partial<Permissions> }>(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`);
+          if (profileData?.role) setRole(profileData.role as Role);
+          if (profileData?.display_name) setDisplayName(profileData.display_name);
+          if (profileData?.role) {
+            setPermissions(resolvePermissions(profileData.role as Role, profileData.permissions));
+          }
+        } catch (profileError) {
+          console.error("Erro ao carregar perfil:", (profileError as Error).message);
+          setRole("viewer");
+        }
+      } else {
+        // Usuário não autenticado - acesso público como viewer
         setRole("viewer");
+        setDisplayName("Visitante");
       }
 
       await fetchRegistros();
@@ -131,7 +141,7 @@ export function useDashboard() {
     };
 
     void loadData();
-  }, [router, fetchRegistros, fetchNotificacoes]);
+  }, [fetchRegistros, fetchNotificacoes]);
 
   const marcarTodasLidas = async () => {
     try {
@@ -364,6 +374,9 @@ export function useDashboard() {
     admin: "Admin",
     editor: "Desenvolvedor",
     viewer: "Viewer",
+    painel_editor: "Editor de Painel",
+    sistema_editor: "Editor de Sistemas",
+    inventario_editor: "Editor de Inventário",
   };
 
   const documentosFiltrados = useMemo(() => {
@@ -411,6 +424,7 @@ export function useDashboard() {
     user,
     role,
     displayName,
+    permissions,
     registros,
     loading,
     error,
@@ -435,8 +449,11 @@ export function useDashboard() {
     isAdmin,
     isEditor,
     isViewer,
+    canView,
     canEdit,
+    canCreate,
     canDelete,
+    isViewerDashboard,
     roleLabel,
     documentosFiltrados,
     totalDocumentos,

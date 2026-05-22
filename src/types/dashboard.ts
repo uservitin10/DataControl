@@ -24,7 +24,7 @@ export type Notificacao = {
   created_at: string;
 };
 
-export type Role = "admin" | "editor" | "viewer";
+export type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 export type View = "categorias" | "documentos";
 
 export type DashboardForm = {

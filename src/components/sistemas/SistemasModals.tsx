@@ -1,4 +1,4 @@
-import type { SistemaForm } from "@/src/types/dashboard";
+import type { SistemaForm } from "@/types/dashboard";
 import { SistemasForm } from "./SistemasForm";
 
 type SistemasModalProps = {

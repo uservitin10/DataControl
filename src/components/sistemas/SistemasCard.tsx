@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { Sistema } from "@/src/types/dashboard";
-import { COLORS, UI_CLASSES } from "@/src/lib/ui-constants";
+import type { Sistema } from "@/types/dashboard";
+import { COLORS, UI_CLASSES } from "@/lib/ui-constants";
 
 type SistemasCardProps = {
   sistema: Sistema;
@@ -81,7 +81,7 @@ export function SistemasCard({
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
-                className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="mt-2 text-xs font-semibold gov-link"
               >
                 {isExpanded ? "Ver menos" : "Ver mais"}
               </button>
@@ -121,7 +121,7 @@ export function SistemasCard({
                 href={sistema.url_producao}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline transition-colors font-medium"
+                className="gov-link hover:underline font-medium"
               >
                 Acessar Produção
               </a>
@@ -133,7 +133,7 @@ export function SistemasCard({
                 href={sistema.url_homologacao}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline transition-colors font-medium"
+                className="gov-link hover:underline font-medium"
               >
                 Acessar Homologação
               </a>
