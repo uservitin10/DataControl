@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "update-inventario": "node ./scripts/update-inventario.js",
+    "fix-inventory-accents": "node ./scripts/fix-inventory-accents.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

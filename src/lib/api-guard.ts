@@ -3,7 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { supabaseServer } from "@/lib/supabase-server";
 import type { Role } from "@/types/dashboard";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule } from "@/lib/permissions";
-import type { PermissionAction, PermissionModule } from "@/lib/permissions";
+import type { PermissionAction, PermissionModule, ModulePermissions } from "@/lib/permissions";
 
 type PermissionRequirement = {
   module: PermissionModule;
@@ -35,6 +35,12 @@ type PermissionRow = {
   can_create?: boolean;
   can_delete?: boolean;
   module?: { name?: string } | string;
+};
+
+type ValidateAuthResult = {
+  user: AuthUser | null;
+  error: string | null;
+  status: number;
 };
 
 /**
@@ -87,8 +93,26 @@ async function getUserProfile(userId: string) {
   }
 }
 
-function getPermissionValue(row: PermissionRow, action: PermissionAction): boolean {
+function isModulePermissions(row: PermissionRow | ModulePermissions | null | undefined): row is ModulePermissions {
+  return Boolean(row && typeof row === "object" && "view" in row && "edit" in row && "create" in row && "delete" in row);
+}
+
+function getPermissionValue(row: PermissionRow | ModulePermissions | null | undefined, action: PermissionAction): boolean {
   if (!row) {
+    return false;
+  }
+
+  if (isModulePermissions(row)) {
+    if (action === "view") {
+      return Boolean(row.view);
+    }
+    if (action === "edit" || action === "create") {
+      return Boolean(row.edit);
+    }
+    if (action === "delete") {
+      return Boolean(row.delete);
+    }
+
     return false;
   }
 
@@ -147,7 +171,10 @@ async function getRolePermissionValue(role: Role, moduleName: PermissionModule, 
     }
 
     const permissions = Array.isArray(data) ? data as PermissionRow[] : [];
-    const permissionRow = permissions.find((row: PermissionRow) => normalizePermissionModule(row.module?.name) === moduleName);
+    const permissionRow = permissions.find((row: PermissionRow) => {
+      const rowModule = typeof row.module === "string" ? row.module : row.module?.name;
+      return normalizePermissionModule(rowModule) === moduleName;
+    });
 
     if (permissionRow) {
       return getPermissionValue(permissionRow, action);
@@ -189,11 +216,12 @@ async function hasPermission(userId: string, role: Role, requirement: Permission
 export async function validateAuth(
   request: NextRequest,
   requirement?: AuthRequirement
-) {
+): Promise<ValidateAuthResult> {
   const token = extractToken(request);
 
   if (!token) {
     return {
+      user: null,
       error: "Token não fornecido",
       status: 401,
     };
@@ -203,6 +231,7 @@ export async function validateAuth(
 
   if (!payload) {
     return {
+      user: null,
       error: "Token inválido",
       status: 401,
     };
@@ -211,6 +240,7 @@ export async function validateAuth(
   const userId = payload.sub;
   if (!userId) {
     return {
+      user: null,
       error: "User ID não encontrado no token",
       status: 401,
     };
@@ -221,6 +251,7 @@ export async function validateAuth(
 
   if (!profile) {
     return {
+      user: null,
       error: "Perfil de usuário não encontrado",
       status: 401,
     };
@@ -232,6 +263,7 @@ export async function validateAuth(
     if (Array.isArray(requirement)) {
       if (!requirement.includes(userRole)) {
         return {
+          user: null,
           error: "Acesso negado",
           status: 403,
         };
@@ -240,12 +272,14 @@ export async function validateAuth(
       const allowed = await hasPermission(userId, userRole, requirement);
       if (allowed === null) {
         return {
+          user: null,
           error: "Erro ao validar permissão",
           status: 500,
         };
       }
       if (!allowed) {
         return {
+          user: null,
           error: "Acesso negado",
           status: 403,
         };
@@ -256,8 +290,8 @@ export async function validateAuth(
   return {
     user: {
       id: userId,
-      email: payload.email,
-      nome: profile.display_name || payload.user_metadata?.nome,
+      email: payload.email ?? null,
+      nome: profile.display_name || payload.user_metadata?.nome || "Visitante",
       role: userRole,
     },
     error: null,
@@ -280,7 +314,7 @@ export async function withOptionalAuth(
 ) {
   const token = extractToken(request);
 
-  let user = null;
+  let user: AuthUser | null = null;
 
   if (token) {
     const payload = decodeJWT(token);
@@ -292,8 +326,8 @@ export async function withOptionalAuth(
         if (profile) {
           user = {
             id: userId,
-            email: payload.email,
-            nome: profile.display_name || payload.user_metadata?.nome,
+            email: payload.email ?? null,
+            nome: profile.display_name || payload.user_metadata?.nome || "Visitante",
             role: (profile.role as Role) || "viewer",
           };
         }
@@ -338,9 +372,9 @@ export async function withAuth(
 ) {
   const validation = await validateAuth(request, requirement);
 
-  if (validation.error) {
+  if (validation.error || !validation.user) {
     return NextResponse.json(
-      { error: validation.error },
+      { error: validation.error ?? "Acesso negado" },
       { status: validation.status }
     );
   }

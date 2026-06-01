@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
 
       // Registrar auditoria (não bloqueante)
       try {
-        const createdId = Array.isArray(data) ? data?.[0]?.id : (data as any)?.id;
+        const createdRecord = Array.isArray(data) ? data[0] : data;
+        const createdId = (createdRecord as any)?.id;
         const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");
         await addAuditLog({
           user_id: user.id,

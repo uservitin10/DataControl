@@ -8,7 +8,8 @@ export type PermissionModule =
   | "usuarios"
   | "notificacoes"
   | "areas"
-  | "fontes_dados";
+  | "fontes_dados"
+  | "registros";
 
 export type ModulePermissions = {
   view: boolean;
@@ -28,6 +29,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: true, edit: true, create: true, delete: true },
     areas: { view: true, edit: true, create: true, delete: true },
     fontes_dados: { view: true, edit: true, create: true, delete: true },
+    registros: { view: true, edit: true, create: true, delete: true },
   },
   editor: {
     dashboard: { view: true, edit: true, create: true, delete: false },
@@ -37,6 +39,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: true, create: true, delete: false },
     fontes_dados: { view: true, edit: true, create: true, delete: false },
+    registros: { view: true, edit: true, create: true, delete: false },
   },
   painel_editor: {
     dashboard: { view: true, edit: true, create: true, delete: false },
@@ -46,6 +49,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: false, create: false, delete: false },
     fontes_dados: { view: true, edit: false, create: false, delete: false },
+    registros: { view: false, edit: false, create: false, delete: false },
   },
   sistema_editor: {
     dashboard: { view: true, edit: false, create: false, delete: false },
@@ -55,6 +59,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: false, create: false, delete: false },
     fontes_dados: { view: true, edit: false, create: false, delete: false },
+    registros: { view: false, edit: false, create: false, delete: false },
   },
   inventario_editor: {
     dashboard: { view: true, edit: false, create: false, delete: false },
@@ -64,6 +69,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: false, create: false, delete: false },
     fontes_dados: { view: true, edit: false, create: false, delete: false },
+    registros: { view: false, edit: false, create: false, delete: false },
   },
   viewer: {
     dashboard: { view: true, edit: false, create: false, delete: false },
@@ -73,6 +79,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: false, create: false, delete: false },
     fontes_dados: { view: true, edit: false, create: false, delete: false },
+    registros: { view: false, edit: false, create: false, delete: false },
   },
 };
 
@@ -97,6 +104,8 @@ export function normalizePermissionModule(moduleName: string | undefined): Permi
       return "areas";
     case "fontes_dados":
       return "fontes_dados";
+    case "registros":
+      return "registros";
     default:
       return null;
   }

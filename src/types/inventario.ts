@@ -1,6 +1,6 @@
 export interface EquipmentItem {
   id: number;
-  type: 'Monitor' | 'Desktop' | 'Laptop';
+  type: 'Monitor' | 'Desktop' | 'Laptop' | 'Licença';
   model: string;
   assetType: string;
   assetId: string;
@@ -8,8 +8,14 @@ export interface EquipmentItem {
   equipmentId?: string;
   bios?: string;
   responsible: string;
+  allocatedUser?: string;
+  legalResponsible?: string;
   sector: string;
+  subsector?: string;
+  warranty?: string;
+  equipmentState?: string;
   notes?: string;
+  seiProcessNumber?: string;
 }
 
 export interface InventoryStats {
@@ -17,7 +23,8 @@ export interface InventoryStats {
   byType: {
     monitor: number;
     desktop: number;
-    laptop: number;
+    notebook: number;
+    license: number;
   };
   bySector: {
     [key: string]: number;

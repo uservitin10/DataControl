@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, { module: "registros", action: "view" });
+  }, { module: "dashboard", action: "view" });
 }
 
 export async function POST(req: NextRequest) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, { module: "registros", action: "edit" });
+  }, { module: "dashboard", action: "edit" });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -91,5 +91,5 @@ export async function DELETE(req: NextRequest) {
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
-  }, { module: "registros", action: "delete" });
+  }, { module: "dashboard", action: "delete" });
 }

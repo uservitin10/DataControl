@@ -8,16 +8,21 @@ export async function GET(req: NextRequest) {
     req,
     async () => {
       try {
-        const { data, error } = await supabaseServer
+        const url = new URL(req.url);
+        const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
+        const offset = parseInt(url.searchParams.get("offset") ?? "0");
+
+        const { data, error, count } = await supabaseServer
           .from("profiles")
-          .select("id,email,display_name,role,created_at")
-          .order("created_at", { ascending: false });
+          .select("id,email,display_name,role,created_at", { count: "exact" })
+          .order("created_at", { ascending: false })
+          .range(offset, offset + limit - 1);
 
         if (error) {
           return apiInternalError(error.message);
         }
 
-        return apiSuccess(data ?? []);
+        return apiSuccess({ data: data ?? [], total: count ?? 0 });
       } catch (err) {
         return apiInternalError((err as Error).message);
       }

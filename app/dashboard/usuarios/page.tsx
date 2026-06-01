@@ -42,8 +42,8 @@ export default function UsuariosPage() {
 
   const fetchUsuarios = async () => {
     try {
-      const data = await fetchJson<Profile[]>("/api/usuarios");
-      setUsuarios(data ?? []);
+      const response = await fetchJson<{ data: Profile[]; total: number }>("/api/usuarios");
+      setUsuarios(response?.data ?? []);
     } catch (fetchError) {
       setUsuarios([]);
       setError((fetchError as Error).message);
@@ -84,7 +84,7 @@ export default function UsuariosPage() {
     { key: "dashboard", label: "Painel" },
     { key: "sistemas", label: "Sistemas" },
     { key: "inventario", label: "Inventário" },
-    { key: "usuarios", label: "Usuários" },
+    { key: "registros", label: "Registros" },
     { key: "notificacoes", label: "Notificações" },
     { key: "areas", label: "Áreas" },
     { key: "fontes_dados", label: "Fontes de Dados" },
