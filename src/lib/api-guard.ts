@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
 import { supabaseServer } from "@/lib/supabase-server";
+import { getProfileById } from "@/lib/profile";
 import type { Role } from "@/types/dashboard";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule } from "@/lib/permissions";
 import type { PermissionAction, PermissionModule, ModulePermissions } from "@/lib/permissions";
@@ -73,25 +74,6 @@ export function decodeJWT(token: string): JWTPayload | null {
 /**
  * Busca o perfil do usuário no banco de dados
  */
-async function getUserProfile(userId: string) {
-  try {
-    const { data, error } = await supabaseServer
-      .from("profiles")
-      .select("role, display_name")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.error("Erro ao buscar perfil:", error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Erro ao buscar perfil:", error);
-    return null;
-  }
-}
 
 function isModulePermissions(row: PermissionRow | ModulePermissions | null | undefined): row is ModulePermissions {
   return Boolean(row && typeof row === "object" && "view" in row && "edit" in row && "create" in row && "delete" in row);
@@ -247,7 +229,7 @@ export async function validateAuth(
   }
 
   // Buscar perfil do banco de dados para obter role atualizada
-  const profile = await getUserProfile(userId);
+  const profile = await getProfileById(userId);
 
   if (!profile) {
     return {
@@ -322,7 +304,7 @@ export async function withOptionalAuth(
     if (payload) {
       const userId = payload.sub;
       if (userId) {
-        const profile = await getUserProfile(userId);
+        const profile = await getProfileById(userId);
         if (profile) {
           user = {
             id: userId,

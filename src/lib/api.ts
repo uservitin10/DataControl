@@ -1,11 +1,5 @@
 import { supabase } from "@/lib/supabase";
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
 const parseJsonResponse = async (res: Response) => {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
@@ -18,7 +12,7 @@ const parseJsonResponse = async (res: Response) => {
 /**
  * Obtém o token de autenticação do Supabase
  */
-const getAuthToken = async (): Promise<string | null> => {
+export const getAuthToken = async (): Promise<string | null> => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -40,13 +34,16 @@ const createAuthHeaders = async (headers: HeadersInit = {}): Promise<HeadersInit
 /**
  * Extrai dados da resposta padronizada da API
  */
-const extractApiData = <T>(response: any): T => {
+const extractApiData = <T>(response: unknown): T => {
   // Se a resposta tem a estrutura padronizada { success, data }
-  if (response && typeof response === "object" && "success" in response) {
-    return response.data ?? response;
+  if (response && typeof response === "object") {
+    const obj = response as Record<string, unknown>;
+    if ("success" in obj) {
+      return (obj["data"] ?? response) as T;
+    }
   }
   // Caso contrário, retorna como está
-  return response;
+  return response as T;
 };
 
 export const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> => {

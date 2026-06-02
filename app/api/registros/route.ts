@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth, withOptionalAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
+import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_REGISTRO_FIELDS } from "@/lib/validation";
 import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
 
@@ -46,17 +47,29 @@ export async function POST(req: NextRequest) {
 
       // Registrar auditoria (não bloqueante)
       try {
-        const createdRecord = Array.isArray(data) ? data[0] : data;
-        const createdId = (createdRecord as any)?.id;
-        const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");
-        await addAuditLog({
-          user_id: user.id,
-          action: "Criou painel",
-          resource_type: "dashboard",
-          resource_id: createdId ? String(createdId) : null,
-          details: JSON.stringify(cleanBody),
-          ip_address: ip,
-        });
+        if (data) {
+          const createdRecord = Array.isArray(data) ? data[0] : data;
+          const createdId = (createdRecord as unknown as Record<string, unknown>)?.['id'] as number | undefined;
+          const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");
+          await addAuditLog({
+            user_id: user.id,
+            action: "Criou painel",
+            resource_type: "dashboard",
+            resource_id: createdId ? String(createdId) : null,
+            details: JSON.stringify(cleanBody),
+            ip_address: ip,
+          });
+
+          await notifyAdmins(
+            buildEntityNotification(
+              "criado",
+              "registro",
+              `${String(cleanBody.nome ?? "sem nome")} (id ${createdId ?? "?"})`,
+              user.nome
+            ),
+            "dashboard"
+          );
+        }
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria (não bloqueante):", auditErr);
       }

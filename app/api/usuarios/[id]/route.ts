@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
+import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError, apiForbidden } from "@/lib/api-response";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule, type PermissionModule, type Permissions } from "@/lib/permissions";
 import type { Role } from "@/types/dashboard";
@@ -40,16 +41,17 @@ export async function GET(req: NextRequest, { params }: Params) {
         .eq("role", role);
 
       if (Array.isArray(rolePerms)) {
-        rolePerms.forEach((row: any) => {
+        rolePerms.forEach((row) => {
+          const r = row as Record<string, unknown>;
           const mod = normalizePermissionModule(
-            Array.isArray(row.module) ? row.module[0]?.name : undefined
+            Array.isArray(r.module) ? (r.module[0] as Record<string, unknown>)?.name as string | undefined : undefined
           );
           if (!mod) return;
           permissions[mod] = {
-            view: Boolean(row.can_view),
-            edit: Boolean(row.can_edit),
-            create: Boolean(row.can_create ?? row.can_edit),
-            delete: Boolean(row.can_delete),
+            view: Boolean(r.can_view),
+            edit: Boolean(r.can_edit),
+            create: Boolean(r.can_create ?? r.can_edit),
+            delete: Boolean(r.can_delete),
           };
         });
       }
@@ -61,14 +63,15 @@ export async function GET(req: NextRequest, { params }: Params) {
         .eq("user_id", id);
 
       if (Array.isArray(userPerms)) {
-        userPerms.forEach((row: any) => {
-          const mod = normalizePermissionModule(row.module);
+        userPerms.forEach((row) => {
+          const r = row as Record<string, unknown>;
+          const mod = normalizePermissionModule(r.module as string | undefined);
           if (!mod) return;
           permissions[mod] = {
-            view: Boolean(row.can_view),
-            edit: Boolean(row.can_edit),
-            create: Boolean(row.can_create),
-            delete: Boolean(row.can_delete),
+            view: Boolean(r.can_view),
+            edit: Boolean(r.can_edit),
+            create: Boolean(r.can_create),
+            delete: Boolean(r.can_delete),
           };
         });
       }
@@ -130,7 +133,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (rows.length > 0) {
           const { error } = await supabaseServer
             .from("user_permissions")
-            .upsert(rows as any[], { onConflict: "user_id, module" });
+            .upsert(rows as Record<string, unknown>[], { onConflict: "user_id, module" });
           if (error) return apiInternalError(error.message);
         }
       }
@@ -145,6 +148,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           details: JSON.stringify({ role, permissions }),
           ip_address: ip,
         });
+
+        await notifyAdmins(
+          buildEntityNotification(
+            "atualizado",
+            "perfil de usuário",
+            `ID ${id}`,
+            user.nome
+          ),
+          "usuarios"
+        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria:", auditErr);
       }
@@ -170,6 +183,22 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         return apiForbidden("Você não pode remover sua própria conta.");
       }
 
+      // Verifica se o usuário possui itens de inventário relacionados antes de excluir
+      const { count, error: countError } = await supabaseServer
+        .from("inventory_items")
+        .select("id", { count: "exact", head: true })
+        .or(`allocated_user_id.eq.${id},created_by.eq.${id}`);
+
+      if (countError) {
+        return apiInternalError(countError.message);
+      }
+
+      if (count && count > 0) {
+        return apiValidationError(
+          "Não é possível remover este usuário enquanto ele tiver itens de inventário relacionados. Reatribua ou exclua os itens primeiro."
+        );
+      }
+
       // Remove o usuário do auth (o cascade cuida do profiles via FK)
       const { error } = await supabaseServer.auth.admin.deleteUser(id);
       if (error) return apiInternalError(error.message);
@@ -184,6 +213,16 @@ export async function DELETE(req: NextRequest, { params }: Params) {
           details: null,
           ip_address: ip,
         });
+
+        await notifyAdmins(
+          buildEntityNotification(
+            "excluído",
+            "perfil de usuário",
+            `ID ${id}`,
+            user.nome
+          ),
+          "usuarios"
+        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria:", auditErr);
       }

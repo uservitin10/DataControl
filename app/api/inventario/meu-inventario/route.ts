@@ -2,11 +2,13 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiInternalError, apiCreated, apiValidationError } from "@/lib/api-response";
+import { addAuditLog } from "@/lib/audit";
 import {
   normalizeString,
   notifyAdminsAboutFallback,
   logFallbackUsage,
 } from "@/lib/inventory-sync";
+import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 
 // Função auxiliar para normalizar tipo de equipamento
 function normalizeType(type: string): string {
@@ -198,6 +200,30 @@ export async function POST(req: NextRequest) {
         if (insertError) {
           return apiInternalError(insertError.message);
         }
+
+        try {
+          await addAuditLog({
+            user_id: user.id,
+            action: 'create_inventory_item',
+            resource_type: 'inventory_item',
+            resource_id: createdItem?.id ? String(createdItem.id) : null,
+            details: JSON.stringify({ type, model, asset_id, equipment_id, sector, responsible, warranty, equipment_state, notes }),
+            ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
+          });
+
+          await notifyAdmins(
+            buildEntityNotification(
+              "criado",
+              "item de inventário",
+              `ID ${createdItem?.id ?? "?"}`,
+              user.nome
+            ),
+            "inventory"
+          );
+        } catch (auditErr) {
+          console.warn('Falha ao gravar auditoria de inventário:', auditErr);
+        }
+
         return apiCreated(createdItem);
       } catch (err) {
         return apiInternalError((err as Error).message);
@@ -210,7 +236,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   return withAuth(
     req,
-    async () => {
+    async (user) => {
       try {
         const url = new URL(req.url);
         const id = url.searchParams.get('id');
@@ -252,12 +278,35 @@ export async function PATCH(req: NextRequest) {
             notes: notes || null,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', Number(id))
+          .eq('id', id)
           .select()
           .single();
 
         if (updateError) {
           return apiInternalError(updateError.message);
+        }
+
+        try {
+          await addAuditLog({
+            user_id: user.id,
+            action: 'update_inventory_item',
+            resource_type: 'inventory_item',
+            resource_id: String(id),
+            details: JSON.stringify({ type, model, asset_id, equipment_id, sector, responsible, warranty, equipment_state, notes }),
+            ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
+          });
+
+          await notifyAdmins(
+            buildEntityNotification(
+              "atualizado",
+              "item de inventário",
+              `ID ${id}`,
+              user.nome
+            ),
+            "inventory"
+          );
+        } catch (auditErr) {
+          console.warn('Falha ao gravar auditoria de inventário:', auditErr);
         }
 
         return apiSuccess(updatedItem);
@@ -272,7 +321,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   return withAuth(
     req,
-    async () => {
+    async (user) => {
       try {
         const url = new URL(req.url);
         const id = url.searchParams.get('id');
@@ -283,10 +332,33 @@ export async function DELETE(req: NextRequest) {
         const { error: deleteError } = await supabaseServer
           .from('inventory_items')
           .delete()
-          .eq('id', Number(id));
+          .eq('id', id);
 
         if (deleteError) {
           return apiInternalError(deleteError.message);
+        }
+
+        try {
+          await addAuditLog({
+            user_id: user.id,
+            action: 'delete_inventory_item',
+            resource_type: 'inventory_item',
+            resource_id: id,
+            details: JSON.stringify({ id }),
+            ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
+          });
+
+          await notifyAdmins(
+            buildEntityNotification(
+              "excluído",
+              "item de inventário",
+              `ID ${id}`,
+              user.nome
+            ),
+            "inventory"
+          );
+        } catch (auditErr) {
+          console.warn('Falha ao gravar auditoria de inventário:', auditErr);
         }
 
         return apiSuccess({ deleted: true });

@@ -1,6 +1,6 @@
 export interface EquipmentItem {
   id: number;
-  type: 'Monitor' | 'Desktop' | 'Laptop' | 'Licença';
+  type: 'Monitor' | 'Desktop' | 'Notebook' | 'Licença';
   model: string;
   assetType: string;
   assetId: string;

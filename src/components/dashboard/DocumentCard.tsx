@@ -58,7 +58,6 @@ export function DocumentCard({
 
   const tipo = getFileTipo(registro.arquivo_path);
   const fonteLink = registro.fonte_dados?.match(/https?:\/\/[^\s]+/)?.[0] ?? null;
-  const fonteText = fonteLink ? registro.fonte_dados?.replace(fonteLink, "").trim() : registro.fonte_dados;
 
   return (
     <div className="rounded-2xl border bg-white overflow-hidden transition-all duration-200 hover-lift shadow-soft hover:shadow-medium" style={{ borderColor: "#e2e8f0" }}>

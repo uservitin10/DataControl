@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/Logo";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
 

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
+import { addAuditLog } from "@/lib/audit";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_NOTIFICACAO_FIELDS } from "@/lib/validation";
 import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
 
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, async () => {
+  return withAuth(req, async (user) => {
     try {
       const body = await req.json();
       
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
         return apiInternalError(error.message);
       }
 
+      await addAuditLog({
+        user_id: user.id,
+        action: "create_notification",
+        resource_type: "notificacoes",
+        resource_id: null,
+        details: `Notificação criada: ${cleanBody.tipo ?? "sem tipo"}`,
+      });
+
       return apiCreated(data);
     } catch (err) {
       return apiInternalError((err as Error).message);
@@ -51,7 +60,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  return withAuth(request, async () => {
+  return withAuth(request, async (user) => {
     try {
       const { error } = await supabaseServer
         .from("notificacoes")
@@ -61,6 +70,14 @@ export async function PATCH(request: NextRequest) {
       if (error) {
         return apiInternalError(error.message);
       }
+
+      await addAuditLog({
+        user_id: user.id,
+        action: "mark_notifications_read",
+        resource_type: "notificacoes",
+        resource_id: null,
+        details: "Todas as notificações foram marcadas como lidas.",
+      });
 
       return apiSuccess({ success: true });
     } catch (err) {

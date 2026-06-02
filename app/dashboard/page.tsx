@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { CategoryCard } from "@/components/dashboard/CategoryCard";
@@ -44,7 +44,7 @@ export default function DashboardPage() {
     setShowNotif,
     notifRef,
     isAdmin,
-    isEditor,
+    
     isViewer,
     canEdit,
     canDelete,
@@ -72,17 +72,19 @@ export default function DashboardPage() {
     marcarTodasLidas,
   } = useDashboard();
 
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const alert = searchParams.get("alert");
+    const url = typeof window !== "undefined" ? new URL(window.location.href) : null;
+    const alert = url?.searchParams.get("alert");
     if (alert === "no_permission_inventario") {
-      setAlertMessage("Você não tem permissão para acessar a página de inventário.");
-      router.replace(pathname);
+      const path = url?.pathname ?? "/dashboard";
+      setTimeout(() => {
+        setAlertMessage("Você não tem permissão para acessar a página de inventário.");
+        router.replace(path);
+      }, 0);
     }
-  }, [searchParams, pathname, router]);
+  }, [router]);
 
   const navItems = [
     {

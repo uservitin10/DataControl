@@ -656,7 +656,9 @@ export function PersonalInventory() {
               </div>
 
               <label className="block">
-                <span className="text-sm font-medium text-slate-700">Arquivo de autorização</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {isLicense ? "Arquivo de autorização" : "Foto do equipamento"}
+                </span>
                 <input
                   type="file"
                   accept=".png,.jpeg,.jpg,.pdf"
@@ -666,7 +668,11 @@ export function PersonalInventory() {
                 {authorizationFile && (
                   <p className="mt-2 text-sm text-slate-500">Arquivo selecionado: {authorizationFile.name}</p>
                 )}
-                <p className="mt-2 text-xs text-slate-500">Envie PNG, JPG ou PDF para confirmar autorização.</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  {isLicense
+                    ? "Envie PNG, JPG ou PDF para confirmar autorização."
+                    : "Envie PNG, JPG ou PDF com a foto do equipamento."}
+                </p>
               </label>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">

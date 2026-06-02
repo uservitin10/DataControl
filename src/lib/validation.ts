@@ -9,7 +9,7 @@ interface ValidationRule {
   maxLength?: number;
   pattern?: RegExp;
   enum?: (string | number | boolean)[];
-  custom?: (value: any) => boolean | string;
+  custom?: (value: unknown) => boolean | string;
 }
 
 interface ValidationSchema {
@@ -19,13 +19,14 @@ interface ValidationSchema {
 /**
  * Valida um objeto contra um schema
  */
-export function validateObject(obj: any, schema: ValidationSchema): string | null {
+export function validateObject(obj: unknown, schema: ValidationSchema): string | null {
   if (!obj || typeof obj !== "object") {
     return "Payload inválido.";
   }
 
+  const typedObj = obj as Record<string, unknown>;
   for (const [field, rules] of Object.entries(schema)) {
-    const value = obj[field];
+    const value = typedObj[field];
 
     // Verificar se é obrigatório
     if (rules.required && (value === undefined || value === null || value === "")) {
@@ -58,7 +59,7 @@ export function validateObject(obj: any, schema: ValidationSchema): string | nul
     }
 
     // Verificar enum
-    if (rules.enum && !rules.enum.includes(value)) {
+    if (rules.enum && !rules.enum.includes(value as string | number | boolean)) {
       return `O campo '${field}' deve ser um dos valores: ${rules.enum.join(", ")}.`;
     }
 
@@ -77,9 +78,10 @@ export function validateObject(obj: any, schema: ValidationSchema): string | nul
 /**
  * Limpa um objeto mantendo apenas os campos permitidos
  */
-export function sanitizeObject(obj: any, allowedFields: string[]): Record<string, any> {
+export function sanitizeObject(obj: unknown, allowedFields: string[]): Record<string, unknown> {
+  const typedObj = (obj as Record<string, unknown>) || {};
   return Object.fromEntries(
-    Object.entries(obj || {}).filter(([key]) => allowedFields.includes(key))
+    Object.entries(typedObj).filter(([key]) => allowedFields.includes(key))
   );
 }
 

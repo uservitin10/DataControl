@@ -6,10 +6,8 @@ import {
   apiInternalError,
   apiForbidden,
 } from "@/lib/api-response";
-import {
-  findUserCandidatesForLegacyData,
-  syncLegacyInventoryItem,
-} from "@/lib/inventory-sync";
+import { addAuditLog } from "@/lib/audit";
+import { syncLegacyInventoryItem } from "@/lib/inventory-sync";
 
 /**
  * GET /api/inventario/sync-legacy-data
@@ -47,16 +45,17 @@ export async function GET(req: NextRequest) {
         }>;
       } = {};
 
-      (legacyItems || []).forEach((item: any) => {
-        const user = item.allocated_user || "SEM NOME";
+      (legacyItems || []).forEach((item) => {
+        const it = item as Record<string, unknown>;
+        const user = (it.allocated_user as string) || "SEM NOME";
         if (!itemsByUser[user]) {
           itemsByUser[user] = [];
         }
         itemsByUser[user].push({
-          id: item.id,
-          type: item.type,
-          model: item.model,
-          sector: item.sector,
+          id: it.id as number,
+          type: (it.type as string) || "",
+          model: (it.model as string) || "",
+          sector: (it.sector as string) || "",
         });
       });
 
@@ -118,7 +117,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Registrar em auditoria
-      await supabaseServer.from("audit_logs").insert({
+      await addAuditLog({
         user_id: user.id,
         action: "sync_legacy_inventory",
         resource_type: "inventory_items",
@@ -180,7 +179,7 @@ export async function PUT(req: NextRequest) {
       }
 
       let syncedCount = 0;
-      const errors: any[] = [];
+      const errors: { itemId: number; error?: unknown }[] = [];
 
       // Sincronizar cada item
       for (const item of items) {
@@ -198,7 +197,7 @@ export async function PUT(req: NextRequest) {
       }
 
       // Registrar em auditoria
-      await supabaseServer.from("audit_logs").insert({
+      await addAuditLog({
         user_id: user.id,
         action: "bulk_sync_legacy_inventory",
         resource_type: "inventory_items",

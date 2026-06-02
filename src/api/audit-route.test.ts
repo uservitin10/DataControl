@@ -1,0 +1,103 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { GET, POST } from "../../app/api/audit/route";
+import { supabaseServer } from "@/lib/supabase-server";
+import type { NextRequest } from "next/server";
+
+vi.mock("@/lib/supabase-server", () => ({
+  supabaseServer: {
+    from: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
+    },
+  },
+}));
+
+describe("app/api/audit/route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("GET returns audit logs successfully", async () => {
+    const range = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null });
+    const order = vi.fn(() => ({ range }));
+    const select = vi.fn(() => ({ order }));
+    (supabaseServer as any).from = vi.fn(() => ({ select }));
+
+    const request = {
+      nextUrl: new URL("http://localhost/api/audit?limit=2&offset=0"),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await GET(request);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: [{ id: "log-1" }], missingTable: false });
+  });
+
+  it("GET returns empty array when audit table is missing", async () => {
+    const range = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
+    const order = vi.fn(() => ({ range }));
+    const select = vi.fn(() => ({ order }));
+    (supabaseServer as any).from = vi.fn(() => ({ select }));
+
+    const request = {
+      nextUrl: new URL("http://localhost/api/audit"),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await GET(request);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+  });
+
+  it("POST returns 400 when action is missing", async () => {
+    const request = {
+      json: async () => ({ user_id: "user-1" }),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "action é obrigatório" });
+  });
+
+  it("POST includes user id from bearer token and returns created row", async () => {
+    const authGetUser = vi.fn().mockResolvedValue({ data: { user: { id: "user-123" } } });
+    (supabaseServer as any).auth.getUser = authGetUser;
+
+    const single = vi.fn().mockResolvedValue({ data: { id: "log-2" }, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    (supabaseServer as any).from = vi.fn(() => ({ insert }));
+
+    const request = {
+      json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
+      headers: new Headers([
+        ["authorization", "Bearer token"],
+      ]),
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: "log-2" });
+    expect(authGetUser).toHaveBeenCalledWith("token");
+  });
+
+  it("POST returns missingTable when audit table is not configured", async () => {
+    const single = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    (supabaseServer as any).from = vi.fn(() => ({ insert }));
+
+    const request = {
+      json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      message: "Audit logging não está configurado. Crie a tabela audit_logs no Supabase.",
+      missingTable: true,
+    });
+  });
+});

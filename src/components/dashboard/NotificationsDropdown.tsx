@@ -1,5 +1,4 @@
 import type { Notificacao } from "@/types/dashboard";
-import type { RefObject } from "react";
 import { tipoIcon } from "@/lib/dashboard";
 
 type NotificationsDropdownProps = {

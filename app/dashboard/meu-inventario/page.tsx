@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { supabase } from "@/lib/supabase";
-import { fetchJson } from "@/lib/api";
 import { PersonalInventory } from "@/components/inventario/PersonalInventory";
 
 export default function MeuInventarioPage() {

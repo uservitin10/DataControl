@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
+import { addAuditLog } from "@/lib/audit";
 import { apiSuccess, apiValidationError, apiInternalError } from "@/lib/api-response";
 
-const formatStorageError = (error: any, bucket: string) => {
-  const message = error?.message || "Erro no storage.";
+const formatStorageError = (error: unknown, bucket: string) => {
+  const message = (error as { message?: string })?.message || "Erro no storage.";
   if (message.toLowerCase().includes("bucket not found")) {
     return `Bucket '${bucket}' não encontrado. Verifique se o bucket existe no Supabase.`;
   }
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return withAuth(req, async () => {
+  return withAuth(req, async (user) => {
     try {
       const formData = await req.formData();
       const bucket = formData.get("bucket");
@@ -64,6 +65,14 @@ export async function POST(req: NextRequest) {
         return apiInternalError(formatStorageError(error, String(bucket)));
       }
 
+      await addAuditLog({
+        user_id: user.id,
+        action: "upload_storage",
+        resource_type: "storage",
+        resource_id: `${String(bucket)}/${String(path)}`,
+        details: `Upload de arquivo no bucket ${String(bucket)} em ${String(path)}`,
+      });
+
       return apiSuccess({ bucket, path }, 201);
     } catch (err) {
       return apiInternalError((err as Error).message);
@@ -72,7 +81,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  return withAuth(req, async () => {
+  return withAuth(req, async (user) => {
     try {
       const body = await req.json();
       const bucket = body.bucket;
@@ -86,6 +95,14 @@ export async function DELETE(req: NextRequest) {
       if (error) {
         return apiInternalError(formatStorageError(error, bucket));
       }
+
+      await addAuditLog({
+        user_id: user.id,
+        action: "delete_storage",
+        resource_type: "storage",
+        resource_id: `${String(bucket)}/${String(path)}`,
+        details: `Remoção de arquivo no bucket ${String(bucket)} em ${String(path)}`,
+      });
 
       return apiSuccess({ success: true });
     } catch (err) {

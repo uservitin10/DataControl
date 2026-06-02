@@ -115,7 +115,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    let { user_id, action, resource_type, resource_id, details } = body;
+    let user_id = body.user_id;
+    const action = body.action;
+    const resource_type = body.resource_type;
+    const resource_id = body.resource_id;
+    const details = body.details;
     const ip_address = getRequestIp(request);
 
     if (!user_id) {

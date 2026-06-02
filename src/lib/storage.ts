@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { getAuthToken } from "@/lib/api";
 const STORAGE_API = "/api/storage";
 
 export const DOCUMENTS_BUCKET = "documentos";
@@ -40,11 +40,7 @@ const parseStorageError = async (res: Response) => {
 };
 
 export const uploadToStorage = async (bucket: string, path: string, file: File) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
+  const token = await getAuthToken();
   if (!token) throw new Error("Token não fornecido");
 
   const formData = new FormData();
@@ -68,11 +64,7 @@ export const uploadToStorage = async (bucket: string, path: string, file: File) 
 };
 
 export const deleteFromStorage = async (bucket: string, path: string) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
+  const token = await getAuthToken();
   if (!token) throw new Error("Token não fornecido");
 
   const res = await fetch(STORAGE_API, {
@@ -96,11 +88,7 @@ export const fetchSignedUrl = async (
   path: string,
   expires = 3600
 ) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
+  const token = await getAuthToken();
 
   const res = await fetch(
     `${STORAGE_API}?type=signed&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}&expires=${expires}`,
@@ -123,11 +111,7 @@ export const fetchPublicUrl = async (
   bucket: string,
   path: string
 ) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
+  const token = await getAuthToken();
 
   const res = await fetch(
     `${STORAGE_API}?type=public&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`,

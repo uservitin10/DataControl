@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase-server";
+import { addAuditLog } from "@/lib/audit";
 
 /**
  * Normaliza strings para comparação
@@ -170,21 +171,19 @@ export async function logFallbackUsage(payload: {
   timestamp?: string;
 }) {
   try {
-    const { error } = await supabaseServer
-      .from("audit_logs")
-      .insert({
-        user_id: payload.userId,
-        action: "fallback_inventory_access",
-        resource_type: "inventory_items",
-        details: JSON.stringify({
-          displayName: payload.displayName,
-          allocatedUserName: payload.allocatedUserName,
-          equipmentCount: payload.equipmentCount,
-        }),
-      });
+    const result = await addAuditLog({
+      user_id: payload.userId,
+      action: "fallback_inventory_access",
+      resource_type: "inventory_items",
+      details: JSON.stringify({
+        displayName: payload.displayName,
+        allocatedUserName: payload.allocatedUserName,
+        equipmentCount: payload.equipmentCount,
+      }),
+    });
 
-    if (error) {
-      console.warn("[Fallback Logging] Erro ao registrar:", error);
+    if (!result.success) {
+      console.warn("[Fallback Logging] Erro ao registrar:", result.error || "skip");
       return { success: false };
     }
 
@@ -213,8 +212,10 @@ export async function getFallbackUsageStats() {
 
     // Agrupar por usuário
     const legacyByUser: { [key: string]: number } = {};
-    (legacyItems || []).forEach((item: any) => {
-      const name = normalizeString(item.allocated_user || "");
+    (legacyItems || []).forEach((item) => {
+      const it = item as Record<string, unknown>;
+      const allocated = (it.allocated_user as string) || "";
+      const name = normalizeString(allocated);
       legacyByUser[name] = (legacyByUser[name] || 0) + 1;
     });
 

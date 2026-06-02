@@ -48,7 +48,7 @@ export default function InventarioPage() {
     total: equipmentData.length,
     monitors: equipmentData.filter((i) => i.type === "Monitor").length,
     desktops: equipmentData.filter((i) => i.type === "Desktop").length,
-    Notebooks: equipmentData.filter((i) => i.type === "Notebooks").length,
+    notebooks: equipmentData.filter((i) => i.type === "Notebook").length,
     licenses: equipmentData.filter((i) => isActiveLicense(i)).length,
   };
 
@@ -176,8 +176,8 @@ export default function InventarioPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-teal-100 p-6">
               <p className="text-sm font-medium text-slate-600">Notebooks</p>
-              <p className="mt-2 text-3xl font-bold text-teal-700">{stats.Notebooks}</p>
-              <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.Notebooks / stats.total) * 100) : 0}% do total</p>
+              <p className="mt-2 text-3xl font-bold text-teal-700">{stats.notebooks}</p>
+              <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.notebooks / stats.total) * 100) : 0}% do total</p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-6">

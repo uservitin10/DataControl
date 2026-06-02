@@ -82,12 +82,7 @@ export default async function SectorInventoryPage({ params }: Props) {
     );
   }
 
-  const stats = {
-    total: sectorItems.length,
-    monitors: sectorItems.filter((item) => item.type === "Monitor").length,
-    desktops: sectorItems.filter((item) => item.type === "Desktop").length,
-    notebooks: sectorItems.filter((item) => item.type === "Notebook").length,
-  };
+  // stats intentionally omitted (not used in this view)
 
   return (
     <main className="gov-page-bg min-h-screen">

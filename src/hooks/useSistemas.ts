@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
-import { fetchJson } from "@/lib/api";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import type { Notificacao, Sistema, SistemaForm, Role } from "@/types/dashboard";
 import { fetchNotificacoesApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
 import { fetchSistemasApi, createSistemaApi, updateSistemaApi, deleteSistemaApi } from "@/lib/sistemas";
-import { DEFAULT_PERMISSIONS, resolvePermissions, type Permissions } from "@/lib/permissions";
+import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
+import { loadClientUser, getClientUserState } from "@/lib/auth";
 
 const EMPTY_FORM: SistemaForm = {
   sigla: "",
@@ -59,7 +58,6 @@ export function useSistemas() {
 
   const isAdmin = role === "admin";
   const isEditor = role === "editor";
-  const canView = permissions.sistemas.view;
   const canEdit = isAdmin || permissions.sistemas.edit;
   const canCreate = isAdmin || permissions.sistemas.create;
   const canDelete = isAdmin || permissions.sistemas.delete;
@@ -119,50 +117,28 @@ export function useSistemas() {
   // Inicializar usuário e role
   useEffect(() => {
     const initUser = async () => {
-      let userRole: Role = "viewer";
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const currentUser = sessionData.session?.user ?? null;
-        setUser(currentUser);
+        const clientUser = await loadClientUser();
+        const clientUserState = getClientUserState(clientUser);
 
-        if (currentUser) {
-          try {
-            const profileData = await fetchJson<{ role: Role; display_name: string; permissions?: Partial<Permissions> }>(
-              `/api/profile?id=${encodeURIComponent(currentUser.id)}`
-            );
+        setUser(clientUser.user);
+        setRole(clientUserState.role);
+        setDisplayName(clientUserState.displayName);
+        setPermissions(clientUserState.permissions);
 
-            userRole = (profileData?.role as Role) || "viewer";
-            setRole(userRole);
-            setDisplayName(profileData?.display_name || currentUser.email || "");
-            setPermissions(resolvePermissions(userRole, profileData?.permissions));
-          } catch (profileError) {
-            console.error("Erro ao carregar perfil:", (profileError as Error).message);
-            setRole("viewer");
-            setDisplayName(currentUser.email || "Usuário");
-            setPermissions(resolvePermissions("viewer"));
-          }
-
-          // Se for viewer, inicializa os filtros como true
-          if (userRole === "viewer") {
-            setFiltroHomologados(true);
-            setFiltroAcessiveis(true);
-            setFiltroTipoAcesso("publico");
-          } else {
-            // admin, editor, painel_editor, sistema_editor, inventario_editor - mostrar todos
-            setFiltroHomologados(false);
-            setFiltroAcessiveis(false);
-            setFiltroTipoAcesso("");
-          }
-
-          await fetchNotificacoes();
-        } else {
-          // Visitante não autenticado deve ver apenas sistemas públicos com produção
-          setRole("viewer");
-          setDisplayName("Visitante");
+        // Se for viewer, inicializa os filtros como true
+        if (clientUser.role === "viewer") {
           setFiltroHomologados(true);
           setFiltroAcessiveis(true);
           setFiltroTipoAcesso("publico");
+        } else {
+          // admin, editor, painel_editor, sistema_editor, inventario_editor - mostrar todos
+          setFiltroHomologados(false);
+          setFiltroAcessiveis(false);
+          setFiltroTipoAcesso("");
         }
+
+        await fetchNotificacoes();
       } catch (err) {
         console.error("Erro ao inicializar usuário:", err);
       } finally {

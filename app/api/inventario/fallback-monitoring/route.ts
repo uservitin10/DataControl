@@ -1,16 +1,13 @@
 import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
+import { addAuditLog } from "@/lib/audit";
 import {
   apiSuccess,
   apiInternalError,
   apiForbidden,
 } from "@/lib/api-response";
-import {
-  getFallbackUsageStats,
-  getFallbackAuditLogs,
-  normalizeString,
-} from "@/lib/inventory-sync";
+import { getFallbackUsageStats, getFallbackAuditLogs } from "@/lib/inventory-sync";
 
 /**
  * GET /api/inventario/fallback-monitoring
@@ -51,8 +48,9 @@ export async function GET(req: NextRequest) {
         };
       } = {};
 
-      auditLogs.forEach((log: any) => {
-        const userId = log.user_id;
+      auditLogs.forEach((log) => {
+        const l = log as Record<string, unknown>;
+        const userId = (l.user_id as string) || "unknown";
         if (!usageByUser[userId]) {
           usageByUser[userId] = {
             userName: "",
@@ -74,15 +72,15 @@ export async function GET(req: NextRequest) {
             usageByUser[userId].messages.push(
               `[${new Date(log.created_at).toLocaleDateString("pt-BR")}] ${details.displayName} acessou ${details.equipmentCount} equipamentos alocados a "${details.allocatedUserName}"`
             );
-          } catch (e) {
-            // Ignore parse errors
-          }
+            } catch {
+              // Ignore parse errors
+            }
         }
       });
 
       // Buscar detalhes dos usuários
       const userIds = Object.keys(usageByUser);
-      let userDetails: any[] = [];
+      let userDetails: Record<string, unknown>[] = [];
 
       if (userIds.length > 0) {
         const { data, error } = await supabaseServer
@@ -97,9 +95,11 @@ export async function GET(req: NextRequest) {
 
       // Enriquecer dados de usuário
       userDetails.forEach((userDetail) => {
-        if (usageByUser[userDetail.id]) {
-          usageByUser[userDetail.id].userName = userDetail.display_name || "";
-          usageByUser[userDetail.id].userEmail = userDetail.email || "";
+        const ud = userDetail as Record<string, unknown>;
+        const id = ud.id as string;
+        if (usageByUser[id]) {
+          usageByUser[id].userName = (ud.display_name as string) || "";
+          usageByUser[id].userEmail = (ud.email as string) || "";
         }
       });
 
@@ -150,7 +150,7 @@ export async function DELETE(req: NextRequest) {
       }
 
       // Registrar em auditoria
-      await supabaseServer.from("audit_logs").insert({
+      await addAuditLog({
         user_id: user.id,
         action: "clear_fallback_notifications",
         resource_type: "notificacoes",

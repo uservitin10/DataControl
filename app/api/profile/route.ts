@@ -3,7 +3,9 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError, apiForbidden } from "@/lib/api-response";
 import { addAuditLog } from "../../../src/lib/audit";
+import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule, type PermissionModule, type Permissions } from "@/lib/permissions";
+import { getProfileById } from "@/lib/profile";
 import type { Role } from "@/types/dashboard";
 
 export async function GET(req: NextRequest) {
@@ -26,17 +28,45 @@ export async function GET(req: NextRequest) {
         return apiForbidden("Acesso negado");
       }
 
-      const { data, error } = await supabaseServer
-        .from("profiles")
-        .select("role, display_name")
-        .eq("id", id)
-        .single();
+      const profile = await getProfileById(id);
 
-      if (error) {
+      // Se o perfil não existe e o usuário está consultando seu próprio perfil, criar automaticamente
+      if (!profile && id === user.id) {
+        const authUser = await supabaseServer.auth.admin.getUserById(id);
+        const displayName = authUser.data?.user?.user_metadata?.display_name || authUser.data?.user?.email || "Usuário";
+        
+        const { data: newProfile, error: createError } = await supabaseServer
+          .from("profiles")
+          .insert({
+            id,
+            display_name: displayName,
+            role: "viewer",
+          })
+          .select("role, display_name")
+          .single();
+
+        if (createError) {
+          return apiInternalError(`Erro ao criar perfil: ${createError.message}`);
+        }
+
+        if (!newProfile) {
+          return apiInternalError("Perfil criado mas não foi possível recuperar os dados");
+        }
+
+        // Retornar o perfil recém-criado com permissões padrão
+        const defaultPermissions = DEFAULT_PERMISSIONS.viewer;
+        return apiSuccess({
+          role: newProfile.role,
+          display_name: newProfile.display_name,
+          permissions: defaultPermissions,
+        });
+      }
+
+      if (!profile) {
         return apiNotFound("Perfil não encontrado");
       }
 
-      const role = data?.role as Role | undefined;
+      const role = profile.role as Role | undefined;
       const defaultPermissions = role && DEFAULT_PERMISSIONS[role] ? DEFAULT_PERMISSIONS[role] : DEFAULT_PERMISSIONS.viewer;
       const permissions: Permissions = { ...defaultPermissions };
 
@@ -91,8 +121,8 @@ export async function GET(req: NextRequest) {
       }
 
       return apiSuccess({
-        role: data.role,
-        display_name: data.display_name,
+        role: profile.role,
+        display_name: profile.display_name,
         permissions,
       });
     } catch (err) {
@@ -183,6 +213,16 @@ export async function PATCH(req: NextRequest) {
           details: JSON.stringify({ role, permissions }),
           ip_address: ip,
         });
+
+        await notifyAdmins(
+          buildEntityNotification(
+            "atualizado",
+            "perfil de usuário",
+            `ID ${id}`,
+            user.nome
+          ),
+          "usuarios"
+        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria (não bloqueante):", auditErr);
       }

@@ -1,17 +1,14 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { /* useRouter */ } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
-import { fetchJson } from "@/lib/api";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import type { DashboardForm, Notificacao, Registro, Role, View } from "@/types/dashboard";
-import { EMPTY_FORM, AREAS, formatarTempo, AREA_CORES, getFileTipo } from "@/lib/dashboard";
-import { DEFAULT_PERMISSIONS, resolvePermissions, type Permissions } from "@/lib/permissions";
+import { EMPTY_FORM, AREAS } from "@/lib/dashboard";
+import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
+import { loadClientUser, getClientUserState } from "@/lib/auth";
 import {
   DOCUMENTS_BUCKET,
   PREVIEWS_BUCKET,
-  VIEWER_PUBLIC_GOV_LINK,
-  VIEWER_PUBLIC_PREVIEW_IMAGE,
   uploadToStorage,
   deleteFromStorage,
   fetchSignedUrl,
@@ -21,7 +18,7 @@ import {
   ALLOWED_DOCUMENT_EXTENSIONS,
 } from "@/lib/storage";
 import { fetchRegistrosApi, createRegistroApi, updateRegistroApi, deleteRegistroApi } from "@/lib/registros";
-import { fetchNotificacoesApi, createNotificacaoApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
+import { fetchNotificacoesApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
 
 const GOV_LINK_PATTERN =
   "https://www.gov.br/planejamento/pt-br/assuntos/articulacao-institucional/pataforma-munis";
@@ -34,7 +31,6 @@ const normalizeFonteDados = (fonte?: string) => {
 };
 
 export function useDashboard() {
-  const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>("viewer");
@@ -101,39 +97,17 @@ export function useDashboard() {
     }
   }, [isAdmin]);
 
-  const criarNotificacao = useCallback(async (tipo: string, mensagem: string) => {
-    try {
-      await createNotificacaoApi({ tipo, mensagem, lida: false });
-    } catch (createError) {
-      console.error("Erro ao criar notificação:", (createError as Error).message || "Erro desconhecido");
-    }
-  }, []);
+  // criarNotificacao intentionally omitted (not used currently)
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData.session?.user ?? null;
+      const clientUser = await loadClientUser();
+      const clientUserState = getClientUserState(clientUser);
 
-      setUser(sessionUser);
-
-      if (sessionUser) {
-        // Usuário autenticado - carregar perfil
-        try {
-          const profileData = await fetchJson<{ role: Role; display_name: string; permissions?: Partial<Permissions> }>(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`);
-          if (profileData?.role) setRole(profileData.role as Role);
-          if (profileData?.display_name) setDisplayName(profileData.display_name);
-          if (profileData?.role) {
-            setPermissions(resolvePermissions(profileData.role as Role, profileData.permissions));
-          }
-        } catch (profileError) {
-          console.error("Erro ao carregar perfil:", (profileError as Error).message);
-          setRole("viewer");
-        }
-      } else {
-        // Usuário não autenticado - acesso público como viewer
-        setRole("viewer");
-        setDisplayName("Visitante");
-      }
+      setUser(clientUser.user);
+      setRole(clientUserState.role);
+      setDisplayName(clientUserState.displayName);
+      setPermissions(clientUserState.permissions);
 
       await fetchRegistros();
       await fetchNotificacoes();
@@ -256,7 +230,7 @@ export function useDashboard() {
       
     }
 
-    const autor = displayName || user?.email || "Alguém";
+    // const autor = displayName || user?.email || "Alguém";
 
     if (editingId) {
       const updateData: Partial<Registro> = { ...form, updated_at: new Date().toISOString() };
@@ -297,7 +271,7 @@ export function useDashboard() {
     setShowModal(false);
   };
 
-  const handleDelete = async (id: string, arquivoPath?: string, previewPath?: string, nome?: string) => {
+  const handleDelete = async (id: string, arquivoPath?: string, previewPath?: string) => {
     if (!confirm("Tem certeza que deseja excluir este registro?")) return;
     if (arquivoPath) {
       try {
