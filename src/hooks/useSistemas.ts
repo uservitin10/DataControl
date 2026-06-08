@@ -1,8 +1,6 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { User } from "@supabase/supabase-js";
-import { useOnClickOutside } from "@/hooks/useOnClickOutside";
-import type { Notificacao, Sistema, SistemaForm, Role } from "@/types/dashboard";
-import { fetchNotificacoesApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
+import type { Sistema, SistemaForm, Role } from "@/types/dashboard";
 import { fetchSistemasApi, createSistemaApi, updateSistemaApi, deleteSistemaApi } from "@/lib/sistemas";
 import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
 import { loadClientUser, getClientUserState } from "@/lib/auth";
@@ -42,11 +40,6 @@ export function useSistemas() {
   const [form, setForm] = useState<SistemaForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
-  const [showNotif, setShowNotif] = useState(false);
-  const notifRef = useRef<HTMLDivElement | null>(null);
-
-  useOnClickOutside(notifRef, () => setShowNotif(false));
 
   // Estados de filtro
   const [busca, setBusca] = useState("");
@@ -61,30 +54,6 @@ export function useSistemas() {
   const canEdit = isAdmin || permissions.sistemas.edit;
   const canCreate = isAdmin || permissions.sistemas.create;
   const canDelete = isAdmin || permissions.sistemas.delete;
-
-  const fetchNotificacoes = useCallback(async () => {
-    if (!isAdmin) {
-      setNotificacoes([]);
-      return;
-    }
-
-    try {
-      const data = await fetchNotificacoesApi();
-      setNotificacoes(data ?? []);
-    } catch (fetchError) {
-      setError((fetchError as Error).message || "Erro ao carregar notificações.");
-    }
-  }, [isAdmin]);
-
-  const marcarTodasLidas = async () => {
-    try {
-      await markNotificacoesLidasApi();
-    } catch (markError) {
-      console.error((markError as Error).message || "Erro ao marcar notificações lidas.");
-    }
-
-    setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
-  };
 
   // Verificar se há filtro ativo
   const temFiltroAtivo = busca !== "" || filtroAmbiente !== "ambos" || filtroHomologados || filtroAcessiveis || filtroTipoAcesso !== "" || filtroSecretaria !== "";
@@ -138,7 +107,6 @@ export function useSistemas() {
           setFiltroTipoAcesso("");
         }
 
-        await fetchNotificacoes();
       } catch (err) {
         console.error("Erro ao inicializar usuário:", err);
       } finally {
@@ -147,7 +115,7 @@ export function useSistemas() {
     };
 
     initUser();
-  }, [fetchNotificacoes]);
+  }, []);
 
   // Carregar sistemas
   const fetchSistemas = useCallback(async () => {
@@ -295,11 +263,6 @@ export function useSistemas() {
     canEdit,
     canCreate,
     canDelete,
-    notificacoes,
-    showNotif,
-    setShowNotif,
-    notifRef,
-    marcarTodasLidas,
     // Filtros
     busca,
     setBusca,

@@ -1,4 +1,4 @@
-import { getAuthToken } from "@/lib/api";
+import { fetchJson, getAuthToken } from "@/lib/api";
 const STORAGE_API = "/api/storage";
 
 export const DOCUMENTS_BUCKET = "documentos";
@@ -23,6 +23,84 @@ export const ALLOWED_DOCUMENT_EXTENSIONS = [
 
 export const PREVIEW_ACCEPT = ALLOWED_PREVIEW_TYPES.join(",");
 export const DOCUMENT_ACCEPT = ALLOWED_DOCUMENT_EXTENSIONS.map((ext) => `.${ext}`).join(",");
+
+export interface EquipmentFileRecord {
+  id: string;
+  equipment_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  created_at: string;
+}
+
+export interface LicenseFileRecord {
+  id: string;
+  license_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  created_at: string;
+}
+
+export const listEquipmentFiles = async (equipmentId: string) => {
+  return fetchJson<EquipmentFileRecord[]>(`/api/equipments/${encodeURIComponent(equipmentId)}/files`);
+};
+
+export const uploadEquipmentFiles = async (equipmentId: string, files: File[]) => {
+  if (!files.length) {
+    throw new Error("Nenhum arquivo selecionado.");
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+
+  const response = await fetchJson<{ files: EquipmentFileRecord[] }>(
+    `/api/equipments/${encodeURIComponent(equipmentId)}/files`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  return response.files;
+};
+
+export const deleteEquipmentFile = async (equipmentId: string, fileId: string) => {
+  return fetchJson<{ deleted: boolean }>(
+    `/api/equipments/${encodeURIComponent(equipmentId)}/files/${encodeURIComponent(fileId)}`,
+    { method: "DELETE" }
+  );
+};
+
+export const listLicenseFiles = async (licenseId: string) => {
+  return fetchJson<LicenseFileRecord[]>(`/api/licenses/${encodeURIComponent(licenseId)}/files`);
+};
+
+export const uploadLicenseFiles = async (licenseId: string, files: File[]) => {
+  if (!files.length) {
+    throw new Error("Nenhum arquivo selecionado.");
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+
+  const response = await fetchJson<{ files: LicenseFileRecord[] }>(
+    `/api/licenses/${encodeURIComponent(licenseId)}/files`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  return response.files;
+};
+
+export const deleteLicenseFile = async (licenseId: string, fileId: string) => {
+  return fetchJson<{ deleted: boolean }>(
+    `/api/licenses/${encodeURIComponent(licenseId)}/files/${encodeURIComponent(fileId)}`,
+    { method: "DELETE" }
+  );
+};
 
 export const generateStoragePath = (name: string, file: File, suffix = "") => {
   const ext = file.name.split(".").pop() ?? "";

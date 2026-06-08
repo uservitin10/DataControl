@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase-server";
+import { sanitizeText } from "@/lib/text";
 import type { Role } from "@/types/dashboard";
 
 export type ProfileRecord = {
@@ -17,5 +18,10 @@ export async function getProfileById(id: string): Promise<ProfileRecord | null> 
     return null;
   }
 
-  return data;
+  return data
+    ? {
+        ...data,
+        display_name: sanitizeText(data.display_name || ""),
+      }
+    : null;
 }

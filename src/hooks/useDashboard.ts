@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { /* useRouter */ } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { useOnClickOutside } from "@/hooks/useOnClickOutside";
-import type { DashboardForm, Notificacao, Registro, Role, View } from "@/types/dashboard";
+import type { DashboardForm, Registro, Role, View } from "@/types/dashboard";
 import { EMPTY_FORM, AREAS } from "@/lib/dashboard";
 import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
 import { loadClientUser, getClientUserState } from "@/lib/auth";
@@ -18,7 +17,6 @@ import {
   ALLOWED_DOCUMENT_EXTENSIONS,
 } from "@/lib/storage";
 import { fetchRegistrosApi, createRegistroApi, updateRegistroApi, deleteRegistroApi } from "@/lib/registros";
-import { fetchNotificacoesApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
 
 const GOV_LINK_PATTERN =
   "https://www.gov.br/planejamento/pt-br/assuntos/articulacao-institucional/pataforma-munis";
@@ -54,9 +52,6 @@ export function useDashboard() {
   const [busca, setBusca] = useState("");
   const [filtroSensivel, setFiltroSensivel] = useState("");
   const [filtroFonte, setFiltroFonte] = useState(true); // default: mostrar apenas com fonte disponível
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
-  const [showNotif, setShowNotif] = useState(false);
-  const notifRef = useRef<HTMLDivElement | null>(null);
 
   const isAdmin = role === "admin";
   const isEditor = role === "editor";
@@ -66,8 +61,6 @@ export function useDashboard() {
   const canCreate = isAdmin || permissions.dashboard.create;
   const canDelete = isAdmin || permissions.dashboard.delete;
   const isViewerDashboard = !canEdit && canView;
-
-  useOnClickOutside(notifRef, () => setShowNotif(false));
 
   const fetchRegistros = useCallback(async () => {
     try {
@@ -83,22 +76,6 @@ export function useDashboard() {
     }
   }, []);
 
-  const fetchNotificacoes = useCallback(async () => {
-    if (!isAdmin) {
-      setNotificacoes([]);
-      return;
-    }
-
-    try {
-      const data = await fetchNotificacoesApi();
-      setNotificacoes(data ?? []);
-    } catch (fetchError) {
-      setError((fetchError as Error).message || "Erro ao carregar notificações.");
-    }
-  }, [isAdmin]);
-
-  // criarNotificacao intentionally omitted (not used currently)
-
   useEffect(() => {
     const loadData = async () => {
       const clientUser = await loadClientUser();
@@ -110,21 +87,11 @@ export function useDashboard() {
       setPermissions(clientUserState.permissions);
 
       await fetchRegistros();
-      await fetchNotificacoes();
       setLoading(false);
     };
 
     void loadData();
-  }, [fetchRegistros, fetchNotificacoes]);
-
-  const marcarTodasLidas = async () => {
-    try {
-      await markNotificacoesLidasApi();
-    } catch (markError) {
-      console.error((markError as Error).message || "Erro ao marcar notificações lidas.");
-    }
-    setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
-  };
+  }, [fetchRegistros]);
 
   const isPreviewFileTypeAllowed = (file: File) => ALLOWED_PREVIEW_TYPES.includes(file.type.toLowerCase());
   const isDocumentFileAllowed = (file: File) => {
@@ -266,7 +233,6 @@ export function useDashboard() {
     }
 
     await fetchRegistros();
-    await fetchNotificacoes();
     setSaving(false);
     setShowModal(false);
   };
@@ -295,9 +261,6 @@ export function useDashboard() {
       return;
     }
 
-    
-
-    await fetchNotificacoes();
     setRegistros((current) => current.filter((r) => r.id !== id));
   };
 
@@ -417,9 +380,6 @@ export function useDashboard() {
     busca,
     filtroSensivel,
     filtroFonte,
-    notificacoes,
-    showNotif,
-    notifRef,
     isAdmin,
     isEditor,
     isViewer,
@@ -449,7 +409,5 @@ export function useDashboard() {
     setShowModal,
     setViewingUrl,
     setDownloadUrl,
-    setShowNotif,
-    marcarTodasLidas,
   };
 }

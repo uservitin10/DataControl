@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/lib/validation";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError } from "@/lib/api-response";
 
@@ -68,16 +67,6 @@ export async function PATCH(
         details: `Sistema atualizado: ID ${id}`,
       });
 
-      await notifyAdmins(
-        buildEntityNotification(
-          "atualizado",
-          "sistema",
-          `ID ${id}`,
-          user.nome
-        ),
-        "sistemas"
-      );
-
       return apiSuccess(data);
     } catch (err) {
       return apiInternalError((err as Error).message);
@@ -106,16 +95,6 @@ export async function DELETE(
         resource_id: id,
         details: `Sistema excluído: ID ${id}`,
       });
-
-      await notifyAdmins(
-        buildEntityNotification(
-          "excluído",
-          "sistema",
-          `ID ${id}`,
-          user.nome
-        ),
-        "sistemas"
-      );
 
       return apiSuccess({ success: true });
     } catch (err) {

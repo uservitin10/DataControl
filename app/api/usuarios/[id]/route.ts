@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError, apiForbidden } from "@/lib/api-response";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule, type PermissionModule, type Permissions } from "@/lib/permissions";
 import type { Role } from "@/types/dashboard";
@@ -148,16 +147,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           details: JSON.stringify({ role, permissions }),
           ip_address: ip,
         });
-
-        await notifyAdmins(
-          buildEntityNotification(
-            "atualizado",
-            "perfil de usuário",
-            `ID ${id}`,
-            user.nome
-          ),
-          "usuarios"
-        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria:", auditErr);
       }
@@ -213,16 +202,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
           details: null,
           ip_address: ip,
         });
-
-        await notifyAdmins(
-          buildEntityNotification(
-            "excluído",
-            "perfil de usuário",
-            `ID ${id}`,
-            user.nome
-          ),
-          "usuarios"
-        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria:", auditErr);
       }

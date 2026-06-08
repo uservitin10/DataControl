@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth, withOptionalAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_SISTEMA_FIELDS } from "@/lib/validation";
 import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
 
@@ -61,16 +60,6 @@ export async function POST(req: NextRequest) {
         resource_id: null,
         details: `Sistema criado: ${String(cleanBody.nome || cleanBody.sigla || "sem nome")}`,
       });
-
-      await notifyAdmins(
-        buildEntityNotification(
-          "criado",
-          "sistema",
-          `${String(cleanBody.nome || cleanBody.sigla || "sem nome")}`,
-          user.nome
-        ),
-        "sistemas"
-      );
 
       return apiCreated(data);
     } catch (err) {

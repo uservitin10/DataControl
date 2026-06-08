@@ -1,6 +1,7 @@
 export interface EquipmentItem {
   id: number;
   type: 'Monitor' | 'Desktop' | 'Notebook' | 'Licença';
+  serial_number?: string;
   model: string;
   assetType: string;
   assetId: string;

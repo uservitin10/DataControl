@@ -67,13 +67,16 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseServer
       .from("audit_logs")
-      .select(`
+      .select(
+        `
         *,
         profiles:user_id (
           display_name,
           role
         )
-      `)
+      `,
+        { count: "exact" }
+      )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -93,19 +96,19 @@ export async function GET(request: NextRequest) {
       query = query.eq("resource_id", resourceId);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
 
     if (error) {
       if (isAuditTableMissing(error)) {
         console.warn("Audit logging não configurado: tabela audit_logs não encontrada.");
-        return NextResponse.json([], { status: 200 });
+        return NextResponse.json({ data: [], missingTable: true, count: 0 }, { status: 200 });
       }
 
       console.error("Erro ao buscar logs de auditoria:", error);
       return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
     }
 
-    return NextResponse.json({ data: data || [], missingTable: false });
+    return NextResponse.json({ data: data || [], missingTable: false, count: count ?? 0 });
   } catch (error) {
     console.error("Erro na API de auditoria:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });

@@ -111,56 +111,6 @@ export async function syncLegacyInventoryItem(
 }
 
 /**
- * Notifica admins sobre uso de fallback
- */
-export async function notifyAdminsAboutFallback(payload: {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  allocatedUserName: string;
-  equipmentCount: number;
-}) {
-  try {
-    // Buscar todos os admins
-    const { data: admins, error: adminsError } = await supabaseServer
-      .from("profiles")
-      .select("id")
-      .eq("role", "admin");
-
-    if (adminsError || !admins || admins.length === 0) {
-      console.warn("[Fallback Notification] Nenhum admin encontrado");
-      return { success: false, reason: "no_admins" };
-    }
-
-    // Criar notificações para cada admin
-    const notifications = admins.map((admin) => ({
-      user_id: admin.id,
-      tipo: "fallback_usage",
-      mensagem: `⚠️ ${payload.userName} (${payload.userEmail}) acessou inventário via fallback de nome. ${payload.equipmentCount} equipamentos encontrados. Nome no sistema: "${payload.allocatedUserName}". Considere sincronizar dados legados.`,
-      lida: false,
-      created_at: new Date().toISOString(),
-    }));
-
-    const { error } = await supabaseServer
-      .from("notificacoes")
-      .insert(notifications);
-
-    if (error) {
-      console.error("[Fallback Notification] Erro ao criar notificações:", error);
-      return { success: false, error };
-    }
-
-    console.log(
-      `[Fallback Notification] ${admins.length} admin(s) notificado(s)`
-    );
-    return { success: true, adminsNotified: admins.length };
-  } catch (err) {
-    console.error("[Fallback Notification] Erro inesperado:", err);
-    return { success: false, error: err };
-  }
-}
-
-/**
  * Registra uso de fallback para auditoria
  */
 export async function logFallbackUsage(payload: {

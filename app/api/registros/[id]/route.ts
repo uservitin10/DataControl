@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { notifyAdmins, buildEntityNotification } from "@/lib/notification-service";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_REGISTRO_FIELDS } from "@/lib/validation";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError } from "@/lib/api-response";
 
@@ -71,16 +70,6 @@ export async function PATCH(
           details: JSON.stringify(patchBody),
           ip_address: ip,
         });
-
-        await notifyAdmins(
-          buildEntityNotification(
-            "atualizado",
-            "registro",
-            `ID ${id}`,
-            user.nome
-          ),
-          "dashboard"
-        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria (não bloqueante):", auditErr);
       }
@@ -117,16 +106,6 @@ export async function DELETE(
           details: null,
           ip_address: ip,
         });
-
-        await notifyAdmins(
-          buildEntityNotification(
-            "excluído",
-            "registro",
-            `ID ${id}`,
-            user.nome
-          ),
-          "dashboard"
-        );
       } catch (auditErr) {
         console.error("Falha ao gravar auditoria (não bloqueante):", auditErr);
       }

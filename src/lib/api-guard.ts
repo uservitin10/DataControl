@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getProfileById } from "@/lib/profile";
+import { sanitizeText } from "@/lib/text";
 import type { Role } from "@/types/dashboard";
 import { DEFAULT_PERMISSIONS, normalizePermissionModule } from "@/lib/permissions";
 import type { PermissionAction, PermissionModule, ModulePermissions } from "@/lib/permissions";
@@ -273,7 +274,7 @@ export async function validateAuth(
     user: {
       id: userId,
       email: payload.email ?? null,
-      nome: profile.display_name || payload.user_metadata?.nome || "Visitante",
+      nome: sanitizeText(profile.display_name || payload.user_metadata?.nome || "Visitante"),
       role: userRole,
     },
     error: null,
@@ -309,7 +310,7 @@ export async function withOptionalAuth(
           user = {
             id: userId,
             email: payload.email ?? null,
-            nome: profile.display_name || payload.user_metadata?.nome || "Visitante",
+            nome: sanitizeText(profile.display_name || payload.user_metadata?.nome || "Visitante"),
             role: (profile.role as Role) || "viewer",
           };
         }

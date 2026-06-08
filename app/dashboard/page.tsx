@@ -7,9 +7,8 @@ import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { DocumentFilters } from "@/components/dashboard/DocumentFilters";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
 import { DocumentFormModal, DocumentViewerModal } from "@/components/dashboard/DocumentModals";
-import { NotificationsDropdown } from "@/components/dashboard/NotificationsDropdown";
 import { useDashboard } from "@/hooks/useDashboard";
-import { AREAS, formatarTempo, AREA_CORES, getFileTipo } from "@/lib/dashboard";
+import { AREAS, AREA_CORES, getFileTipo } from "@/lib/dashboard";
 import { BackButton } from "@/components/BackButton";
 import { VIEWER_PUBLIC_GOV_LINK, VIEWER_PUBLIC_PREVIEW_IMAGE } from "@/lib/storage";
 
@@ -39,10 +38,6 @@ export default function DashboardPage() {
     busca,
     filtroSensivel,
     filtroFonte,
-    notificacoes,
-    showNotif,
-    setShowNotif,
-    notifRef,
     isAdmin,
     
     isViewer,
@@ -69,7 +64,6 @@ export default function DashboardPage() {
     setShowModal,
     setViewingUrl,
     setDownloadUrl,
-    marcarTodasLidas,
   } = useDashboard();
 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -152,22 +146,6 @@ export default function DashboardPage() {
                 </span>
               </div>
             ) : null}
-
-            {isAdmin && (
-              <NotificationsDropdown
-                notificacoes={notificacoes}
-                showNotif={showNotif}
-                onToggle={() => {
-                  setShowNotif((v) => !v);
-                  if (!showNotif) {
-                    void marcarTodasLidas();
-                  }
-                }}
-                onMarkAllRead={marcarTodasLidas}
-                formatarTempo={formatarTempo}
-                containerRef={notifRef}
-              />
-            )}
 
             {!showLanding && canEdit && (
               <button

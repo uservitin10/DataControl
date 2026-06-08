@@ -6,9 +6,7 @@ import { Logo } from "@/components/Logo";
 import { useSistemas } from "@/hooks/useSistemas";
 import { SistemasModal } from "@/components/sistemas/SistemasModals";
 import { SistemasFilters } from "@/components/sistemas/SistemasFilters";
-import { NotificationsDropdown } from "@/components/dashboard/NotificationsDropdown";
 import { COLORS, ROLE_LABELS } from "@/lib/ui-constants";
-import { formatarTempo } from "@/lib/dashboard";
 
 export default function SistemasPage() {
   const router = useRouter();
@@ -28,11 +26,6 @@ export default function SistemasPage() {
     canEdit,
     canDelete,
     isAdmin,
-    notificacoes,
-    showNotif,
-    setShowNotif,
-    notifRef,
-    marcarTodasLidas,
     busca,
     setBusca,
     filtroAmbiente,
@@ -93,17 +86,6 @@ export default function SistemasPage() {
                   {ROLE_LABELS[role]}
                 </span>
               </div>
-            )}
-
-            {isAdmin && (
-              <NotificationsDropdown
-                notificacoes={notificacoes}
-                showNotif={showNotif}
-                onToggle={() => setShowNotif((prev) => !prev)}
-                onMarkAllRead={marcarTodasLidas}
-                formatarTempo={formatarTempo}
-                containerRef={notifRef}
-              />
             )}
 
             {canEdit && (

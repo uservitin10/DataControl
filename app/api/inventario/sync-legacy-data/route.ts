@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
 import { syncLegacyInventoryItem } from "@/lib/inventory-sync";
+import { sanitizeText } from "@/lib/text";
 
 /**
  * GET /api/inventario/sync-legacy-data
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
 
       (legacyItems || []).forEach((item) => {
         const it = item as Record<string, unknown>;
-        const user = (it.allocated_user as string) || "SEM NOME";
+        const user = sanitizeText((it.allocated_user as string) || "SEM NOME");
         if (!itemsByUser[user]) {
           itemsByUser[user] = [];
         }
@@ -105,11 +106,13 @@ export async function POST(req: NextRequest) {
         return apiInternalError("Item não encontrado");
       }
 
+      const itemAllocatedUser = sanitizeText(item.allocated_user || "");
+
       // Sincronizar
       const result = await syncLegacyInventoryItem(
         itemId,
         userId,
-        item.allocated_user || ""
+        itemAllocatedUser
       );
 
       if (!result.success) {
@@ -168,25 +171,30 @@ export async function PUT(req: NextRequest) {
       }
 
       // Buscar todos os items deste usuário legado
+      const sanitizedAllocatedUserName = sanitizeText(allocatedUserName);
+
       const { data: items, error: itemsError } = await supabaseServer
         .from("inventory_items")
-        .select("id")
-        .eq("allocated_user", allocatedUserName)
+        .select("id, allocated_user")
         .is("allocated_user_id", null);
 
       if (itemsError || !items) {
         return apiInternalError("Erro ao buscar items");
       }
 
+      const matchingItems = items.filter((item) =>
+        sanitizeText((item.allocated_user as string) || "") === sanitizedAllocatedUserName
+      );
+
       let syncedCount = 0;
       const errors: { itemId: number; error?: unknown }[] = [];
 
       // Sincronizar cada item
-      for (const item of items) {
+      for (const item of matchingItems) {
         const result = await syncLegacyInventoryItem(
           item.id,
           userId,
-          allocatedUserName
+          sanitizedAllocatedUserName
         );
 
         if (result.success) {
