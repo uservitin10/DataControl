@@ -10,6 +10,7 @@ interface FileUploadInputProps {
   multiple?: boolean;
   maxFiles?: number;
   maxSize?: number;
+  buttonClassName?: string;
 }
 
 export function FileUploadInput({
@@ -20,6 +21,7 @@ export function FileUploadInput({
   multiple = false,
   maxFiles,
   maxSize,
+  buttonClassName,
 }: FileUploadInputProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -60,7 +62,7 @@ export function FileUploadInput({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="gov-button-secondary-dark rounded-2xl px-4 py-3 text-sm font-semibold"
+          className={buttonClassName ?? "gov-button-secondary-dark rounded-2xl px-4 py-3 text-sm font-semibold"}
         >
           {files.length > 0 ? "Trocar arquivo" : "Selecionar arquivo"}
         </button>

@@ -49,9 +49,21 @@ export default function LicencasPage() {
     .filter((item) => isActiveLicense(item))
     .slice()
     .sort((a, b) => {
-      const nameA = (a.allocatedUser || a.responsible || a.assetId || '').toString().toLowerCase();
-      const nameB = (b.allocatedUser || b.responsible || b.assetId || '').toString().toLowerCase();
-      return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      const labelA = (a.allocatedUser || a.responsible || a.model || a.assetId || a.equipmentId || "")
+        .toString()
+        .trim();
+      const labelB = (b.allocatedUser || b.responsible || b.model || b.assetId || b.equipmentId || "")
+        .toString()
+        .trim();
+
+      const primary = labelA.localeCompare(labelB, "pt-BR", { sensitivity: "base" });
+      if (primary !== 0) return primary;
+
+      return (a.model || a.assetId || a.equipmentId || "")
+        .toString()
+        .localeCompare((b.model || b.assetId || b.equipmentId || "").toString(), "pt-BR", {
+          sensitivity: "base",
+        });
     });
 
   if (loadingUser) {
