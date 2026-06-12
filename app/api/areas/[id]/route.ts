@@ -1,11 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { validateAuth } from "@/lib/api-guard";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-);
+import { supabaseServer } from "@/lib/supabase-server";
 
 // GET - Fetch single area (admin only)
 export async function GET(
@@ -22,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from("areas")
       .select("*")
       .eq("id", params.id)
@@ -64,7 +59,7 @@ export async function PATCH(
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from("areas")
       .update({
         nome: nome.trim(),
@@ -102,7 +97,7 @@ export async function DELETE(
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseServer
       .from("areas")
       .delete()
       .eq("id", params.id);

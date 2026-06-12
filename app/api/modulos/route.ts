@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       error instanceof Error
         ? error.message
         : error && typeof error === "object" && "message" in error
-        ? String((error as any).message)
+        ? String((error as { message?: unknown }).message)
         : "Failed to fetch modulos";
     return NextResponse.json({ error: message }, { status: 500 });
   }

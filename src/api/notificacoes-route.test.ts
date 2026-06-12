@@ -4,8 +4,13 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { addAuditLog } from "@/lib/audit";
 import type { NextRequest } from "next/server";
 
+type MockUser = {
+  id: string;
+  nome: string;
+};
+
 vi.mock("@/lib/api-guard", () => ({
-  withAuth: vi.fn((request: unknown, callback: (user: any) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
+  withAuth: vi.fn((request: unknown, callback: (user: MockUser) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
 }));
 
 vi.mock("@/lib/supabase-server", () => ({
@@ -23,11 +28,13 @@ describe("app/api/notificacoes/route", () => {
     vi.clearAllMocks();
   });
 
+  const supabaseFromMock = vi.mocked(supabaseServer.from);
+
   it("GET returns notifications when supabase query succeeds", async () => {
     const limit = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
     const order = vi.fn(() => ({ limit }));
     const select = vi.fn(() => ({ order }));
-    (supabaseServer as any).from = vi.fn(() => ({ select }));
+    supabaseFromMock.mockImplementation(() => ({ select } as never));
 
     const response = await GET({} as unknown as NextRequest);
     expect(response.status).toBe(200);
@@ -47,7 +54,7 @@ describe("app/api/notificacoes/route", () => {
 
   it("POST creates a notification and writes an audit log", async () => {
     const insert = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
-    (supabaseServer as any).from = vi.fn(() => ({ insert }));
+    supabaseFromMock.mockImplementation(() => ({ insert } as never));
 
     const request = {
       json: async () => ({ tipo: "alerta", mensagem: "Teste", lida: false }),
@@ -63,7 +70,7 @@ describe("app/api/notificacoes/route", () => {
   it("PATCH marks all notifications as read and writes an audit log", async () => {
     const eq = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
     const update = vi.fn(() => ({ eq }));
-    (supabaseServer as any).from = vi.fn(() => ({ update }));
+    supabaseFromMock.mockImplementation(() => ({ update } as never));
 
     const response = await PATCH({} as unknown as NextRequest);
     expect(response.status).toBe(200);

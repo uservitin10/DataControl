@@ -17,11 +17,14 @@ describe("app/api/audit/route", () => {
     vi.clearAllMocks();
   });
 
+  const supabaseFromMock = vi.mocked(supabaseServer.from);
+  const supabaseGetUserMock = vi.mocked(supabaseServer.auth.getUser);
+
   it("GET returns audit logs successfully", async () => {
     const range = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null });
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    (supabaseServer as any).from = vi.fn(() => ({ select }));
+    supabaseFromMock.mockImplementation(() => ({ select } as never));
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit?limit=2&offset=0"),
@@ -37,7 +40,7 @@ describe("app/api/audit/route", () => {
     const range = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    (supabaseServer as any).from = vi.fn(() => ({ select }));
+    supabaseFromMock.mockImplementation(() => ({ select } as never));
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit"),
@@ -62,12 +65,12 @@ describe("app/api/audit/route", () => {
 
   it("POST includes user id from bearer token and returns created row", async () => {
     const authGetUser = vi.fn().mockResolvedValue({ data: { user: { id: "user-123" } } });
-    (supabaseServer as any).auth.getUser = authGetUser;
+    supabaseGetUserMock.mockImplementation(authGetUser);
 
     const single = vi.fn().mockResolvedValue({ data: { id: "log-2" }, error: null });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    (supabaseServer as any).from = vi.fn(() => ({ insert }));
+    supabaseFromMock.mockImplementation(() => ({ insert } as never));
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
@@ -86,7 +89,7 @@ describe("app/api/audit/route", () => {
     const single = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    (supabaseServer as any).from = vi.fn(() => ({ insert }));
+    supabaseFromMock.mockImplementation(() => ({ insert } as never));
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),

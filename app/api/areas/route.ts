@@ -26,12 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data || []);
   } catch (error) {
     console.error("Error fetching areas:", error);
-    const message =
-      error instanceof Error
-        ? error.message
-        : error && typeof error === "object" && "message" in error
-        ? String((error as any).message)
-        : "Failed to fetch areas";
+    const message = error instanceof Error ? error.message : "Failed to fetch areas";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
