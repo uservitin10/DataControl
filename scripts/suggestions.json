@@ -1,0 +1,332 @@
+[
+  {
+    "model": "CDAO Executive Team Leader",
+    "responsible": "Gustavo Bruzzeguez",
+    "bestScore": 1,
+    "best": [
+      "gustavo andrade",
+      "bruzzeguezgustavo.bruzzeguez@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "CDAO Executive Team Member",
+    "responsible": "Everton Ramos",
+    "bestScore": 1,
+    "best": [
+      "daniel ramos",
+      "costadaniel.r.costa@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Leader",
+    "responsible": "Álvaro José de Andrade Carneiro",
+    "bestScore": 3,
+    "best": [
+      "álvaro josé de andrade",
+      "carneiroalvaro.carneiro@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Leader",
+    "responsible": "Ramon Brandão",
+    "bestScore": 0,
+    "best": null
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Marcos Alsina",
+    "bestScore": 1,
+    "best": [
+      "marcos césar chaves da",
+      "fonsecamarcos.fonseca@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Leandro Lira",
+    "bestScore": 1,
+    "best": [
+      "leandro de lima",
+      "liraleandro.lira@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Felipe Cesar Araujo Da Silva",
+    "bestScore": 3,
+    "best": [
+      "felipe cesar araujo da",
+      "silvafelipe.csilva@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Wertiz Dantas da Silva Junior",
+    "bestScore": 1,
+    "best": [
+      "daniel da silva",
+      "grimaldidaniel.grimaldi@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Daniel de Figueiredo Bandarrinha",
+    "bestScore": 2,
+    "best": [
+      "daniel de figueiredo",
+      "bandarrinhadaniel.bandarrinha@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Mauro Tapajós Santos",
+    "bestScore": 1,
+    "best": [
+      "ana vitória santos",
+      "lessaana.lessa@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Monade Rassa Souza Costa",
+    "bestScore": 1,
+    "best": [
+      "ana carolina de souza",
+      "dantasana.dantas@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Nelson Sattler da Fonseca",
+    "bestScore": 0,
+    "best": null
+  },
+  {
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Ricardo Tadeu de Albuquerque Peixoto",
+    "bestScore": 0,
+    "best": null
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Adalberto Rodrigues Ferreira",
+    "bestScore": 2,
+    "best": [
+      "adalberto rodrigues",
+      "ferreiraadalberto.ferreira@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Adrieny Azeredo Guterres",
+    "bestScore": 2,
+    "best": [
+      "adrieny azeredo",
+      "guterresadrieny.guterres@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Allex Carneiro Martins",
+    "bestScore": 2,
+    "best": [
+      "allex carneiro",
+      "martinsallex.martins@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Ana Laura Sousa e Custodio",
+    "bestScore": 3,
+    "best": [
+      "ana laura sousa e",
+      "custodioana.custodio@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Ana Vitória Santos Lessa",
+    "bestScore": 3,
+    "best": [
+      "ana vitória santos",
+      "lessaana.lessa@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Antônio Sabino da Costa Filho",
+    "bestScore": 3,
+    "best": [
+      "antônio sabino da costa",
+      "filhoantonio.s.filho@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Claudia Campos de Ávila Santos",
+    "bestScore": 3,
+    "best": [
+      "claudia campos de ávila",
+      "santosclaudia.avila@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Claudia Regina Tavares Canedo",
+    "bestScore": 3,
+    "best": [
+      "claudia regina tavares",
+      "canedoclaudia.canedo@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Cláudio Martins Neiva Monteiro",
+    "bestScore": 3,
+    "best": [
+      "cláudio martins neiva",
+      "monteiroclaudio.monteiro@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Deborah Ferreira Arbex",
+    "bestScore": 2,
+    "best": [
+      "deborah ferreira",
+      "arbexdeborah.arbex@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Dilso Marvell Marques",
+    "bestScore": 2,
+    "best": [
+      "dilso marvell",
+      "marquesdilso.marques@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Elisângela Maria de Aguiar",
+    "bestScore": 2,
+    "best": [
+      "elisângela maria de",
+      "aguiarelisangela.aguiar@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Jônatas D'Alma Costa Santos",
+    "bestScore": 3,
+    "best": [
+      "jônatas d'alma costa",
+      "santosjonatas.santos@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Júlio Vinícius Alves Leite",
+    "bestScore": 3,
+    "best": [
+      "júlio vinícius alves",
+      "leitejulio.leite@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Leonardo Mello",
+    "bestScore": 1,
+    "best": [
+      "leonardo",
+      "melloleonardo.c.mello@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Mara Helena Sousa",
+    "bestScore": 2,
+    "best": [
+      "mara helena",
+      "sousamara.sousa@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Mariana Cunha Eleutério Rodrigues",
+    "bestScore": 3,
+    "best": [
+      "mariana cunha eleutério",
+      "rodriguesmariana.rodrigues@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Mario dos Santos Morais Valverde Neto",
+    "bestScore": 4,
+    "best": [
+      "mário dos santos morais valverde",
+      "netomario.valverde@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Maristella Alves do Nascimento Salgado",
+    "bestScore": 3,
+    "best": [
+      "maristella alves do nascimento",
+      "salgadomaristella.salgado@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Nanahira de Rabelo e Sant'Anna",
+    "bestScore": 2,
+    "best": [
+      "nanahira de rabelo e sant'",
+      "annananahira.rabelo@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Paulo Eduardo Nunes de Moura Rocha",
+    "bestScore": 4,
+    "best": [
+      "paulo eduardo nunes de moura",
+      "rochapaulo-n.rocha@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Pedro Barbosa da Silva",
+    "bestScore": 2,
+    "best": [
+      "pedro barbosa da",
+      "silvapedro.barbosa@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Priscilla Rosa Pimentel Sganzerla",
+    "bestScore": 3,
+    "best": [
+      "priscilla rosa pimentel",
+      "sganzerlapriscilla.pimentel@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Rodolfo Vaz Oliveira Aguiar",
+    "bestScore": 1,
+    "best": [
+      "basemate oliveira dos",
+      "santosbasemate.santos@planejamento.gov.br"
+    ]
+  },
+  {
+    "model": "Copilot Add-on",
+    "responsible": "Thomaz Fronzaglia",
+    "bestScore": 0,
+    "best": null
+  }
+]

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Data Control",
+  title: "Horús - Portal de Gestão de Documentos",
   description: "Portal interno de gestão de documentos e usuários",
-  keywords: ["Data Control", "dashboard", "Supabase", "documentos", "admin"],
+  keywords: ["Horús", "dashboard", "Supabase", "documentos", "admin"],
 };
 
 export default function RootLayout({

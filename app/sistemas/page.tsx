@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { useSistemas } from "@/hooks/useSistemas";
 import { SistemasModal } from "@/components/sistemas/SistemasModals";
 import { SistemasFilters } from "@/components/sistemas/SistemasFilters";
@@ -71,9 +72,9 @@ export default function SistemasPage() {
             className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
             aria-label="Ir para o Dashboard"
           >
-            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Data Control</h1>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
               <p className="text-xs text-white/70">Portal de Gestão de Documentos</p>
             </div>
           </Link>
@@ -92,7 +93,7 @@ export default function SistemasPage() {
               <button
                 type="button"
                 onClick={openNewModal}
-                className="gov-button text-sm px-4 py-2 rounded-lg font-medium hover-lift inline-flex items-center gap-2"
+                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -116,7 +117,7 @@ export default function SistemasPage() {
             <button
               type="button"
               onClick={() => router.push("/dashboard/profile")}
-              className="gov-button-secondary-dark rounded-lg px-3 py-2 text-sm font-medium"
+              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
             >
               Meu Perfil
             </button>
@@ -130,6 +131,7 @@ export default function SistemasPage() {
         )}
 
         <div className="mb-8">
+          <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
           <h1 className="text-3xl font-bold" style={{ color: COLORS.primary }}>
             Sistemas
           </h1>

@@ -96,6 +96,11 @@ export default function DashboardPage() {
       onClick: () => router.push("/inventario"),
       active: false,
     },
+    {
+      label: "Levantamento",
+      onClick: () => router.push("/levantamento"),
+      active: false,
+    },
     ...(isAdmin
       ? [
           {
@@ -130,9 +135,9 @@ export default function DashboardPage() {
             className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
             aria-label="Ir para o Dashboard"
           >
-            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Data Control</h1>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
               <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
           </button>
@@ -151,7 +156,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={openCreate}
-                className="gov-button text-sm px-4 py-2 rounded-2xl font-medium bg-slate-900 shadow-lg shadow-slate-950/20 hover:bg-slate-800 hover:-translate-y-0.5"
+                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
               >
                 + Novo Painel
               </button>
@@ -161,7 +166,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => router.push(user ? "/dashboard/profile" : "/login")}
-                className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-medium bg-white/10 shadow-lg shadow-slate-950/10 hover:bg-white/15"
+                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
               >
                 {user ? "Meu Perfil" : "Login"}
               </button>
@@ -207,7 +212,7 @@ export default function DashboardPage() {
                       Painel principal
                     </p>
                     <h1 className="mt-3 text-3xl font-bold text-gov-heading">
-                      Bem-vindo ao Data Control
+                      Bem-vindo ao Horús
                     </h1>
                     <p className="mt-3 text-base leading-7 text-slate-600">
                       Acesse seus painéis, sistemas e inventário com um clique.
@@ -314,7 +319,7 @@ export default function DashboardPage() {
             ) : (
               <>
                 <div className="mb-4">
-                  <BackButton onClick={voltarCategorias} label="Voltar às áreas" className="gov-button-ghost mb-2 text-xs font-medium" />
+                  <BackButton onClick={voltarCategorias} label="Voltar às áreas" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium" />
                   <h1 className="gov-section-title text-xl font-medium">{areaAtiva}</h1>
                   <p className="text-sm text-gov-muted">
                     {documentosFiltrados.length} painel{documentosFiltrados.length !== 1 ? "s" : ""}

@@ -6,6 +6,8 @@
     "dev": "next dev",
     "update-inventario": "node ./scripts/update-inventario.js",
     "fix-inventory-accents": "node ./scripts/fix-inventory-accents.js",
+    "validate-inventario": "node ./scripts/validate-inventario.js",
+    "prebuild": "npm run validate-inventario",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AreasModulosManager from "@/components/admin/AreasModulosManager";
+import { BackButton } from "@/components/BackButton";
 import { fetchJson } from "@/lib/api";
 
 export default function AdminAreasModulosPage() {
@@ -50,6 +51,7 @@ export default function AdminAreasModulosPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
       <AreasModulosManager />
     </div>
   );

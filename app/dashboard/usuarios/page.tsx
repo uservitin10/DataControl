@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/lib/supabase";
 import { fetchJson, patchJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
@@ -177,10 +178,10 @@ export default function UsuariosPage() {
             href="/dashboard"
             className="flex items-center gap-3 rounded-3xl bg-slate-900/80 px-4 py-3 text-left transition hover:bg-white/10"
           >
-            <Logo className="h-10 w-auto" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto" width={40} height={40} alt="Horús" />
             <div>
               <p className="text-sm font-semibold text-white">Gerenciamento de Usuários</p>
-              <p className="text-xs text-slate-300">Data Control</p>
+              <p className="text-xs text-slate-300">Horús</p>
             </div>
           </Link>
         </div>
@@ -188,6 +189,7 @@ export default function UsuariosPage() {
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">
+          <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2 text-gov-heading">Gerenciamento de Usuários</h1>
@@ -448,7 +450,7 @@ export default function UsuariosPage() {
                     setSelectedUser(null);
                     setEditingPermissions(null);
                   }}
-                  className="gov-button-secondary rounded-3xl px-4 py-2 text-sm font-medium text-slate-700 bg-slate-50 transition duration-200 hover:bg-slate-100"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                 >
                   Cancelar
                 </button>
@@ -456,7 +458,7 @@ export default function UsuariosPage() {
                   type="button"
                   onClick={() => selectedUser && handleSaveRole(selectedUser.id)}
                   disabled={saving}
-                  className="gov-button rounded-3xl px-4 py-2 text-sm font-medium bg-slate-900 text-white shadow-lg shadow-slate-950/20 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800 disabled:opacity-60"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                 >
                   {saving ? "Salvando..." : "Salvar alterações"}
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchJson, postJson, patchJson } from "@/lib/api";
 import {
@@ -8,6 +8,7 @@ import {
   generateStoragePath,
   uploadToStorage,
   fetchSignedUrl,
+  resolveDocumentViewerUrl,
   listEquipmentFiles,
   uploadEquipmentFiles,
   deleteEquipmentFile,
@@ -72,6 +73,24 @@ function normalizePersonName(value?: string): string {
   return (value ?? "").toString().trim().toLocaleLowerCase("pt-BR");
 }
 
+function getInventoryOwner(item: InventoryItem): string {
+  return (item.allocated_user || item.responsible || "").toString().trim();
+}
+
+function compareInventoryItems(left: InventoryItem, right: InventoryItem): number {
+  const leftPerson = normalizePersonName(getInventoryOwner(left));
+  const rightPerson = normalizePersonName(getInventoryOwner(right));
+
+  const personOrder = leftPerson.localeCompare(rightPerson, "pt-BR", { sensitivity: "base" });
+  if (personOrder !== 0) return personOrder;
+
+  return (left.model || left.asset_id || left.equipment_id || "")
+    .toString()
+    .localeCompare((right.model || right.asset_id || right.equipment_id || "").toString(), "pt-BR", {
+      sensitivity: "base",
+    });
+}
+
 export function PersonalInventory() {
   const [data, setData] = useState<PersonalInventoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,12 +118,36 @@ export function PersonalInventory() {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [fileUploadFiles, setFileUploadFiles] = useState<File[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [fileCounts, setFileCounts] = useState<Record<number, number>>({});
+
+  async function loadFileCountsFor(items: InventoryItem[]) {
+    if (!items || items.length === 0) return;
+    try {
+      const json = await postJson<{ counts: Record<string, number> }>(
+        '/api/inventario/files-counts',
+        { items: items.map((it) => ({ id: it.id, type: it.type })) }
+      );
+
+      if (json && typeof json.counts === 'object') {
+        const numericCounts = Object.fromEntries(
+          Object.entries(json.counts).map(([k, v]) => [Number(k) || k, v])
+        );
+        setFileCounts((prev) => ({ ...prev, ...numericCounts }));
+      }
+    } catch (err) {
+      console.error('Failed to load file counts:', err instanceof Error ? err.message : err);
+    }
+  }
+
   const [viewingFileUrl, setViewingFileUrl] = useState<string | null>(null);
   const [viewingFileName, setViewingFileName] = useState<string | null>(null);
   const [viewingFileType, setViewingFileType] = useState<string | null>(null);
+  const [viewingFileText, setViewingFileText] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileSuccess, setFileSuccess] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<"equipamentos" | "licencas" | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filterViewerItems = (
     items: InventoryItem[],
@@ -127,7 +170,20 @@ export function PersonalInventory() {
     });
   };
 
-  const fetchInventory = async (role: Role | null = userRole) => {
+  const formatInventoryError = (error: unknown, fallbackMessage: string) => {
+    if (!(error instanceof Error)) {
+      return fallbackMessage;
+    }
+
+    const message = error.message;
+    if (/column .*user_id .*does not exist/i.test(message) || /coluna .*user_id .*não existe/i.test(message)) {
+      return "Não há equipamentos alocados para este usuário.";
+    }
+
+    return message;
+  };
+
+  const fetchInventory = async (role: Role | null) => {
     try {
       const response = await fetchJson<PersonalInventoryResponse>(
         "/api/inventario/meu-inventario"
@@ -144,18 +200,13 @@ export function PersonalInventory() {
           totalEquipments: filteredEquipments.length,
           totalLicenses: filteredLicenses.length,
         });
+        void loadFileCountsFor([...filteredEquipments, ...filteredLicenses]);
       } else {
         setData(response);
+        void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? /column .*user_id .*does not exist/i.test(err.message) ||
-            /coluna .*user_id .*não existe/i.test(err.message)
-            ? "Não há equipamentos alocados para este usuário."
-            : err.message
-          : "Erro ao carregar inventário"
-      );
+      setError(formatInventoryError(err, "Erro ao carregar inventário"));
     }
   };
 
@@ -166,7 +217,27 @@ export function PersonalInventory() {
         const role = profile.role;
         setUserRole(role);
         setCanCreate(role === "admin" || role === "editor");
-        await fetchInventory(role);
+
+        const response = await fetchJson<PersonalInventoryResponse>(
+          "/api/inventario/meu-inventario"
+        );
+
+        if (role === "viewer") {
+          const filteredEquipments = filterViewerItems(response.equipments, response.user);
+          const filteredLicenses = filterViewerItems(response.licenses, response.user);
+
+          setData({
+            ...response,
+            equipments: filteredEquipments,
+            licenses: filteredLicenses,
+            totalEquipments: filteredEquipments.length,
+            totalLicenses: filteredLicenses.length,
+          });
+          void loadFileCountsFor([...filteredEquipments, ...filteredLicenses]);
+        } else {
+          setData(response);
+          void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
+        }
       } catch (err) {
         if (err instanceof Error) {
           setError(
@@ -184,7 +255,7 @@ export function PersonalInventory() {
     };
 
     void loadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resetForm = () => {
     setFormState(initialFormState);
@@ -286,7 +357,7 @@ export function PersonalInventory() {
 
       const previewEntries = await Promise.all(
         imageFiles.map(async (file) => {
-          const signedUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 3600);
+          const signedUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 86400);
           return signedUrl ? ([file.id, signedUrl] as const) : null;
         })
       );
@@ -330,13 +401,9 @@ export function PersonalInventory() {
         ? await uploadLicenseFiles(String(activeItem.id), fileUploadFiles)
         : await uploadEquipmentFiles(String(activeItem.id), fileUploadFiles);
 
+      setItemFiles(files);
       setFileSuccess(`${files.length} arquivo(s) enviado(s) com sucesso.`);
       setFileUploadFiles([]);
-      if (activeItem.type === "Licença") {
-        setItemFiles(await listLicenseFiles(String(activeItem.id)));
-      } else {
-        setItemFiles(await listEquipmentFiles(String(activeItem.id)));
-      }
     } catch (err) {
       setFileError(err instanceof Error ? err.message : "Erro ao enviar arquivos.");
     } finally {
@@ -352,16 +419,12 @@ export function PersonalInventory() {
     setFileSuccess(null);
 
     try {
-      if (activeItem.type === "Licença") {
-        await deleteLicenseFile(String(activeItem.id), fileId);
-      } else {
-        await deleteEquipmentFile(String(activeItem.id), fileId);
-      }
-      setFileSuccess("Arquivo excluído com sucesso.");
-      const refreshedFiles = activeItem.type === "Licença"
-        ? await listLicenseFiles(String(activeItem.id))
-        : await listEquipmentFiles(String(activeItem.id));
+      const response = activeItem.type === "Licença"
+        ? await deleteLicenseFile(String(activeItem.id), fileId)
+        : await deleteEquipmentFile(String(activeItem.id), fileId);
 
+      setFileSuccess("Arquivo excluído com sucesso.");
+      const refreshedFiles = response.remainingFiles || [];
       setItemFiles(refreshedFiles);
       const nextSelectedId = refreshedFiles.find((file) => file.id !== fileId)?.id ?? null;
       setSelectedFileId(nextSelectedId);
@@ -370,7 +433,7 @@ export function PersonalInventory() {
         const nextFile = refreshedFiles.find((file) => file.id === nextSelectedId) ?? null;
         if (nextFile) {
           const nextUrl = nextFile.file_type.startsWith("image/")
-            ? await fetchSignedUrl(DOCUMENTS_BUCKET, nextFile.file_url, 3600)
+            ? await fetchSignedUrl(DOCUMENTS_BUCKET, nextFile.file_url, 86400)
             : null;
           setViewingFileName(nextFile.file_name);
           setViewingFileType(nextFile.file_type);
@@ -397,40 +460,179 @@ export function PersonalInventory() {
   }) => {
     setSelectedFileId(file.id);
     setFileError(null);
-
     const cachedUrl = filePreviewUrls[file.id] ?? null;
-    if (cachedUrl) {
+    if (cachedUrl && file.file_type.startsWith("image/")) {
       setViewingFileName(file.file_name);
       setViewingFileUrl(cachedUrl);
       setViewingFileType(file.file_type);
+      setViewingFileText(null);
       return;
     }
 
-    setLoadingFiles(true);
+    setPreviewLoading(true);
     setViewingFileUrl(null);
     setViewingFileName(null);
     setViewingFileType(null);
+    setViewingFileText(null);
 
     try {
-      const fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 3600);
-      if (!fileUrl) {
+      const viewerUrl = await resolveDocumentViewerUrl(DOCUMENTS_BUCKET, file.file_url);
+
+      if (file.file_type.startsWith("text/") || file.file_name.endsWith(".csv")) {
+        const signed = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 86400);
+        if (!signed) throw new Error("Não foi possível gerar o link de visualização.");
+        const res = await fetch(signed);
+        if (!res.ok) throw new Error("Falha ao carregar conteúdo do arquivo.");
+        const text = await res.text();
+        setViewingFileName(file.file_name);
+        setViewingFileType(file.file_type);
+        setViewingFileText(text);
+        setViewingFileUrl(signed);
+        return;
+      }
+
+      if (!viewerUrl) {
         throw new Error("Não foi possível gerar o link de visualização.");
       }
+
       setViewingFileName(file.file_name);
-      setViewingFileUrl(fileUrl);
+      setViewingFileUrl(viewerUrl);
       setViewingFileType(file.file_type);
     } catch (err) {
       setFileError(err instanceof Error ? err.message : "Erro ao gerar link de visualização.");
     } finally {
-      setLoadingFiles(false);
+      setPreviewLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (!fileModalOpen || itemFiles.length === 0) return;
+
+    const handler = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        closeFileModal();
+      }
+      if (ev.key === "ArrowRight") {
+        ev.preventDefault();
+        const idx = itemFiles.findIndex((f) => f.id === selectedFileId);
+        const next = itemFiles[(idx + 1) % itemFiles.length];
+        if (next) void handleViewFile(next);
+      }
+      if (ev.key === "ArrowLeft") {
+        ev.preventDefault();
+        const idx = itemFiles.findIndex((f) => f.id === selectedFileId);
+        const prev = itemFiles[(idx - 1 + itemFiles.length) % itemFiles.length];
+        if (prev) void handleViewFile(prev);
+      }
+      if (ev.key === "Delete") {
+        if (selectedFileId) {
+          void handleDeleteFile(selectedFileId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [fileModalOpen, itemFiles, selectedFileId]);
+
   const canModify = userRole === "admin" || userRole === "editor";
   const isLicense = formState.type === "Licença";
+
   const handleSectionClick = (section: "equipamentos" | "licencas") => {
     setActiveSection(section);
   };
+
+  // FIX: removido allocationBoundary e slice(0, boundary) — agora usa todos os equipamentos do banco
+  const allocatedEquipments = useMemo(
+    () => data?.equipments ?? [],
+    [data?.equipments]
+  );
+
+  const sortedEquipments = useMemo(
+    () => allocatedEquipments.slice().sort(compareInventoryItems),
+    [allocatedEquipments]
+  );
+
+  const sortedLicenses = useMemo(
+    () =>
+      (data?.licenses ?? [])
+        .slice()
+        .sort((left, right) => {
+          const modelOrder = (left.model || "")
+            .toString()
+            .localeCompare((right.model || "").toString(), "pt-BR", { sensitivity: "base" });
+          if (modelOrder !== 0) return modelOrder;
+
+          const leftName = normalizePersonName(getInventoryOwner(left));
+          const rightName = normalizePersonName(getInventoryOwner(right));
+
+          return leftName.localeCompare(rightName, "pt-BR", { sensitivity: "base" });
+        }),
+    [data?.licenses]
+  );
+
+  const licenseActiveCount = useMemo(
+    () => (data?.licenses ?? []).filter((item) => {
+      const status = item.equipment_state?.trim().toLowerCase();
+      return status?.includes("ativo") || status?.includes("ativa");
+    }).length,
+    [data?.licenses]
+  );
+
+  const hasLicenses = Boolean(data?.licenses?.length);
+
+  const filteredEquipments = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    if (!normalizedSearch) return sortedEquipments;
+
+    return sortedEquipments.filter((item) => {
+      const valuesToMatch = [
+        item.type,
+        item.model,
+        item.serial_number,
+        item.asset_id,
+        item.equipment_id,
+        item.allocated_user,
+        item.responsible,
+        item.sector,
+        item.mac_ip,
+        item.equipment_state,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.toLowerCase());
+
+      return valuesToMatch.some((value) => value.includes(normalizedSearch));
+    });
+  }, [searchQuery, sortedEquipments]);
+
+  const filteredLicenses = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    if (!normalizedSearch) return sortedLicenses;
+
+    return sortedLicenses.filter((item) => {
+      const valuesToMatch = [
+        item.type,
+        item.model,
+        item.serial_number,
+        item.asset_id,
+        item.equipment_id,
+        item.allocated_user,
+        item.responsible,
+        item.sector,
+        item.warranty,
+        item.equipment_state,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.toLowerCase());
+
+      return valuesToMatch.some((value) => value.includes(normalizedSearch));
+    });
+  }, [searchQuery, sortedLicenses]);
+
+  const selectedFile = useMemo(
+    () => itemFiles.find((file) => file.id === selectedFileId) ?? null,
+    [itemFiles, selectedFileId]
+  );
 
   useEffect(() => {
     if (!activeSection) return;
@@ -452,7 +654,7 @@ export function PersonalInventory() {
         method: "DELETE",
       });
       setCreateSuccess("Item excluído com sucesso.");
-      await fetchInventory();
+      await fetchInventory(userRole);
     } catch (err) {
       setCreateError(
         err instanceof Error
@@ -498,7 +700,7 @@ export function PersonalInventory() {
       return;
     }
 
-    if (!formState.serialNumber.trim()) {
+    if (editingItemId === null && !formState.serialNumber.trim()) {
       setCreateError("Número de série é obrigatório.");
       return;
     }
@@ -571,7 +773,7 @@ export function PersonalInventory() {
       setEditingItemId(null);
       setExistingNotes(null);
       setShowModal(false);
-      await fetchInventory();
+      await fetchInventory(userRole);
     } catch (err) {
       setCreateError(
         err instanceof Error
@@ -609,45 +811,6 @@ export function PersonalInventory() {
     );
   }
 
-  const hasLicenses = data.licenses && data.licenses.length > 0;
-  const licenseActiveCount = data.licenses.filter((item) => {
-    const status = item.equipment_state?.trim().toLowerCase();
-    return status?.includes("ativo") || status?.includes("ativa");
-  }).length;
-  const selectedFile = itemFiles.find((file) => file.id === selectedFileId) ?? null;
-
-  const sortedEquipments = data.equipments
-    .slice()
-    .sort((left, right) => {
-      const leftPerson = normalizePersonName(left.allocated_user || left.responsible);
-      const rightPerson = normalizePersonName(right.allocated_user || right.responsible);
-
-      const personOrder = leftPerson.localeCompare(rightPerson, "pt-BR", { sensitivity: "base" });
-      if (personOrder !== 0) return personOrder;
-
-      return (left.model || left.asset_id || left.equipment_id || "")
-        .toString()
-        .localeCompare((right.model || right.asset_id || right.equipment_id || "").toString(), "pt-BR", {
-          sensitivity: "base",
-        });
-    });
-
-  const sortedLicenses = data.licenses
-    .slice()
-    .sort((left, right) => {
-      const leftPerson = normalizePersonName(left.responsible || left.allocated_user);
-      const rightPerson = normalizePersonName(right.responsible || right.allocated_user);
-
-      const personOrder = leftPerson.localeCompare(rightPerson, "pt-BR", { sensitivity: "base" });
-      if (personOrder !== 0) return personOrder;
-
-      return (left.model || left.asset_id || left.equipment_id || "")
-        .toString()
-        .localeCompare((right.model || right.asset_id || right.equipment_id || "").toString(), "pt-BR", {
-          sensitivity: "base",
-        });
-    });
-
   const isViewerWithoutItems =
     userRole === "viewer" &&
     data.totalEquipments === 0 &&
@@ -684,7 +847,7 @@ export function PersonalInventory() {
           <button
             type="button"
             onClick={openCreateItem}
-            className="gov-button rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
           >
             Cadastrar novo item
           </button>
@@ -697,6 +860,20 @@ export function PersonalInventory() {
         </div>
       )}
 
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+        <label htmlFor="inventorySearch" className="block text-sm font-semibold text-slate-700">
+          Buscar por equipamento, modelo, nome, email ou setor
+        </label>
+        <input
+          id="inventorySearch"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Digite um termo para filtrar equipamentos e licenças..."
+          className="mt-3 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-gov-blue focus:ring-2 focus:ring-gov-blue/20"
+        />
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <div
           role="button"
@@ -708,15 +885,14 @@ export function PersonalInventory() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Equipamentos Alocados</p>
-              <h2 className="mt-4 text-5xl font-bold text-slate-950">{data.totalEquipments}</h2>
+              <h2 className="mt-4 text-5xl font-bold text-slate-950">{allocatedEquipments.length}</h2>
               <p className="mt-3 max-w-2xl text-sm text-slate-600">Monitores, desktops e notebooks cadastrados. Clique em um equipamento para abrir os arquivos vinculados.</p>
             </div>
             <div className="rounded-3xl bg-blue-50 px-5 py-4 text-blue-700 shadow-sm">
               <p className="text-xs uppercase tracking-[0.2em]">Total</p>
-              <p className="mt-2 text-3xl font-semibold">{data.totalEquipments}</p>
+              <p className="mt-2 text-3xl font-semibold">{allocatedEquipments.length}</p>
             </div>
           </div>
-
         </div>
 
         <div
@@ -737,7 +913,6 @@ export function PersonalInventory() {
               <p className="mt-2 text-3xl font-semibold">{licenseActiveCount}</p>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -759,7 +934,7 @@ export function PersonalInventory() {
 
       <div className="grid gap-4">
 
-      {activeSection === "equipamentos" && data.equipments && data.equipments.length > 0 && (
+      {activeSection === "equipamentos" && (
         <div id="equipamentos" className="rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gov-heading">Meus Equipamentos</h2>
@@ -768,8 +943,9 @@ export function PersonalInventory() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-y-2">
+          {filteredEquipments.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full border-separate border-spacing-y-2">
               <thead>
                 <tr className="rounded-3xl bg-slate-50 text-left text-xs font-semibold uppercase text-slate-700">
                   <th className="px-4 py-3">Tipo</th>
@@ -783,7 +959,7 @@ export function PersonalInventory() {
                 </tr>
               </thead>
               <tbody>
-                {sortedEquipments.map((item) => (
+                {filteredEquipments.map((item) => (
                   <tr
                     key={`${item.id}-${item.equipment_id}`}
                     className="bg-white shadow-sm transition hover:bg-slate-50"
@@ -824,23 +1000,23 @@ export function PersonalInventory() {
                         <button
                           type="button"
                           onClick={() => openFileModal(item)}
-                          className="rounded px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
                         >
-                          Arquivos
+                          Arquivos ({(fileCounts as Record<number, number>)[item.id] ?? 0})
                         </button>
                         {canModify && (
                           <>
                             <button
                               type="button"
                               onClick={() => openEditItem(item)}
-                              className="rounded px-3 py-1.5 text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+                              className="rounded-2xl px-3 py-1.5 text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
                             >
                               Editar
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(item.id)}
-                              className="rounded px-3 py-1.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                              className="rounded-2xl px-3 py-1.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
                             >
                               Excluir
                             </button>
@@ -852,11 +1028,16 @@ export function PersonalInventory() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-slate-600">Nenhum equipamento encontrado com o filtro atual.</p>
+            </div>
+          )}
         </div>
       )}
 
-      {activeSection === "licencas" && hasLicenses && (
+      {activeSection === "licencas" && (
         <div id="licencas" className="rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gov-heading">Minhas Licenças Ativas</h2>
@@ -865,77 +1046,87 @@ export function PersonalInventory() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-y-2">
-              <thead>
-                <tr className="rounded-3xl bg-slate-50 text-left text-xs font-semibold uppercase text-slate-700">
-                  <th className="px-4 py-3">Licença</th>
-                  <th className="px-4 py-3">Modelo</th>
-                  <th className="px-4 py-3">Número</th>
-                  <th className="px-4 py-3">Garantia</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedLicenses.map((item) => (
-                  <tr
-                    key={`${item.id}-${item.equipment_id}`}
-                    className="bg-white shadow-sm transition hover:bg-slate-50"
-                  >
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
-                        Licença
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      {item.model}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-mono text-slate-900">
-                      {item.serial_number || item.equipment_id || item.asset_id || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      {item.warranty || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      <span className="inline-flex rounded px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
-                        {item.equipment_state || "-"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openFileModal(item)}
-                          className="rounded px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors"
-                        >
-                          Arquivos
-                        </button>
-                        {canModify && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => openEditItem(item)}
-                              className="rounded px-3 py-1.5 text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(item.id)}
-                              className="rounded px-3 py-1.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
-                            >
-                              Excluir
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+          {filteredLicenses.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full border-separate border-spacing-y-2">
+                <thead>
+                  <tr className="rounded-3xl bg-slate-50 text-left text-xs font-semibold uppercase text-slate-700">
+                    <th className="px-4 py-3">Licença</th>
+                    <th className="px-4 py-3">Modelo</th>
+                    <th className="px-4 py-3">Nome</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Garantia</th>
+                    <th className="px-4 py-3">Estado</th>
+                    <th className="px-4 py-3">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredLicenses.map((item) => (
+                    <tr
+                      key={`${item.id}-${item.equipment_id}`}
+                      className="bg-white shadow-sm transition hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
+                          Licença
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {item.model}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {item.responsible || item.allocated_user || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-mono text-slate-900">
+                        {item.asset_id || item.serial_number || item.equipment_id || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {item.warranty || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        <span className="inline-flex rounded px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
+                          {item.equipment_state || "-"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openFileModal(item)}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
+                          >
+                            Arquivos ({(fileCounts as Record<number, number>)[item.id] ?? 0})
+                          </button>
+                          {canModify && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openEditItem(item)}
+                                className="rounded-2xl px-3 py-1.5 text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(item.id)}
+                                className="rounded-2xl px-3 py-1.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                              >
+                                Excluir
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-slate-600">Nenhuma licença encontrada com o filtro atual.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -1162,7 +1353,7 @@ export function PersonalInventory() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-semibold"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                 >
                   Cancelar
                 </button>
@@ -1170,7 +1361,7 @@ export function PersonalInventory() {
                   type="button"
                   onClick={handleCreate}
                   disabled={saving}
-                  className="gov-button rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                 >
                   {saving ? "Salvando..." : editingItemId !== null ? "Salvar alterações" : "Cadastrar item"}
                 </button>
@@ -1215,163 +1406,50 @@ export function PersonalInventory() {
                 </div>
               )}
 
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">Arquivos existentes</p>
-                      <p className="text-[11px] text-slate-500">Mosaico com miniaturas e seleção rápida.</p>
-                    </div>
-                    <span className="text-[11px] text-slate-500">
-                      {loadingFiles ? "Carregando..." : `${itemFiles.length} arquivo(s)`}
-                    </span>
-                  </div>
-
-                  {itemFiles.length === 0 ? (
-                    <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
-                      Nenhum arquivo encontrado.
-                    </div>
-                  ) : (
-                    <div className="mt-3 grid auto-rows-[96px] grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                      {itemFiles.map((file, index) => {
-                        const isSelected = selectedFileId === file.id;
-                        const previewUrl = filePreviewUrls[file.id];
-
-                        return (
-                          <div
-                            key={file.id}
-                            onClick={() => void handleViewFile(file)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(event) => event.key === "Enter" && void handleViewFile(file)}
-                            className={`group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getFileVisualStyle(index, isSelected)}`}
-                          >
-                            <div className="absolute inset-0">
-                              {previewUrl ? (
-                                <img
-                                  src={previewUrl}
-                                  alt={file.file_name}
-                                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-700 to-slate-500 p-3 text-white">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <span className="rounded-full bg-white/15 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/90">
-                                      {getFileKindLabel(file.file_type, file.file_name)}
-                                    </span>
-                                    <span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-medium text-white/75">
-                                      {isImageFile(file.file_type) ? "Preview" : "Doc"}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <div className="h-10 w-10 rounded-2xl bg-white/10 ring-1 ring-white/15" />
-                                    <p className="mt-2 line-clamp-2 text-xs font-semibold text-white">
-                                      {file.file_name}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/85 via-slate-950/45 to-transparent p-2 text-white">
-                              <p className="line-clamp-1 text-[11px] font-semibold">{file.file_name}</p>
-                              <p className="mt-0.5 text-[10px] text-white/75">
-                                {new Date(file.created_at).toLocaleString()}
-                              </p>
-                            </div>
-
-                            {isSelected && (
-                              <div className="absolute right-2 top-2 rounded-full bg-white px-2 py-0.5 text-[9px] font-semibold text-slate-900 shadow-sm">
-                                Selecionado
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleDeleteFile(file.id);
-                              }}
-                              className="absolute left-2 top-2 z-30 rounded-full border border-red-300 bg-red-600 px-3 py-1 text-[10px] font-semibold text-white shadow-lg transition hover:bg-red-700"
-                              aria-label={`Excluir arquivo ${file.file_name}`}
-                            >
-                              Excluir
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
                 <div className="space-y-4">
                   <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 text-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 gap-3">
                       <div>
                         <p className="text-sm font-semibold">Pré-visualização</p>
-                        <p className="text-[11px] text-white/65">
-                          {viewingFileName || "Selecione um arquivo no mosaico"}
-                        </p>
+                        <p className="text-[11px] text-white/65">{viewingFileName || "Selecione um arquivo no mosaico"}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {viewingFileUrl && (
-                          <a
-                            href={viewingFileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
-                          >
-                            Abrir
-                          </a>
+                          <a href={viewingFileUrl} target="_blank" rel="noreferrer" className="rounded-2xl bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20">Abrir</a>
+                        )}
+                        {viewingFileUrl && viewingFileType !== "application/pdf" && (
+                          <a href={viewingFileUrl} download={viewingFileName ?? undefined} className="rounded-2xl border border-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10">Baixar</a>
                         )}
                         {selectedFile && (
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteFile(selectedFile.id)}
-                            disabled={loadingFiles}
-                            className="rounded-full border border-red-300 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Remover
-                          </button>
+                          <button type="button" onClick={() => void handleDeleteFile(selectedFile.id)} disabled={loadingFiles} className="rounded-2xl border border-red-300 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">Remover</button>
                         )}
                       </div>
                     </div>
 
                     <div className="bg-slate-900 p-3">
-                      {viewingFileUrl && viewingFileName ? (
+                      {previewLoading ? (
+                        <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[360px] xl:h-[420px]">
+                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white/60" />
+                          <p className="ml-3">Carregando preview...</p>
+                        </div>
+                      ) : viewingFileUrl && viewingFileName ? (
                         viewingFileType?.startsWith("image/") ? (
-                          <img
-                            src={viewingFileUrl}
-                            alt={viewingFileName}
-                              className="h-[220px] w-full rounded-2xl object-contain bg-black/20 md:h-[260px] xl:h-[300px]"
-                          />
+                          <img src={viewingFileUrl} alt={viewingFileName} className="h-[320px] w-full rounded-2xl object-contain bg-black/20 md:h-[360px] xl:h-[420px]" />
+                        ) : viewingFileText ? (
+                          <pre className="max-h-[420px] overflow-auto rounded-2xl bg-white/5 p-4 text-xs text-white/80">{viewingFileText}</pre>
                         ) : viewingFileType === "application/pdf" ? (
-                          <object
-                            data={viewingFileUrl}
-                            type="application/pdf"
-                              className="h-[220px] w-full rounded-2xl bg-white md:h-[260px] xl:h-[300px]"
-                          >
-                              <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[260px] xl:h-[300px]">
+                          <object data={viewingFileUrl} type="application/pdf" className="h-[320px] w-full rounded-2xl bg-white md:h-[360px] xl:h-[420px]">
+                            <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[360px] xl:h-[420px]">
                               O navegador não conseguiu renderizar o PDF embutido.
-                              <a
-                                href={viewingFileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="ml-1 underline"
-                              >
-                                Abrir o arquivo em nova aba
-                              </a>
+                              <a href={viewingFileUrl} target="_blank" rel="noreferrer" className="ml-1 underline">Abrir o arquivo em nova aba</a>
                             </div>
                           </object>
                         ) : (
-                          <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[260px] xl:h-[300px]">
-                            Não foi possível renderizar uma pré-visualização rica para este arquivo.
-                          </div>
+                          <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[360px] xl:h-[420px]">Não foi possível renderizar uma pré-visualização rica para este arquivo.</div>
                         )
                       ) : (
-                        <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[260px] xl:h-[300px]">
-                          Clique em um card do mosaico para abrir o preview aqui.
-                        </div>
+                        <div className="flex h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-white/70 md:h-[360px] xl:h-[420px]">Clique em um card do mosaico para abrir o preview aqui.</div>
                       )}
                     </div>
                   </div>
@@ -1380,39 +1458,64 @@ export function PersonalInventory() {
                     <p className="text-sm font-semibold text-slate-900">Enviar novo(s) arquivo(s)</p>
                     <p className="mt-1 text-[11px] text-slate-500">Você pode carregar até 5 arquivos por vez.</p>
                     <div className="mt-3">
-                      <FileUploadInput
-                        files={fileUploadFiles}
-                        onFilesChange={setFileUploadFiles}
-                        label="Selecione arquivos para upload"
-                        accept="image/png,image/jpeg,image/jpg,application/pdf"
-                        multiple
-                        maxFiles={5}
-                        maxSize={20 * 1024 * 1024}
-                        buttonClassName="rounded-2xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 hover:border-blue-700"
-                      />
+                      <FileUploadInput files={fileUploadFiles} onFilesChange={setFileUploadFiles} label="Selecione arquivos para upload" accept="image/png,image/jpeg,image/jpg,application/pdf" multiple maxFiles={5} maxSize={20 * 1024 * 1024} buttonClassName="rounded-2xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 hover:border-blue-700" />
                     </div>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={closeFileModal}
-                        className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-semibold"
-                      >
-                        Fechar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleFileUpload}
-                        disabled={loadingFiles || fileUploadFiles.length === 0}
-                        className="gov-button rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {loadingFiles ? "Enviando..." : "Enviar arquivos"}
-                      </button>
+                      <button type="button" onClick={closeFileModal} className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-semibold">Fechar</button>
+                      <button type="button" onClick={handleFileUpload} disabled={loadingFiles || fileUploadFiles.length === 0} className="gov-button rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{loadingFiles ? "Enviando..." : "Enviar arquivos"}</button>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 shadow-sm">
-                    Clique em um card para trocar o preview. Imagens aparecem como miniaturas; PDFs entram no painel de leitura.
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 shadow-sm">Clique em um card para trocar o preview. Imagens aparecem como miniaturas; PDFs entram no painel de leitura.</div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Arquivos existentes</p>
+                      <p className="text-[11px] text-slate-500">Mosaico com miniaturas e seleção rápida.</p>
+                    </div>
+                    <span className="text-[11px] text-slate-500">{loadingFiles ? "Carregando..." : `${itemFiles.length} arquivo(s)`}</span>
                   </div>
+
+                  {itemFiles.length === 0 ? (
+                    <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">Nenhum arquivo encontrado.</div>
+                  ) : (
+                    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+                      {itemFiles.map((file) => {
+                        const isSelected = selectedFileId === file.id;
+                        const previewUrl = filePreviewUrls[file.id];
+                        return (
+                          <article key={file.id} className={`group relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg ${isSelected ? "border-blue-500 ring-2 ring-blue-200" : ""}`}>
+                            <div role="button" tabIndex={0} onClick={() => void handleViewFile(file)} onKeyDown={(event) => event.key === "Enter" && void handleViewFile(file)} className="flex h-full w-full flex-col items-stretch text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                              <div className="relative h-44 overflow-hidden bg-slate-100">
+                                {previewUrl ? (
+                                  <img src={previewUrl} alt={file.file_name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                                ) : (
+                                  <div className="flex h-full flex-col justify-center gap-3 p-4 text-white">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">{getFileKindLabel(file.file_type, file.file_name)}</span>
+                                      <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-medium text-white/80">Visualizar</span>
+                                    </div>
+                                    <div className="flex flex-1 flex-col justify-end"><div className="h-12 w-12 rounded-3xl bg-white/10" /></div>
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent px-3 py-3 text-white">
+                                  <p className="line-clamp-1 text-sm font-semibold">{file.file_name}</p>
+                                  <p className="mt-1 text-[11px] text-white/70">{new Date(file.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-1 flex-col gap-2 p-4">
+                                <div className="flex items-center justify-between gap-2 text-xs text-slate-500"><span>{file.file_type.split("/")[1] || "Arquivo"}</span><span>{file.file_name.split(".").pop() || ""}</span></div>
+                                <div className="mt-auto flex items-center justify-start gap-3"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{isSelected ? "Selecionado" : "Ver arquivo"}</span></div>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

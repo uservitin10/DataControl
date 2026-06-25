@@ -5,6 +5,7 @@ export type PermissionModule =
   | "dashboard"
   | "sistemas"
   | "inventario"
+  | "levantamento"
   | "usuarios"
   | "notificacoes"
   | "areas"
@@ -25,6 +26,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     dashboard: { view: true, edit: true, create: true, delete: true },
     sistemas: { view: true, edit: true, create: true, delete: true },
     inventario: { view: true, edit: true, create: true, delete: true },
+    levantamento: { view: true, edit: true, create: true, delete: true },
     usuarios: { view: true, edit: true, create: true, delete: true },
     notificacoes: { view: true, edit: true, create: true, delete: true },
     areas: { view: true, edit: true, create: true, delete: true },
@@ -35,6 +37,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     dashboard: { view: true, edit: true, create: true, delete: false },
     sistemas: { view: true, edit: true, create: true, delete: false },
     inventario: { view: true, edit: true, create: true, delete: false },
+    levantamento: { view: true, edit: true, create: true, delete: false },
     usuarios: { view: false, edit: false, create: false, delete: false },
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: true, create: true, delete: false },
@@ -45,6 +48,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
     dashboard: { view: true, edit: true, create: true, delete: false },
     sistemas: { view: true, edit: false, create: false, delete: false },
     inventario: { view: true, edit: false, create: false, delete: false },
+    levantamento: { view: true, edit: false, create: false, delete: false },
     usuarios: { view: false, edit: false, create: false, delete: false },
     notificacoes: { view: false, edit: false, create: false, delete: false },
     areas: { view: true, edit: false, create: false, delete: false },
@@ -54,6 +58,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
   sistema_editor: {
     dashboard: { view: true, edit: false, create: false, delete: false },
     sistemas: { view: true, edit: true, create: true, delete: false },
+    levantamento: { view: true, edit: false, create: false, delete: false },
     inventario: { view: true, edit: false, create: false, delete: false },
     usuarios: { view: false, edit: false, create: false, delete: false },
     notificacoes: { view: false, edit: false, create: false, delete: false },
@@ -64,6 +69,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
   inventario_editor: {
     dashboard: { view: true, edit: false, create: false, delete: false },
     sistemas: { view: true, edit: false, create: false, delete: false },
+    levantamento: { view: true, edit: false, create: false, delete: false },
     inventario: { view: true, edit: true, create: true, delete: false },
     usuarios: { view: false, edit: false, create: false, delete: false },
     notificacoes: { view: false, edit: false, create: false, delete: false },
@@ -73,6 +79,7 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permissions> = {
   },
   viewer: {
     dashboard: { view: true, edit: false, create: false, delete: false },
+    levantamento: { view: true, edit: false, create: false, delete: false },
     sistemas: { view: true, edit: false, create: false, delete: false },
     inventario: { view: true, edit: false, create: false, delete: false },
     usuarios: { view: false, edit: false, create: false, delete: false },
@@ -96,6 +103,8 @@ export function normalizePermissionModule(moduleName: string | undefined): Permi
       return "sistemas";
     case "inventario":
       return "inventario";
+    case "levantamento":
+      return "levantamento";
     case "usuarios":
       return "usuarios";
     case "notificacoes":

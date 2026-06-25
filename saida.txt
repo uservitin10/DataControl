@@ -647,8 +647,8 @@ export default function UsuariosPage() {
 
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-xl font-medium" style={{ color: "#1a2744" }}>Gerenciamento de UsuÃ¡rios</h1>
-          <p className="text-sm" style={{ color: "#64748b" }}>{usuarios.length} usuÃ¡rio{usuarios.length !== 1 ? "s" : ""} cadastrado{usuarios.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-xl font-medium" style={{ color: "#1a2744" }}>Gerenciamento de usuário s</h1>
+          <p className="text-sm" style={{ color: "#64748b" }}>{usuarios.length} usuário {usuarios.length !== 1 ? "s" : ""} cadastrado{usuarios.length !== 1 ? "s" : ""}</p>
         </div>
 
         {error && <p className="mb-4 rounded-lg border p-3 text-sm border-red-200 bg-red-50 text-red-600">{error}</p>}
@@ -727,7 +727,7 @@ export default function UsuariosPage() {
               )) : (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-sm" style={{ color: "#94a3b8" }}>
-                    Nenhum usuÃ¡rio encontrado.
+                    Nenhum usuário  encontrado.
                   </td>
                 </tr>
               )}

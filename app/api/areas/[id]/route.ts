@@ -5,9 +5,10 @@ import { supabaseServer } from "@/lib/supabase-server";
 // GET - Fetch single area (admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await validateAuth(request, {
       module: "areas",
       action: "view",
@@ -20,7 +21,7 @@ export async function GET(
     const { data, error } = await supabaseServer
       .from("areas")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (error) throw error;
@@ -38,9 +39,10 @@ export async function GET(
 // PATCH - Update area (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await validateAuth(request, {
       module: "areas",
       action: "edit",
@@ -66,7 +68,7 @@ export async function PATCH(
         descricao: descricao?.trim() || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -85,9 +87,10 @@ export async function PATCH(
 // DELETE - Delete area (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authResult = await validateAuth(request, {
       module: "areas",
       action: "delete",
@@ -100,7 +103,7 @@ export async function DELETE(
     const { error } = await supabaseServer
       .from("areas")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) throw error;
 

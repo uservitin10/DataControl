@@ -115,7 +115,7 @@ export default function LoginPage() {
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gov-heading">
-            Data Control
+            Horús
           </h1>
           <p className="mt-3 text-sm text-gov-muted">
             Acesse sua conta para gerenciar documentos e usuários em um portal confiável.
@@ -190,7 +190,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="gov-button w-full disabled:opacity-60"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-60"
                 >
                   {loading ? "Entrando..." : "Entrar"}
                 </button>
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => router.push("/sistemas")}
-                  className="gov-button-secondary mt-3 w-full"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full"
                 >
                   Acesso ao portal
                 </button>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="gov-button w-full disabled:opacity-60"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-60"
                 >
                   {loading ? "Cadastrando..." : "Criar Conta"}
                 </button>

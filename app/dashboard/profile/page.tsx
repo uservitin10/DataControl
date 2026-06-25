@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
 
@@ -163,9 +164,9 @@ export default function ProfilePage() {
             className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
             aria-label="Ir para o Dashboard"
           >
-            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Data Control</h1>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
               <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
           </Link>
@@ -178,7 +179,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-medium bg-white/10 shadow-lg shadow-slate-950/10 hover:bg-red-500/10"
+              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
             >
               Sair
             </button>
@@ -189,6 +190,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-2xl px-6 py-8">
         <div className="gov-card overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.12)]">
           <div className="border-b border-slate-200/80 px-6 py-6">
+            <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
             <h1 className="text-2xl font-bold text-gov-heading">Meu Perfil</h1>
             <p className="mt-1 text-sm text-gov-muted">Gerenciar informações da sua conta</p>
           </div>
@@ -234,7 +236,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="gov-button mt-4 w-full"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full"
                 >
                   Editar Perfil
                 </button>
@@ -304,14 +306,14 @@ export default function ProfilePage() {
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="gov-button mt-2 w-full disabled:opacity-50"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-50"
                   >
                     {saving ? "Salvando..." : "Salvar Alterações"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="gov-button-secondary mt-2 w-full"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full"
                   >
                     Cancelar
                   </button>

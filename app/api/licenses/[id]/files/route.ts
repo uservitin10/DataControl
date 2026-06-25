@@ -99,7 +99,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
         const { error: uploadError } = await supabaseServer.storage
           .from(STORAGE_BUCKET)
-          .upload(path, new Uint8Array(arrayBuffer), { upsert: true });
+          .upload(path, new Uint8Array(arrayBuffer), {
+            upsert: true,
+            contentType: fileType,
+          });
 
         if (uploadError) {
           return apiInternalError(uploadError.message);

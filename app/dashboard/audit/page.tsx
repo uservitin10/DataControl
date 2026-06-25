@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 
 type AuditLog = {
   id: number;
@@ -107,22 +108,16 @@ export default function AuditLogsPage() {
             className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
             aria-label="Voltar para o Dashboard"
           >
-            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Data Control</h1>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
               <p className="text-xs text-white/80">Painel de Auditoria</p>
             </div>
           </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="gov-button-secondary-dark rounded-2xl px-4 py-2 text-sm font-medium bg-white/10 shadow-lg shadow-slate-950/10 hover:bg-white/15"
-            >
-              Voltar ao dashboard
-            </button>
-          </div>
+            <div className="flex items-center gap-3">
+              <BackButton href="/dashboard" label="Voltar ao dashboard" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium" />
+            </div>
         </div>
       </nav>
 
@@ -138,7 +133,7 @@ export default function AuditLogsPage() {
                 <button
                   type="button"
                   onClick={() => void fetchLogs(page)}
-                  className="gov-button-secondary rounded-2xl px-3 py-2 text-sm font-medium bg-slate-100 text-slate-900 hover:bg-slate-200"
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                 >
                   Atualizar
                 </button>
@@ -263,7 +258,7 @@ export default function AuditLogsPage() {
                     type="button"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page <= 1}
-                    className="gov-button-secondary rounded-2xl px-4 py-2 text-sm font-medium bg-slate-100 text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                   >
                     Anterior
                   </button>
@@ -271,7 +266,7 @@ export default function AuditLogsPage() {
                     type="button"
                     onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                     disabled={page >= pageCount}
-                    className="gov-button-secondary rounded-2xl px-4 py-2 text-sm font-medium bg-slate-100 text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
                   >
                     Próxima
                   </button>

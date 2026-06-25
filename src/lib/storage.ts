@@ -66,7 +66,7 @@ export const uploadEquipmentFiles = async (equipmentId: string, files: File[]) =
 };
 
 export const deleteEquipmentFile = async (equipmentId: string, fileId: string) => {
-  return fetchJson<{ deleted: boolean }>(
+  return fetchJson<{ deleted: boolean; remainingFiles: EquipmentFileRecord[] }>(
     `/api/equipments/${encodeURIComponent(equipmentId)}/files/${encodeURIComponent(fileId)}`,
     { method: "DELETE" }
   );
@@ -96,7 +96,7 @@ export const uploadLicenseFiles = async (licenseId: string, files: File[]) => {
 };
 
 export const deleteLicenseFile = async (licenseId: string, fileId: string) => {
-  return fetchJson<{ deleted: boolean }>(
+  return fetchJson<{ deleted: boolean; remainingFiles: LicenseFileRecord[] }>(
     `/api/licenses/${encodeURIComponent(licenseId)}/files/${encodeURIComponent(fileId)}`,
     { method: "DELETE" }
   );
@@ -206,4 +206,21 @@ export const fetchPublicUrl = async (
 
   const response = await res.json();
   return response.data?.publicUrl as string | null;
+};
+
+export const resolveDocumentViewerUrl = async (
+  bucket: string,
+  path: string
+) => {
+  const signedUrl = await fetchSignedUrl(bucket, path, 86400);
+  if (!signedUrl) {
+    return null;
+  }
+
+  const ext = path.split(".").pop()?.toLowerCase();
+  if (["xlsx", "xls", "docx", "doc", "pptx", "ppt"].includes(ext ?? "")) {
+    return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(signedUrl)}`;
+  }
+
+  return signedUrl;
 };

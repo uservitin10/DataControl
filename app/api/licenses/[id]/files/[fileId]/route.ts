@@ -73,7 +73,18 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         details: JSON.stringify({ licenseId }),
       });
 
-      return apiSuccess({ deleted: true });
+      // ✅ Retornar lista atualizada para evitar GET extra no frontend
+      const { data: remainingFiles, error: listError } = await supabaseServer
+        .from("license_files")
+        .select("id,license_id,file_url,file_name,file_type,created_at")
+        .eq("license_id", licenseId)
+        .order("created_at", { ascending: false });
+
+      if (listError) {
+        return apiSuccess({ deleted: true, remainingFiles: [] });
+      }
+
+      return apiSuccess({ deleted: true, remainingFiles: remainingFiles ?? [] });
     } catch (err) {
       return apiInternalError((err as Error).message);
     }

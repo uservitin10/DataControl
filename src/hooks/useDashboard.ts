@@ -269,7 +269,7 @@ export function useDashboard() {
     let fileUrl: string | null = null;
 
     try {
-      fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, arquivoPath, 3600);
+      fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, arquivoPath, 86400);
     } catch (signedUrlError) {
       setError((signedUrlError as Error).message || "Não foi possível gerar o link de visualização.");
       return;

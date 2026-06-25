@@ -11,9 +11,11 @@ type Props = {
   items: EquipmentItem[];
   showExtendedFields?: boolean;
   showSector?: boolean;
+  showEmail?: boolean;
+  showDetailsButton?: boolean;
 };
 
-export function SectorInventoryTable({ items, showExtendedFields = true, showSector = false }: Props) {
+export function SectorInventoryTable({ items, showExtendedFields = true, showSector = false, showEmail = false, showDetailsButton = true }: Props) {
   const [pageIndex, setPageIndex] = useState(0);
   const router = useRouter();
 
@@ -69,10 +71,11 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
               {showSector && <th className="px-4 py-3">Setor</th>}
               {showExtendedFields && <th className="px-4 py-3">Etiqueta / Patrimônio</th>}
               <th className="px-4 py-3">Usuário</th>
+              {showEmail && <th className="px-4 py-3">Email</th>}
               {showExtendedFields && <th className="px-4 py-3">Responsável legal</th>}
               {showExtendedFields && <th className="px-4 py-3">Garantia</th>}
               <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3">Detalhes</th>
+              {showDetailsButton && <th className="px-4 py-3">Detalhes</th>}
             </tr>
           </thead>
           <tbody>
@@ -118,6 +121,9 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm text-slate-900">{item.allocatedUser ?? item.responsible ?? "-"}</td>
+                  {showEmail && (
+                    <td className="px-4 py-3 text-sm text-slate-900">{item.assetId || "-"}</td>
+                  )}
                   {showExtendedFields && (
                     <td className="px-4 py-3 text-sm text-slate-900">{item.legalResponsible ?? getLegalResponsible(item.sector)}</td>
                   )}
@@ -125,16 +131,18 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     <td className="px-4 py-3 text-sm text-slate-900">{item.warranty ?? "-"}</td>
                   )}
                   <td className="px-4 py-3 text-sm text-slate-900">{item.equipmentState || "-"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-900">
-                    <button
-                      type="button"
-                      onClick={() => openDetails(item)}
-                      className="gov-button rounded px-3 py-1 text-sm"
-                      aria-label={`Ver detalhes do item ${item.assetId}`}
-                    >
-                      +
-                    </button>
-                  </td>
+                  {showDetailsButton && (
+                    <td className="px-4 py-3 text-sm text-slate-900">
+                      <button
+                        type="button"
+                        onClick={() => openDetails(item)}
+                        className="gov-button rounded px-3 py-1 text-sm"
+                        aria-label={`Ver detalhes do item ${item.assetId}`}
+                      >
+                        +
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}

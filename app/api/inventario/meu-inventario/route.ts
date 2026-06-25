@@ -3,15 +3,66 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiInternalError, apiCreated, apiValidationError } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
-import {
-  normalizeString,
-  logFallbackUsage,
-} from "@/lib/inventory-sync";
 import { sanitizeText } from "@/lib/text";
+import { isLicenseType } from "@/lib/inventario";
 
-// Função auxiliar para normalizar tipo de equipamento
-function normalizeType(type: string): string {
-  return (type || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function isMissingColumnError(error: unknown, column: string): boolean {
+  if (!error || typeof error !== "object" || !("message" in error)) {
+    return false;
+  }
+
+  const message = String((error as { message?: string }).message);
+  return (
+    new RegExp(`column \\\"?inventory_items\\.${column}\\\"? does not exist`, "i").test(message) ||
+    new RegExp(`${column}.*does not exist`, "i").test(message) ||
+    new RegExp(`coluna .*${column}.*não existe`, "i").test(message)
+  );
+}
+
+async function fetchInventoryItemsByColumn(column: string, value: string) {
+  return supabaseServer
+    .from("inventory_items")
+    .select("*")
+    .eq(column, value)
+    .order("sector", { ascending: true })
+    .order("type", { ascending: true });
+}
+
+async function loadViewerEquipments(userId: string) {
+  let searchMethod: "allocated_user_id" | "user_id" = "allocated_user_id";
+  const allocatedResult = await fetchInventoryItemsByColumn("allocated_user_id", userId);
+
+  if (!allocatedResult.error) {
+    return { equipments: allocatedResult.data ?? [], searchMethod };
+  }
+
+  if (!isMissingColumnError(allocatedResult.error, "allocated_user_id")) {
+    throw allocatedResult.error;
+  }
+
+  searchMethod = "user_id";
+  const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);
+
+  if (userIdResult.error) {
+    throw userIdResult.error;
+  }
+
+  return { equipments: userIdResult.data ?? [], searchMethod };
+}
+
+// FIX: removido o loop de update a cada GET — normalização agora é apenas leitura
+function normalizeInventoryItems(items: any[]) {
+  return (items ?? []).map((item) => ({
+    ...item,
+    allocated_user: sanitizeText(item.allocated_user || "") || null,
+    responsible: sanitizeText(item.responsible || "") || null,
+  }));
+}
+
+function splitInventoryItems(items: any[]) {
+  const regularEquipments = items.filter((item) => !isLicenseType(item.type));
+  const licenses = items.filter((item) => isLicenseType(item.type));
+  return { regularEquipments, licenses };
 }
 
 export async function GET(req: NextRequest) {
@@ -36,44 +87,19 @@ export async function GET(req: NextRequest) {
       }
 
       const displayName = fixedDisplayName;
-      
+
       let equipments = null;
-      let searchMethod = "allocated_user_id"; // Para rastreamento
+      let searchMethod: "allocated_user_id" | "user_id" = "allocated_user_id";
 
       if (user.role === "viewer") {
-        const allocatedResult = await supabaseServer
-          .from("inventory_items")
-          .select("*")
-          .eq("allocated_user_id", user.id)
-          .order("sector", { ascending: true })
-          .order("type", { ascending: true });
-
-        if (!allocatedResult.error) {
-          equipments = allocatedResult.data;
-        } else {
-          const missingColumn = /column \"?inventory_items\.allocated_user_id\"? does not exist/i.test(allocatedResult.error.message) ||
-            /allocated_user_id.*does not exist/i.test(allocatedResult.error.message) ||
-            /coluna .*allocated_user_id.*não existe/i.test(allocatedResult.error.message);
-
-          if (missingColumn) {
-            searchMethod = "user_id";
-            const userIdResult = await supabaseServer
-              .from("inventory_items")
-              .select("*")
-              .eq("user_id", user.id)
-              .order("sector", { ascending: true })
-              .order("type", { ascending: true });
-
-            if (userIdResult.error) {
-              return apiInternalError(userIdResult.error.message);
-            }
-
-            equipments = userIdResult.data;
-          } else {
-            return apiInternalError(allocatedResult.error.message);
-          }
+        const userId = user.id;
+        if (!userId) {
+          return apiInternalError("ID do usuário não encontrado.");
         }
 
+        const viewerResult = await loadViewerEquipments(userId);
+        equipments = viewerResult.equipments;
+        searchMethod = viewerResult.searchMethod;
       } else {
         // admin/editor vê tudo
         const { data, error } = await supabaseServer
@@ -89,60 +115,31 @@ export async function GET(req: NextRequest) {
         equipments = data;
       }
 
-      const cleanedEquipments = [];
-      for (const item of (equipments || [])) {
-        const fixedAllocatedUser = sanitizeText(item.allocated_user || "");
-        const fixedResponsible = sanitizeText(item.responsible || "");
+      // FIX: normalização sem side-effects (sem update no banco a cada GET)
+      const cleanedEquipments = normalizeInventoryItems(equipments || []);
+      const { regularEquipments, licenses } = splitInventoryItems(cleanedEquipments);
 
-        if (
-          fixedAllocatedUser !== (item.allocated_user || "") ||
-          fixedResponsible !== (item.responsible || "")
-        ) {
-          await supabaseServer
-            .from("inventory_items")
-            .update({
-              allocated_user: fixedAllocatedUser || null,
-              responsible: fixedResponsible || null,
-            })
-            .eq("id", item.id);
-        }
-
-        cleanedEquipments.push({
-          ...item,
-          allocated_user: fixedAllocatedUser || null,
-          responsible: fixedResponsible || null,
-        });
-      }
-
-      const regularEquipments = cleanedEquipments.filter(
-        (item) => normalizeType(item.type) !== "licenca"
-      );
-      const licenses = cleanedEquipments.filter(
-        (item) => normalizeType(item.type) === "licenca"
+      const activeLicenses = licenses.filter((license) =>
+        ["ativa", "ativo"].includes(
+          (license.equipment_state || "").toLowerCase()
+        )
       );
 
-      const activeLicenses =
-        user.role === "viewer"
-          ? licenses.filter((license) =>
-              ["ativa", "ativo"].includes(
-                (license.equipment_state || "").toLowerCase()
-              )
-            )
-          : licenses;
+      // FIX: removido mpoParkEquipment — esses dados já estão no banco após a sincronização
+      const responseEquipments = regularEquipments;
 
       return apiSuccess({
         user: {
           id: user.id,
           displayName,
         },
-        equipments: regularEquipments,
+        equipments: responseEquipments,
         licenses: activeLicenses,
-        totalEquipments: regularEquipments.length,
+        totalEquipments: responseEquipments.length,
         totalLicenses: activeLicenses.length,
-        // Informação adicional para rastreamento (opcional, para fase 3)
         _metadata: {
-          searchMethod, // 'allocated_user_id' | 'allocated_user_name_fallback'
-          usingFallback: searchMethod === "allocated_user_name_fallback",
+          searchMethod,
+          usingFallback: false,
         },
       });
     } catch (err) {
@@ -235,8 +232,8 @@ export async function PATCH(req: NextRequest) {
           notes,
         } = body;
 
-        if (!type || !model || !responsible || !serial_number) {
-          return apiValidationError('Tipo, modelo, responsável e número de série são obrigatórios.');
+        if (!type || !model || !responsible) {
+          return apiValidationError('Tipo, modelo e responsável são obrigatórios.');
         }
         if (type === 'Licença' && !asset_id) {
           return apiValidationError('Email do responsável é obrigatório para licenças.');
@@ -276,7 +273,6 @@ export async function PATCH(req: NextRequest) {
             details: JSON.stringify({ type, model, asset_id, equipment_id, sector, responsible, warranty, equipment_state, notes }),
             ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
           });
-
         } catch (auditErr) {
           console.warn('Falha ao gravar auditoria de inventário:', auditErr);
         }
@@ -319,7 +315,6 @@ export async function DELETE(req: NextRequest) {
             details: JSON.stringify({ id }),
             ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
           });
-
         } catch (auditErr) {
           console.warn('Falha ao gravar auditoria de inventário:', auditErr);
         }

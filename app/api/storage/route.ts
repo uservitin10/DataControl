@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const fileData = new Uint8Array(arrayBuffer);
 
-      const { error } = await supabaseServer.storage.from(String(bucket)).upload(String(path), fileData, { upsert: true });
+      const { error } = await supabaseServer.storage.from(String(bucket)).upload(String(path), fileData, {
+        upsert: true,
+        contentType: file.type || "application/octet-stream",
+      });
       if (error) {
         return apiInternalError(formatStorageError(error, String(bucket)));
       }

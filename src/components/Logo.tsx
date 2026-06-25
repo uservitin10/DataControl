@@ -11,7 +11,7 @@ export function Logo({
   className,
   width = 40,
   height = 40,
-  alt = "Data Control",
+  alt = "Horús",
 }: LogoProps) {
   if (className) {
     return (

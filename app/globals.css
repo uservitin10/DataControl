@@ -113,44 +113,53 @@ button:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--gov-primary);
+  background: white;
+  color: var(--gov-primary-dark);
   border: 1px solid var(--gov-border);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   font-weight: 600;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .gov-button-secondary:hover {
-  background: rgba(31, 92, 138, 0.08);
+  background: rgba(31, 92, 138, 0.06);
+  color: var(--gov-primary);
 }
 
 .gov-button-secondary-dark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--gov-primary);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--gov-primary-dark);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   font-weight: 600;
-  transition: background-color 0.18s ease, transform 0.18s ease;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .gov-button-secondary-dark:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--gov-primary-dark);
+  box-shadow: 0 10px 24px rgba(22, 71, 109, 0.12);
 }
 
 .gov-button-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--gov-text);
-  border: 1px solid var(--gov-border);
+  background: transparent;
+  color: var(--gov-primary-dark);
+  border: 1px solid transparent;
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.gov-button-ghost:hover {
+  background: rgba(31, 92, 138, 0.06);
+  color: var(--gov-primary);
 }
 
 .gov-input {

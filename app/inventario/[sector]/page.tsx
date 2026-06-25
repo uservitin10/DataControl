@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { BackButton } from "@/components/BackButton";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
 import {
   equipmentData,
@@ -31,9 +32,7 @@ export default async function SectorInventoryPage({ params }: Props) {
             <h1 className="text-2xl font-semibold text-slate-900">Setor não especificado</h1>
             <p className="mt-4 text-slate-600">Verifique a URL e tente novamente.</p>
             <div className="mt-6">
-              <Link href="/inventario" className="gov-button-secondary-dark rounded-lg px-4 py-2 text-sm font-medium">
-                Voltar ao inventário
-              </Link>
+              <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" label="Voltar ao inventário" />
             </div>
           </div>
         </div>
@@ -72,9 +71,7 @@ export default async function SectorInventoryPage({ params }: Props) {
             <h1 className="text-2xl font-semibold text-slate-900">Setor não encontrado</h1>
             <p className="mt-4 text-slate-600">Não há ativos cadastrados para este setor.</p>
             <div className="mt-6">
-              <Link href="/inventario" className="gov-button-secondary-dark rounded-lg px-4 py-2 text-sm font-medium">
-                Voltar ao inventário
-              </Link>
+              <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" label="Voltar ao inventário" />
             </div>
           </div>
         </div>
@@ -93,9 +90,9 @@ export default async function SectorInventoryPage({ params }: Props) {
             className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10"
             aria-label="Ir para o Dashboard"
           >
-            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Data Control" />
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Data Control</h1>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
               <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
           </Link>
@@ -123,12 +120,7 @@ export default async function SectorInventoryPage({ params }: Props) {
                 Ativos cadastrados para este setor. Use esta página para verificar modelos, responsáveis e detalhes de cada item.
               </p>
             </div>
-            <Link
-              href="/inventario"
-              className="gov-button rounded-lg px-4 py-3 text-sm font-medium"
-            >
-              Voltar
-            </Link>
+            <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" />
           </div>
 
           <SectorInventoryTable items={sectorItems} />
