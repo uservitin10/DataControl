@@ -2,8 +2,19 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { addAuditLog } from "./audit";
 import { supabaseServer } from "@/lib/supabase-server";
 
-// Tipo do mock do from()
-type MockFrom = ReturnType<typeof vi.fn> & typeof supabaseServer.from;
+interface AuditLogInsertResponse {
+  data: Array<{ id: string }>;
+  error: null;
+}
+
+interface AuditLogErrorResponse {
+  data: null;
+  error: { code: string; message: string };
+}
+
+type MockFrom = {
+  insert: ReturnType<typeof vi.fn>;
+};
 
 vi.mock("@/lib/supabase-server", () => ({
   supabaseServer: {
@@ -19,8 +30,8 @@ describe("addAuditLog", () => {
   });
 
   it("returns success when the insert succeeds", async () => {
-    const insert = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null });
-    supabaseMock.from = vi.fn(() => ({ insert })) as MockFrom;
+    const insert = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null } as AuditLogInsertResponse);
+    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -38,8 +49,8 @@ describe("addAuditLog", () => {
     const insert = vi.fn().mockResolvedValue({
       data: null,
       error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" },
-    });
-    supabaseMock.from = vi.fn(() => ({ insert })) as MockFrom;
+    } as AuditLogErrorResponse);
+    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -50,9 +61,9 @@ describe("addAuditLog", () => {
   });
 
   it("returns an error object when the insert fails for another reason", async () => {
-    const error = { code: "PGRST000", message: "Unexpected error" };
-    const insert = vi.fn().mockResolvedValue({ data: null, error });
-    supabaseMock.from = vi.fn(() => ({ insert })) as MockFrom;
+    const error: { code: string; message: string } = { code: "PGRST000", message: "Unexpected error" };
+    const insert = vi.fn().mockResolvedValue({ data: null, error } as AuditLogErrorResponse);
+    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
 
     const result = await addAuditLog({
       user_id: "user-1",
