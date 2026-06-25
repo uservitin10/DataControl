@@ -30,7 +30,7 @@ describe("app/api/audit/route", () => {
     const range = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null, count: 1 } as SupabaseSelectResult);
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ select }) as any);
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit?limit=2&offset=0"),
@@ -46,7 +46,7 @@ describe("app/api/audit/route", () => {
     const range = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" }, count: null } as SupabaseSelectResult);
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ select }) as any);
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit"),
@@ -76,7 +76,7 @@ describe("app/api/audit/route", () => {
     const single = vi.fn().mockResolvedValue({ data: { id: "log-2" }, error: null });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    supabaseFromMock.mockImplementation(() => ({ insert }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ insert }) as any);
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
@@ -95,7 +95,7 @@ describe("app/api/audit/route", () => {
     const single = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    supabaseFromMock.mockImplementation(() => ({ insert }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ insert }) as any);
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
