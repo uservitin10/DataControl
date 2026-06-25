@@ -12,17 +12,13 @@ interface AuditLogErrorResponse {
   error: { code: string; message: string };
 }
 
-type MockFrom = {
-  insert: ReturnType<typeof vi.fn>;
-};
-
 vi.mock("@/lib/supabase-server", () => ({
   supabaseServer: {
     from: vi.fn(),
   },
 }));
 
-const supabaseMock = vi.mocked(supabaseServer);
+const supabaseFromMock = vi.mocked(supabaseServer.from);
 
 describe("addAuditLog", () => {
   beforeEach(() => {
@@ -31,7 +27,7 @@ describe("addAuditLog", () => {
 
   it("returns success when the insert succeeds", async () => {
     const insert = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null } as AuditLogInsertResponse);
-    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
+    supabaseFromMock.mockImplementation(() => ({ insert } as any));
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -42,7 +38,7 @@ describe("addAuditLog", () => {
     });
 
     expect(result).toEqual({ success: true, data: [{ id: "log-1" }] });
-    expect(supabaseMock.from).toHaveBeenCalledWith("audit_logs");
+    expect(supabaseFromMock).toHaveBeenCalledWith("audit_logs");
   });
 
   it("skips audit logging when the audit table is missing", async () => {
@@ -50,7 +46,7 @@ describe("addAuditLog", () => {
       data: null,
       error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" },
     } as AuditLogErrorResponse);
-    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
+    supabaseFromMock.mockImplementation(() => ({ insert } as any));
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -63,7 +59,7 @@ describe("addAuditLog", () => {
   it("returns an error object when the insert fails for another reason", async () => {
     const error: { code: string; message: string } = { code: "PGRST000", message: "Unexpected error" };
     const insert = vi.fn().mockResolvedValue({ data: null, error } as AuditLogErrorResponse);
-    supabaseMock.from = vi.fn(() => ({ insert }) as unknown as MockFrom) as typeof supabaseServer.from;
+    supabaseFromMock.mockImplementation(() => ({ insert } as any));
 
     const result = await addAuditLog({
       user_id: "user-1",
