@@ -34,7 +34,7 @@ describe("app/api/notificacoes/route", () => {
     const limit = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
     const order = vi.fn(() => ({ limit }));
     const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ select }) as any);
 
     const response = await GET({} as unknown as NextRequest);
     expect(response.status).toBe(200);
@@ -54,7 +54,7 @@ describe("app/api/notificacoes/route", () => {
 
   it("POST creates a notification and writes an audit log", async () => {
     const insert = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
-    supabaseFromMock.mockImplementation(() => ({ insert }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ insert }) as any);
 
     const request = {
       json: async () => ({ tipo: "alerta", mensagem: "Teste", lida: false }),
@@ -70,7 +70,7 @@ describe("app/api/notificacoes/route", () => {
   it("PATCH marks all notifications as read and writes an audit log", async () => {
     const eq = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
     const update = vi.fn(() => ({ eq }));
-    supabaseFromMock.mockImplementation(() => ({ update }) as ReturnType<typeof vi.fn>);
+    supabaseFromMock.mockImplementation(() => ({ update }) as any);
 
     const response = await PATCH({} as unknown as NextRequest);
     expect(response.status).toBe(200);
