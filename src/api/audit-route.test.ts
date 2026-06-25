@@ -3,6 +3,12 @@ import { GET, POST } from "../../app/api/audit/route";
 import { supabaseServer } from "@/lib/supabase-server";
 import type { NextRequest } from "next/server";
 
+type SupabaseSelectResult = {
+  data: Array<{ id: string }> | null;
+  error: null | { code: string; message: string };
+  count: number | null;
+};
+
 vi.mock("@/lib/supabase-server", () => ({
   supabaseServer: {
     from: vi.fn(),
@@ -21,10 +27,10 @@ describe("app/api/audit/route", () => {
   const supabaseGetUserMock = vi.mocked(supabaseServer.auth.getUser);
 
   it("GET returns audit logs successfully", async () => {
-    const range = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null });
+    const range = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null, count: 1 } as SupabaseSelectResult);
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select } as never));
+    supabaseFromMock.mockImplementation(() => ({ select }) as ReturnType<typeof vi.fn>);
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit?limit=2&offset=0"),
@@ -33,14 +39,14 @@ describe("app/api/audit/route", () => {
 
     const response = await GET(request);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ data: [{ id: "log-1" }], missingTable: false });
+    expect(await response.json()).toEqual({ data: [{ id: "log-1" }], missingTable: false, count: 1 });
   });
 
   it("GET returns empty array when audit table is missing", async () => {
-    const range = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
+    const range = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" }, count: null } as SupabaseSelectResult);
     const order = vi.fn(() => ({ range }));
     const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select } as never));
+    supabaseFromMock.mockImplementation(() => ({ select }) as ReturnType<typeof vi.fn>);
 
     const request = {
       nextUrl: new URL("http://localhost/api/audit"),
@@ -49,7 +55,7 @@ describe("app/api/audit/route", () => {
 
     const response = await GET(request);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual([]);
+    expect(await response.json()).toEqual({ data: [], missingTable: true, count: 0 });
   });
 
   it("POST returns 400 when action is missing", async () => {
@@ -70,7 +76,7 @@ describe("app/api/audit/route", () => {
     const single = vi.fn().mockResolvedValue({ data: { id: "log-2" }, error: null });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    supabaseFromMock.mockImplementation(() => ({ insert } as never));
+    supabaseFromMock.mockImplementation(() => ({ insert }) as ReturnType<typeof vi.fn>);
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
@@ -89,7 +95,7 @@ describe("app/api/audit/route", () => {
     const single = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" } });
     const select = vi.fn(() => ({ single }));
     const insert = vi.fn(() => ({ select }));
-    supabaseFromMock.mockImplementation(() => ({ insert } as never));
+    supabaseFromMock.mockImplementation(() => ({ insert }) as ReturnType<typeof vi.fn>);
 
     const request = {
       json: async () => ({ action: "create_audit", resource_type: "audit", details: "ok" }),
