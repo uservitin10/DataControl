@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided via PageHeader
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
 import { equipmentData, isActiveLicense } from "@/lib/inventario";
@@ -112,17 +113,7 @@ export default function LicencasPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-gov-heading">Todas as Licenças Ativas</h2>
-              <p className="mt-2 text-base text-slate-600">
-                Lista completa de licenças de software ativas no inventário.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <BackButton href="/inventario" />
-            </div>
-          </div>
+          <PageHeader title={<h2 className="text-3xl font-bold text-gov-heading">Todas as Licenças Ativas</h2>} subtitle={"Lista completa de licenças de software ativas no inventário."} backHref="/inventario" />
 
           <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
             <label htmlFor="licenseSearch" className="block text-sm font-semibold text-slate-700">

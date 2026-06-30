@@ -1,6 +1,15 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
+type LicenseRecord = {
+  id: number;
+  type?: string | null;
+  model?: string | null;
+  asset_id?: string | null;
+  responsible?: string | null;
+  equipment_state?: string | null;
+};
+
 export async function GET(req: NextRequest) {
   try {
     // Buscar todas as licenças ativas, usando filtro de tipo mais flexível
@@ -18,15 +27,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const activeLicenses = (licenses || []).filter((license: any) =>
+    const activeLicenses = (licenses || []).filter((license: LicenseRecord) =>
       ["ativa", "ativo"].includes(
         (license.equipment_state || "").toString().trim().toLowerCase()
       )
     );
 
     // Agrupar por asset_id (email) para encontrar duplicatas
-    const groupedByAsset: { [key: string]: any[] } = {};
-    activeLicenses.forEach((l: any) => {
+    const groupedByAsset: Record<string, LicenseRecord[]> = {};
+    activeLicenses.forEach((l: LicenseRecord) => {
       const key = (l.asset_id || "").toString().trim().toLowerCase() || `_no_email_${l.id}`;
       if (!groupedByAsset[key]) {
         groupedByAsset[key] = [];
@@ -35,7 +44,18 @@ export async function GET(req: NextRequest) {
     });
 
     // Encontrar duplicatas
-    const duplicates: any[] = [];
+    const duplicates: Array<{
+      asset: string;
+      count: number;
+      records: Array<{
+        id: number;
+        model?: string | null;
+        responsible?: string | null;
+        asset_id?: string | null;
+        keep: boolean;
+        delete: boolean;
+      }>;
+    }> = [];
     const idsToDelete: number[] = [];
 
     for (const [key, items] of Object.entries(groupedByAsset)) {
@@ -43,7 +63,7 @@ export async function GET(req: NextRequest) {
         duplicates.push({
           asset: key,
           count: items.length,
-          records: items.map((item: any, idx: number) => ({
+          records: items.map((item: LicenseRecord, idx: number) => ({
             id: item.id,
             model: item.model,
             responsible: item.responsible,
@@ -54,7 +74,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Manter o primeiro, marcar o resto para deletar
-        items.forEach((item: any, idx: number) => {
+        items.forEach((item: LicenseRecord, idx: number) => {
           if (idx > 0) {
             idsToDelete.push(item.id);
           }

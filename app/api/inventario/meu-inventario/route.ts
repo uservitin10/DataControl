@@ -6,6 +6,14 @@ import { addAuditLog } from "@/lib/audit";
 import { sanitizeText } from "@/lib/text";
 import { isLicenseType } from "@/lib/inventario";
 
+type InventoryItemRecord = {
+  [key: string]: unknown;
+  allocated_user?: string | null;
+  responsible?: string | null;
+  type?: string | null;
+  equipment_state?: string | null;
+};
+
 function isMissingColumnError(error: unknown, column: string): boolean {
   if (!error || typeof error !== "object" || !("message" in error)) {
     return false;
@@ -51,7 +59,7 @@ async function loadViewerEquipments(userId: string) {
 }
 
 // FIX: removido o loop de update a cada GET — normalização agora é apenas leitura
-function normalizeInventoryItems(items: any[]) {
+function normalizeInventoryItems(items: InventoryItemRecord[]) {
   return (items ?? []).map((item) => ({
     ...item,
     allocated_user: sanitizeText(item.allocated_user || "") || null,
@@ -59,9 +67,9 @@ function normalizeInventoryItems(items: any[]) {
   }));
 }
 
-function splitInventoryItems(items: any[]) {
-  const regularEquipments = items.filter((item) => !isLicenseType(item.type));
-  const licenses = items.filter((item) => isLicenseType(item.type));
+function splitInventoryItems(items: InventoryItemRecord[]) {
+  const regularEquipments = items.filter((item) => !isLicenseType(String(item.type ?? "")));
+  const licenses = items.filter((item) => isLicenseType(String(item.type ?? "")));
   return { regularEquipments, licenses };
 }
 

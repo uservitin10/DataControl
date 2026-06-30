@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import ServerUserBadge from "@/components/ServerUserBadge";
 import { BackButton } from "@/components/BackButton";
+import PageHeader from "@/components/PageHeader";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
 import {
   equipmentData,
   getAllSectors,
   isSemSetorValue,
   normalizeSectorName,
+  isActiveLicense,
 } from "@/lib/inventario";
 
 type Props = {
@@ -29,10 +32,10 @@ export default async function SectorInventoryPage({ params }: Props) {
       <main className="gov-page-bg min-h-screen">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft text-center">
-            <h1 className="text-2xl font-semibold text-slate-900">Setor não especificado</h1>
-            <p className="mt-4 text-slate-600">Verifique a URL e tente novamente.</p>
-            <div className="mt-6">
-              <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" label="Voltar ao inventário" />
+            <div className="mb-6 text-center">
+              <BackButton href="/inventario" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" label="Voltar ao inventário" />
+              <h1 className="text-2xl font-semibold text-slate-900">Setor não especificado</h1>
+              <p className="mt-4 text-slate-600">Verifique a URL e tente novamente.</p>
             </div>
           </div>
         </div>
@@ -57,6 +60,9 @@ export default async function SectorInventoryPage({ params }: Props) {
     if (isExcludedCGTOPItem(item)) {
       return false;
     }
+    if (isActiveLicense(item)) {
+      return false;
+    }
 
     return isSemSetor
       ? normalizedItemSector === "" || normalizedItemSector === "sem setor"
@@ -68,10 +74,10 @@ export default async function SectorInventoryPage({ params }: Props) {
       <main className="gov-page-bg min-h-screen">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft text-center">
-            <h1 className="text-2xl font-semibold text-slate-900">Setor não encontrado</h1>
-            <p className="mt-4 text-slate-600">Não há ativos cadastrados para este setor.</p>
-            <div className="mt-6">
-              <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" label="Voltar ao inventário" />
+            <div className="mb-6 text-center">
+              <BackButton href="/inventario" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" label="Voltar ao inventário" />
+              <h1 className="text-2xl font-semibold text-slate-900">Setor não encontrado</h1>
+              <p className="mt-4 text-slate-600">Não há ativos cadastrados para este setor.</p>
             </div>
           </div>
         </div>
@@ -98,30 +104,23 @@ export default async function SectorInventoryPage({ params }: Props) {
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/dashboard/profile"
-              className="gov-button-secondary-dark rounded-lg px-3 py-2 text-sm font-medium"
-            >
-              Meu Perfil
-            </Link>
+            <ServerUserBadge />
           </div>
         </div>
       </nav>
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Setor</p>
-              <h1 className="mt-2 text-3xl font-bold text-gov-heading">
-                {isSemSetor ? "Sem setor" : sectorItems[0].sector}
-              </h1>
-              <p className="mt-2 text-base text-slate-600">
-                Ativos cadastrados para este setor. Use esta página para verificar modelos, responsáveis e detalhes de cada item.
-              </p>
-            </div>
-            <BackButton href="/inventario" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 text-xs font-medium" />
-          </div>
+          <PageHeader
+            title={
+              <>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Setor</p>
+                <h1 className="mt-2 text-3xl font-bold text-gov-heading">{isSemSetor ? "Sem setor" : sectorItems[0].sector}</h1>
+              </>
+            }
+            subtitle={"Ativos cadastrados para este setor. Use esta página para verificar modelos, responsáveis e detalhes de cada item."}
+            backHref="/inventario"
+          />
 
           <SectorInventoryTable items={sectorItems} />
         </div>

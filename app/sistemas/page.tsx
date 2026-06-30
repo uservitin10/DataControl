@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided by PageHeader via `backHref`
+import PageHeader from "@/components/PageHeader";
 import { useSistemas } from "@/hooks/useSistemas";
 import { SistemasModal } from "@/components/sistemas/SistemasModals";
 import { SistemasFilters } from "@/components/sistemas/SistemasFilters";
@@ -80,20 +81,13 @@ export default function SistemasPage() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {user && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
-                <span className="text-sm text-white/90">{displayName || "Usuário"}</span>
-                <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 text-white">
-                  {ROLE_LABELS[role]}
-                </span>
-              </div>
-            )}
+            {/* user display removed to avoid duplication; profile accessible via the right-side user badge */}
 
             {canEdit && (
               <button
                 type="button"
                 onClick={openNewModal}
-                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                className="gov-button inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -112,15 +106,26 @@ export default function SistemasPage() {
               </button>
             )}
 
-            {/* Usuários button removed per request */}
-
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/profile")}
-              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
-            >
-              Meu Perfil
-            </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/profile")}
+                className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
+                aria-label={displayName || "Usuário"}
+                title={displayName || "Usuário"}
+              >
+                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || "Usuário"}</span>
+                <span className={`gov-badge role-${role}`}>{ROLE_LABELS?.[role] ?? role}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold"
+              >
+                Login
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -130,15 +135,7 @@ export default function SistemasPage() {
           <p className="mb-4 rounded-lg border p-3 text-sm border-red-200 bg-red-50 text-red-600">{error}</p>
         )}
 
-        <div className="mb-8">
-          <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
-          <h1 className="text-3xl font-bold" style={{ color: COLORS.primary }}>
-            Sistemas
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Catálogo de plataformas e sistemas disponíveis
-          </p>
-        </div>
+        <PageHeader title={<h1 className="text-3xl font-bold" style={{ color: COLORS.primary }}>Sistemas</h1>} subtitle={"Catálogo de plataformas e sistemas disponíveis"} backHref="/dashboard" />
 
         {/* Filtros */}
         <SistemasFilters

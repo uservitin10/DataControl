@@ -31,13 +31,13 @@ export async function POST(req: NextRequest) {
 
             countsRecord[itemId] = error ? 0 : (count ?? 0);
           }
-        } catch (e) {
+        } catch {
           countsRecord[itemId] = 0;
         }
       }
 
       return NextResponse.json({ counts: countsRecord });
-    } catch (err) {
+    } catch {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
   });

@@ -1,5 +1,9 @@
-const fs=require('fs'); const path=require('path');
-const inv=require('../src/data/inventario.json');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import inv from '../src/data/inventario.json' with { type: 'json' };
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const pasted=fs.readFileSync(path.join(__dirname,'pasted.txt'),'utf8');
 const emailRegex=/[a-z0-9._%+-]+@planejamento\.gov\.br/gi;
 const matches=[...pasted.matchAll(emailRegex)];

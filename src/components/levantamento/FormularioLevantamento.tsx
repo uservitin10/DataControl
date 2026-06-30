@@ -10,9 +10,7 @@ type FormularioLevantamentoProps = {
 };
 
 const TIPOS_ATIVO = ["Banco de dados", "Sistema corporativo", "Planilha", "Dashboard", "Data Lake", "Outro"];
-const VOLUMES_ESTIMADOS = ["Menos de 1.000", "1.000–10.000", "10.000–100.000", "Acima de 100.000"];
 const LOCAIS_ARMAZENAMENTO = ["Servidor local", "Nuvem", "Planilha/drive", "Sistema interno", "E-mail", "Outro"];
-const NIVEIS_ACESSO = ["Apenas o setor", "Outros setores internos", "Fornecedores externos", "Clientes"];
 const NIVEIS_CRITICIDADE = ["Baixa", "Média", "Alta", "Crítica"];
 const POLITICAS_RETENCAO = ["Sim", "Não", "Em elaboração"];
 const STATUS_ATIVO = ["Em uso", "Legado", "Em Desenvolvimento"];
@@ -99,8 +97,8 @@ export function FormularioLevantamento({ respostaExistente, onSucesso }: Formula
     });
   };
 
-  const handleChipSelect = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value as any }));
+  const handleChipSelect = (field: keyof RespostaLevantamentoInsert, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value as RespostaLevantamentoInsert[keyof RespostaLevantamentoInsert] }));
   };
 
   const validarFormulario = (): boolean => {
@@ -324,6 +322,7 @@ function InputField({ label, required, optional, value, onChange, type = "text",
     <div>
       <label className="block text-sm font-medium text-[#1a202c] mb-2">
         {label} {required && <span className="text-red-500">*</span>}
+        {optional && <span className="ml-2 text-xs font-normal text-[#718096]">Opcional</span>}
       </label>
       <input type={type} value={value ?? ""} onChange={onChange} className="w-full border border-[#d1d9e0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#2d4a6b] focus:ring-1 focus:ring-[#2d4a6b]" placeholder={placeholder} />
     </div>
@@ -341,7 +340,10 @@ type TextAreaFieldProps = {
 function TextAreaField({ label, optional, value, onChange, placeholder }: TextAreaFieldProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#1a202c] mb-2">{label}</label>
+      <label className="block text-sm font-medium text-[#1a202c] mb-2">
+        {label}
+        {optional && <span className="ml-2 text-xs font-normal text-[#718096]">Opcional</span>}
+      </label>
       <textarea value={value ?? ""} onChange={onChange} className="w-full border border-[#d1d9e0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#2d4a6b] focus:ring-1 focus:ring-[#2d4a6b] min-h-[100px]" placeholder={placeholder} />
     </div>
   );
@@ -358,7 +360,10 @@ type SelectFieldProps = {
 function SelectField({ label, optional, value, options, onChange }: SelectFieldProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#1a202c] mb-2">{label}</label>
+      <label className="block text-sm font-medium text-[#1a202c] mb-2">
+        {label}
+        {optional && <span className="ml-2 text-xs font-normal text-[#718096]">Opcional</span>}
+      </label>
       <select value={value ?? ""} onChange={onChange} className="w-full border border-[#d1d9e0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#2d4a6b] focus:ring-1 focus:ring-[#2d4a6b]">
         <option value="">Selecione...</option>
         {options.map((opt: string) => {
@@ -392,6 +397,7 @@ function ChipsGroup({ label, required, optional, options, selected, onChange }: 
     <div>
       <label className="block text-sm font-medium text-[#1a202c] mb-3">
         {label} {required && <span className="text-red-500">*</span>}
+        {optional && <span className="ml-2 text-xs font-normal text-[#718096]">Opcional</span>}
       </label>
       <div className="flex flex-wrap gap-2">
         {options.map((opt: string) => (

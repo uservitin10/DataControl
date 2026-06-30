@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided via PageHeader
+import PageHeader from "@/components/PageHeader";
+import UserBadge from "@/components/UserBadge";
 import { supabase } from "@/lib/supabase";
 import { PersonalInventory } from "@/components/inventario/PersonalInventory";
 
@@ -53,26 +55,14 @@ export default function MeuInventarioPage() {
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/profile")}
-              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
-            >
-              Meu Perfil
-            </button>
+            <UserBadge />
           </div>
         </div>
       </nav>
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft">
-          <div className="mb-8">
-            <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
-            <h1 className="text-3xl font-bold text-gov-heading">Meu Inventário</h1>
-            <p className="mt-2 text-base text-slate-600">
-              Veja aqui os equipamentos e licenças alocados para você.
-            </p>
-          </div>
+          <PageHeader title="Meu Inventário" subtitle="Veja aqui os equipamentos e licenças alocados para você." backHref="/dashboard" />
 
           <PersonalInventory />
         </div>

@@ -85,12 +85,12 @@ export function DocumentCard({
           )}
           {!isViewer && registro.tipo_acesso === "restrito" && (
             <span className="rounded-full px-3 py-1 text-xs font-medium bg-red-50 text-red-700">
-              🔒 Restrito
+               Restrito
             </span>
           )}
           {!isViewer && registro.dados_sensiveis && (
             <span className="rounded-full px-3 py-1 text-xs font-medium bg-orange-50 text-orange-700">
-              ⚠️ Sensível
+               Sensível
             </span>
           )}
         </div>
@@ -99,11 +99,11 @@ export function DocumentCard({
         {registro.descricao && <p className="text-sm line-clamp-2 text-slate-600 mb-3 leading-relaxed">{registro.descricao}</p>}
 
         <div className="space-y-1.5 mb-4">
-          {!isViewer && registro.secretaria && <p className="text-sm text-slate-600 flex items-center gap-2"><span>🏛️</span> {registro.secretaria}</p>}
-          {!isViewer && registro.responsavel && <p className="text-sm text-slate-600 flex items-center gap-2"><span>👤</span> {registro.responsavel}</p>}
+          {!isViewer && registro.secretaria && <p className="text-sm text-slate-600 flex items-center gap-2"><span></span> {registro.secretaria}</p>}
+          {!isViewer && registro.responsavel && <p className="text-sm text-slate-600 flex items-center gap-2"><span></span> {registro.responsavel}</p>}
           {!isViewer && registro.fonte_dados && (
             <p className="text-sm text-slate-600 flex items-center gap-2 break-all">
-              <span>🗄️</span>
+              <span></span>
               {fonteLink ? (
                 <a href={fonteLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline transition-colors">
                   Abrir fonte de dados

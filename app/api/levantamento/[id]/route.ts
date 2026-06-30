@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { apiSuccess, apiNotFound, apiValidationError, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiNotFound, apiInternalError } from "@/lib/api-response";
 import { getRespostaPorId, atualizarResposta } from "@/lib/levantamento";
 import type { RespostaLevantamentoInsert } from "@/types/levantamento";
 

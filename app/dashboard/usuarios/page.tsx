@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided via PageHeader
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson, patchJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
@@ -189,19 +190,7 @@ export default function UsuariosPage() {
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">
-          <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 text-gov-heading">Gerenciamento de Usuários</h1>
-              <p className="text-base text-gov-muted">
-                {usuarios.length} usuário{usuarios.length !== 1 ? "s" : ""} cadastrado{usuarios.length !== 1 ? "s" : ""} no sistema
-              </p>
-            </div>
-            <div className="rounded-3xl border border-slate-200/80 bg-slate-50/90 px-5 py-4 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.08)]">
-              <p className="text-xs uppercase tracking-[0.32em] text-slate-500">Total de usuários</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{usuarios.length}</p>
-            </div>
-          </div>
+          <PageHeader title={<h1 className="text-3xl font-bold mb-2 text-gov-heading">Gerenciamento de Usuários</h1>} subtitle={<p className="text-base text-gov-muted">{usuarios.length} usuário{usuarios.length !== 1 ? "s" : ""} cadastrado{usuarios.length !== 1 ? "s" : ""} no sistema</p>} backHref="/dashboard" />
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-3xl border border-slate-200/80 bg-slate-50/90 px-5 py-4 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.08)]">
               <p className="text-xs uppercase tracking-[0.32em] text-slate-500">Administradores</p>
@@ -245,17 +234,7 @@ export default function UsuariosPage() {
               className="gov-input w-full rounded-2xl border border-slate-200 bg-white/95 pl-12 pr-4 py-3 text-sm shadow-sm transition-shadow duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/profile")}
-            className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Meu Perfil
-          </button>
+          {/* 'Meu Perfil' button removed: profile is accessible by clicking the user name in header */}
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl transition-shadow hover:shadow-2xl">
@@ -281,12 +260,7 @@ export default function UsuariosPage() {
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-600">{usuario.email}</td>
                   <td className="px-6 py-4">
-                    <span
-                      className="inline-flex items-center rounded-full border border-slate-200/80 px-3 py-1 text-xs font-semibold shadow-sm ring-1 ring-slate-200/70"
-                      style={{ backgroundColor: roleLabels[usuario.role]?.bg, color: roleLabels[usuario.role]?.text }}
-                    >
-                      {roleLabels[usuario.role]?.label}
-                    </span>
+                    <span className={`gov-badge role-${usuario.role}`}>{roleLabels[usuario.role]?.label}</span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {usuario.created_at ? new Date(usuario.created_at).toLocaleDateString("pt-BR") : "—"}

@@ -15,7 +15,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+          cache-dependency-path: package-lock.json
+      - name: Clean npm cache if needed
+        run: npm cache clean --force || true
+      - name: Install dependencies with retry
+        run: npm ci --force --legacy-peer-deps || npm ci --force --legacy-peer-deps
       - run: npm run lint
       - run: npm run build
       - run: npm run test

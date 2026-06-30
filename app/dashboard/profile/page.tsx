@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided via PageHeader
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
 
@@ -153,7 +154,7 @@ export default function ProfilePage() {
     label: (roleLabel as Record<string, string>)[role] ?? role,
     color: "bg-slate-100 text-slate-600",
   };
-  const { label, color } = rc;
+  const { label } = rc;
 
   return (
     <main className="gov-page-bg min-h-screen">
@@ -172,14 +173,14 @@ export default function ProfilePage() {
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm ring-1 ring-white/10">
-              <span className="text-sm text-white/90">{displayName || "Usuário"}</span>
-              <span className="gov-badge rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white ring-1 ring-white/20">{(roleLabel as Record<string, string>)[role] ?? role}</span>
+            <div className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-white/15 to-white/10 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/20 shadow-lg shadow-black/10">
+              <span className="text-sm font-semibold text-white">{displayName || "Usuário"}</span>
+              <span className={`gov-badge role-${role}`}>{(roleLabel as Record<string, string>)[role] ?? role}</span>
             </div>
             <button
               type="button"
               onClick={handleLogout}
-              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold"
             >
               Sair
             </button>
@@ -190,9 +191,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-2xl px-6 py-8">
         <div className="gov-card overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.12)]">
           <div className="border-b border-slate-200/80 px-6 py-6">
-            <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
-            <h1 className="text-2xl font-bold text-gov-heading">Meu Perfil</h1>
-            <p className="mt-1 text-sm text-gov-muted">Gerenciar informações da sua conta</p>
+            <PageHeader title={<h1 className="text-2xl font-bold text-gov-heading">Meu Perfil</h1>} subtitle={"Gerenciar informações da sua conta"} backHref="/dashboard" />
           </div>
 
           <div className="p-6">
@@ -204,7 +203,7 @@ export default function ProfilePage() {
                 <p className="text-lg font-semibold text-gov-heading">{displayName || "Usuário"}</p>
                 <p className="text-sm text-gov-muted">{email}</p>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${color}`}>
+              <span className={`gov-badge role-${role}`}>
                 {label}
               </span>
             </div>

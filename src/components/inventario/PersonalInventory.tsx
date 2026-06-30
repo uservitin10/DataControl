@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchJson, postJson, patchJson } from "@/lib/api";
 import {
@@ -149,7 +150,7 @@ export function PersonalInventory() {
   const [activeSection, setActiveSection] = useState<"equipamentos" | "licencas" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filterViewerItems = (
+  const filterViewerItems = useCallback((
     items: InventoryItem[],
     user: PersonalInventoryResponse["user"]
   ) => {
@@ -168,7 +169,7 @@ export function PersonalInventory() {
 
       return matchesUserId || matchesAllocatedName;
     });
-  };
+  }, []);
 
   const formatInventoryError = (error: unknown, fallbackMessage: string) => {
     if (!(error instanceof Error)) {
@@ -255,7 +256,7 @@ export function PersonalInventory() {
     };
 
     void loadData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filterViewerItems]);
 
   const resetForm = () => {
     setFormState(initialFormState);
@@ -283,18 +284,6 @@ export function PersonalInventory() {
 
     const extension = fileName.split(".").pop()?.toUpperCase();
     return extension || "Arquivo";
-  };
-
-  const getFileVisualStyle = (index: number, selected: boolean) => {
-    const variants = [
-      "sm:col-span-2 sm:row-span-2 min-h-72",
-      "sm:col-span-1 sm:row-span-1 min-h-48",
-      "sm:col-span-1 sm:row-span-1 min-h-48",
-      "sm:col-span-2 sm:row-span-1 min-h-56",
-      "sm:col-span-1 sm:row-span-1 min-h-48",
-    ];
-
-    return `${variants[index % variants.length]} ${selected ? "ring-2 ring-slate-900 ring-offset-2" : ""}`;
   };
 
   const openFileModal = async (item: InventoryItem) => {
@@ -329,7 +318,7 @@ export function PersonalInventory() {
     }
   };
 
-  const closeFileModal = () => {
+  const closeFileModal = useCallback(() => {
     setFileModalOpen(false);
     setActiveItem(null);
     setItemFiles([]);
@@ -342,7 +331,7 @@ export function PersonalInventory() {
     setFileError(null);
     setFileSuccess(null);
     setLoadingFiles(false);
-  };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -411,7 +400,7 @@ export function PersonalInventory() {
     }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = useCallback(async (fileId: string) => {
     if (!activeItem) return;
 
     setLoadingFiles(true);
@@ -449,9 +438,9 @@ export function PersonalInventory() {
     } finally {
       setLoadingFiles(false);
     }
-  };
+  }, [activeItem]);
 
-  const handleViewFile = async (file: {
+  const handleViewFile = useCallback(async (file: {
     id: string;
     file_url: string;
     file_name: string;
@@ -503,7 +492,7 @@ export function PersonalInventory() {
     } finally {
       setPreviewLoading(false);
     }
-  };
+  }, [filePreviewUrls]);
 
   useEffect(() => {
     if (!fileModalOpen || itemFiles.length === 0) return;
@@ -533,7 +522,7 @@ export function PersonalInventory() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [fileModalOpen, itemFiles, selectedFileId]);
+  }, [closeFileModal, fileModalOpen, handleDeleteFile, handleViewFile, itemFiles, selectedFileId]);
 
   const canModify = userRole === "admin" || userRole === "editor";
   const isLicense = formState.type === "Licença";
@@ -578,8 +567,6 @@ export function PersonalInventory() {
     }).length,
     [data?.licenses]
   );
-
-  const hasLicenses = Boolean(data?.licenses?.length);
 
   const filteredEquipments = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -1435,7 +1422,7 @@ export function PersonalInventory() {
                         </div>
                       ) : viewingFileUrl && viewingFileName ? (
                         viewingFileType?.startsWith("image/") ? (
-                          <img src={viewingFileUrl} alt={viewingFileName} className="h-[320px] w-full rounded-2xl object-contain bg-black/20 md:h-[360px] xl:h-[420px]" />
+                          <Image src={viewingFileUrl} alt={viewingFileName ?? "Arquivo"} width={1200} height={900} unoptimized className="h-[320px] w-full rounded-2xl object-contain bg-black/20 md:h-[360px] xl:h-[420px]" />
                         ) : viewingFileText ? (
                           <pre className="max-h-[420px] overflow-auto rounded-2xl bg-white/5 p-4 text-xs text-white/80">{viewingFileText}</pre>
                         ) : viewingFileType === "application/pdf" ? (
@@ -1490,7 +1477,7 @@ export function PersonalInventory() {
                             <div role="button" tabIndex={0} onClick={() => void handleViewFile(file)} onKeyDown={(event) => event.key === "Enter" && void handleViewFile(file)} className="flex h-full w-full flex-col items-stretch text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                               <div className="relative h-44 overflow-hidden bg-slate-100">
                                 {previewUrl ? (
-                                  <img src={previewUrl} alt={file.file_name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                                  <Image src={previewUrl} alt={file.file_name} width={800} height={600} unoptimized className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" />
                                 ) : (
                                   <div className="flex h-full flex-col justify-center gap-3 p-4 text-white">
                                     <div className="flex items-center justify-between gap-2">

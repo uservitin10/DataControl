@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+import { ROLE_LABELS } from "@/lib/ui-constants";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
 import { equipmentData, isActiveLicense } from "@/lib/inventario";
@@ -12,9 +13,12 @@ import { equipmentData, isActiveLicense } from "@/lib/inventario";
 export default function InventarioPage() {
   const router = useRouter();
   const [loadingUser, setLoadingUser] = useState(true);
+  const [userPresent, setUserPresent] = useState(false);
+  const [displayNameState, setDisplayNameState] = useState<string | null>(null);
+  const [roleState, setRoleState] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAccess = async () => {
+      const checkAccess = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const sessionUser = sessionData.session?.user ?? null;
       if (!sessionUser) {
@@ -23,7 +27,7 @@ export default function InventarioPage() {
       }
 
       try {
-        const profile = await fetchJson<{ role: string }>(
+        const profile = await fetchJson<{ role: string; display_name?: string }>(
           `/api/profile?id=${encodeURIComponent(sessionUser.id)}`
         );
 
@@ -32,6 +36,9 @@ export default function InventarioPage() {
           return;
         }
 
+        setUserPresent(true);
+        setDisplayNameState(profile.display_name ?? sessionUser.email ?? null);
+        setRoleState(profile.role ?? null);
         setLoadingUser(false);
       } catch {
         router.replace("/dashboard?alert=no_permission_inventario");
@@ -101,7 +108,6 @@ export default function InventarioPage() {
         monitors: items.filter((item) => item.type === "Monitor").length,
         desktops: items.filter((item) => item.type === "Desktop").length,
         notebooks: items.filter((item) => item.type === "Notebook").length,
-        licenses: items.filter((item) => isActiveLicense(item)).length,
       };
     });
 
@@ -132,26 +138,31 @@ export default function InventarioPage() {
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/profile")}
-              className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
-            >
-              Meu Perfil
-            </button>
+            {userPresent ? (
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/profile")}
+                className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
+                aria-label={displayNameState ?? "Usuário"}
+                title={displayNameState ?? "Usuário"}
+              >
+                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayNameState ?? "Usuário"}</span>
+                <span className={`gov-badge role-${roleState ?? "viewer"}`}>{ROLE_LABELS?.[(roleState ?? "viewer") as keyof typeof ROLE_LABELS] ?? (roleState ?? "viewer")}</span>
+              </button>
+            ) : null}
           </div>
         </div>
       </nav>
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft">
-          <div className="mb-8">
-            <BackButton href="/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 mb-4" />
-            <h1 className="text-3xl font-bold text-gov-heading">Gestão de Inventário</h1>
-            <p className="mt-2 text-base text-slate-600">
-              Aqui você encontra todos os ativos cadastrados no sistema com informações detalhadas sobre modelos, responsáveis e status de funcionamento.
-            </p>
-          </div>
+          <PageHeader
+            title="Gestão de Inventário"
+            subtitle={
+              "Aqui você encontra todos os ativos cadastrados no sistema com informações detalhadas sobre modelos, responsáveis e status de funcionamento."
+            }
+            backHref="/dashboard"
+          />
 
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -222,10 +233,6 @@ export default function InventarioPage() {
                       <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
                         <p className="text-slate-500">Desktops</p>
                         <p className="mt-1 text-lg font-semibold">{summary.desktops}</p>
-                      </div>
-                      <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
-                        <p className="text-slate-500">Licenças</p>
-                        <p className="mt-1 text-lg font-semibold">{summary.licenses}</p>
                       </div>
                     </div>
                     <p className="mt-4 text-sm text-slate-500">

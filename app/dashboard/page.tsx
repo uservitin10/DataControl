@@ -9,7 +9,8 @@ import { DocumentCard } from "@/components/dashboard/DocumentCard";
 import { DocumentFormModal, DocumentViewerModal } from "@/components/dashboard/DocumentModals";
 import { useDashboard } from "@/hooks/useDashboard";
 import { AREAS, AREA_CORES, getFileTipo } from "@/lib/dashboard";
-import { BackButton } from "@/components/BackButton";
+// BackButton usage moved to PageHeader where appropriate
+import PageHeader from "@/components/PageHeader";
 import { VIEWER_PUBLIC_GOV_LINK, VIEWER_PUBLIC_PREVIEW_IMAGE } from "@/lib/storage";
 
 export default function DashboardPage() {
@@ -143,32 +144,36 @@ export default function DashboardPage() {
           </button>
 
           <div className="flex flex-wrap items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-sm">
-                <span className="text-sm text-white/90">{displayName || user?.email}</span>
-                <span className="gov-badge rounded-full bg-white/15 text-white">
-                  {roleLabel[role]}
-                </span>
-              </div>
-            ) : null}
-
             {!showLanding && canEdit && (
               <button
                 type="button"
                 onClick={openCreate}
-                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                className="gov-button inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
               >
                 + Novo Painel
               </button>
             )}
 
-            {showLanding && (
+            {user ? (
               <button
                 type="button"
-                onClick={() => router.push(user ? "/dashboard/profile" : "/login")}
-                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                onClick={() => router.push("/dashboard/profile")}
+                className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
+                aria-label={displayName || user?.email}
+                title={displayName || user?.email}
               >
-                {user ? "Meu Perfil" : "Login"}
+                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || user?.email}</span>
+                <span className="gov-badge">{roleLabel[role]}</span>
+              </button>
+            ) : null}
+
+            {showLanding && !user && (
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold"
+              >
+                Login
               </button>
             )}
           </div>
@@ -293,12 +298,12 @@ export default function DashboardPage() {
 
             {view === "categorias" ? (
               <>
-                <div className="mb-8">
-                  <h1 className="gov-section-title text-3xl font-bold mb-2">Catálogo de Painéis</h1>
-                  <p className="text-lg text-gov-muted">
-                    {AREAS.length} áreas disponíveis · {totalDocumentos} painéis cadastrados
-                  </p>
-                </div>
+                <PageHeader
+                  title={<h1 className="gov-section-title text-3xl font-bold">Catálogo de Painéis</h1>}
+                  subtitle={<p className="text-lg text-gov-muted">{AREAS.length} áreas disponíveis · {totalDocumentos} painéis cadastrados</p>}
+                  backOnClick={() => setShowLanding(true)}
+                  backLabel="Voltar"
+                />
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {AREAS.map((cat) => {
@@ -319,12 +324,7 @@ export default function DashboardPage() {
             ) : (
               <>
                 <div className="mb-4">
-                  <BackButton onClick={voltarCategorias} label="Voltar às áreas" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium" />
-                  <h1 className="gov-section-title text-xl font-medium">{areaAtiva}</h1>
-                  <p className="text-sm text-gov-muted">
-                    {documentosFiltrados.length} painel{documentosFiltrados.length !== 1 ? "s" : ""}
-                    {temFiltroAtivo ? " encontrado" + (documentosFiltrados.length !== 1 ? "s" : "") : " nesta área"}
-                  </p>
+                  <PageHeader title={<h1 className="gov-section-title text-xl font-medium">{areaAtiva}</h1>} subtitle={<p className="text-sm text-gov-muted">{documentosFiltrados.length} painel{documentosFiltrados.length !== 1 ? "s" : ""}{temFiltroAtivo ? " encontrado" + (documentosFiltrados.length !== 1 ? "s" : "") : " nesta área"}</p>} backOnClick={voltarCategorias} backLabel="Voltar às áreas" />
                 </div>
 
                 <DocumentFilters

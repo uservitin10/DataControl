@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { BackButton } from "@/components/BackButton";
+// BackButton provided via PageHeader
+import PageHeader from "@/components/PageHeader";
 
 type AuditLog = {
   id: number;
@@ -115,47 +116,28 @@ export default function AuditLogsPage() {
             </div>
           </button>
 
-            <div className="flex items-center gap-3">
-              <BackButton href="/dashboard" label="Voltar ao dashboard" className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium" />
+            <div className="flex items-center gap-3">{}
             </div>
         </div>
       </nav>
-
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="gov-card rounded-3xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.18)]">
+          <PageHeader
+            title={<>
+              <p className="text-xs uppercase tracking-[0.24em] text-gov-muted">Auditoria</p>
+              <h1 className="mt-3 text-3xl font-bold text-gov-heading">Logs de acesso e alterações</h1>
+            </>}
+            subtitle={"Acompanhe login, logout, falhas e alterações de recurso em um único painel."}
+            backHref="/dashboard"
+            actions={<div className="flex flex-wrap items-center gap-3 text-sm text-slate-600"><button type="button" onClick={() => void fetchLogs(page)} className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2">Atualizar</button><span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-800">{totalLogs} registros totais</span></div>}
+          />
           <div className="mb-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-gov-muted">Auditoria</p>
-                <h1 className="mt-3 text-3xl font-bold text-gov-heading">Logs de acesso e alterações</h1>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                <button
-                  type="button"
-                  onClick={() => void fetchLogs(page)}
-                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
-                >
-                  Atualizar
-                </button>
-                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-800">{totalLogs} registros totais</span>
-              </div>
-              <p className="max-w-2xl text-sm leading-6 text-slate-600">
-                Acompanhe login, logout, falhas e alterações de recurso em um único painel.
-              </p>
             </div>
-
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:justify-end">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:justify-end">
               <div className="w-full sm:w-auto">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                  Buscar no log
-                </label>
-                <input
-                  type="search"
-                  value={filter}
-                  onChange={(event) => setFilter(event.target.value)}
-                  placeholder="Usuário, ação, recurso, IP..."
-                  className="gov-input w-full bg-white border-slate-300 text-slate-900"
-                />
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">Buscar no log</label>
+                <input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Usuário, ação, recurso, IP..." className="gov-input w-full bg-white border-slate-300 text-slate-900" />
               </div>
             </div>
           </div>
@@ -258,7 +240,7 @@ export default function AuditLogsPage() {
                     type="button"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page <= 1}
-                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -266,7 +248,7 @@ export default function AuditLogsPage() {
                     type="button"
                     onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                     disabled={page >= pageCount}
-                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                    className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium mb-2 disabled:opacity-50"
                   >
                     Próxima
                   </button>

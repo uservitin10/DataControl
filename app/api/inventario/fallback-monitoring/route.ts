@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
-import { addAuditLog } from "@/lib/audit";
 import {
   apiSuccess,
   apiInternalError,

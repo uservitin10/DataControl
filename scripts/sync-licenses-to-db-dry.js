@@ -1,5 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-const inventarioData = require('../src/data/inventario.json');
+import { createClient } from '@supabase/supabase-js';
+import inventarioData from '../src/data/inventario.json' with { type: 'json' };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
