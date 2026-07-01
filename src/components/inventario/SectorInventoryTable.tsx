@@ -120,7 +120,7 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                         : item.assetId || item.equipmentId || "-"}
                     </td>
                   )}
-                  <td className="px-4 py-3 text-sm text-slate-900">{item.allocatedUser ?? item.responsible ?? "-"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-900">{item.allocatedUser || item.responsible || "-"}</td>
                   {showEmail && (
                     <td className="px-4 py-3 text-sm text-slate-900">{item.assetId || "-"}</td>
                   )}

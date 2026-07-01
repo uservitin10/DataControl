@@ -563,7 +563,7 @@ export function PersonalInventory() {
   const licenseActiveCount = useMemo(
     () => (data?.licenses ?? []).filter((item) => {
       const status = item.equipment_state?.trim().toLowerCase();
-      return status?.includes("ativo") || status?.includes("ativa");
+      return status?.includes("ativo") || status?.includes("Ativa");
     }).length,
     [data?.licenses]
   );
@@ -1283,14 +1283,14 @@ export function PersonalInventory() {
                     {isLicense ? (
                       <>
                         <option value="Ativo">Ativo</option>
-                        <option value="Desativado">Desativado</option>
+                        <option value="DesAtivado">DesAtivado</option>
                       </>
                     ) : (
                       <>
                         <option value="Operacional">Operacional</option>
                         <option value="Manutenção">Manutenção</option>
                         <option value="Inoperante">Inoperante</option>
-                        <option value="Desativado">Desativado</option>
+                        <option value="DesAtivado">DesAtivado</option>
                       </>
                     )}
                   </select>

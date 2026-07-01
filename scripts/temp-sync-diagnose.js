@@ -45,7 +45,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   }
 
   const json = JSON.parse(fs.readFileSync('src/data/inventario.json', 'utf8'));
-  const licenses = json.filter(i => i.type === 'Licença' && String(i.equipmentState || '').toLowerCase() === 'ativa');
+  const licenses = json.filter(i => i.type === 'Licença' && String(i.equipmentState || '').toLowerCase() === 'Ativa');
   const seenJson = new Map();
   const jsonDupes = [];
   licenses.forEach(item => {

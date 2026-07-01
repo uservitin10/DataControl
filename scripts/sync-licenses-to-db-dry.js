@@ -19,19 +19,19 @@ async function dryRun() {
       item.equipmentState.toLowerCase() === 'ativa'
     );
 
-    console.log(`✓ Encontradas ${licensesFromJson.length} licenças ativas no JSON`);
+    console.log(`✓ Encontradas ${licensesFromJson.length} licenças Ativas no JSON`);
 
     const { data: licensesFromDb, error: fetchError } = await supabase
       .from('inventory_items')
       .select('*')
       .eq('type', 'Licença')
-      .in('equipment_state', ['ativa', 'ativo']);
+      .in('equipment_state', ['Ativa', 'ativa', 'ativo']);
 
     if (fetchError) {
       throw new Error(`Erro ao buscar licenças do banco: ${fetchError.message}`);
     }
 
-    console.log(`✓ Encontradas ${licensesFromDb.length} licenças ativas no banco`);
+    console.log(`✓ Encontradas ${licensesFromDb.length} licenças Ativas no banco`);
 
     const emailsInDb = new Set(
       licensesFromDb.map(license => (license.asset_id || '').toLowerCase().trim())
@@ -44,7 +44,7 @@ async function dryRun() {
 
     console.log('\nLicenças faltando no banco: ' + licensesToAdd.length);
     if (licensesToAdd.length === 0) {
-      console.log('Nenhuma ação necessária. Banco já contém todas as licenças ativas do JSON.');
+      console.log('Nenhuma ação necessária. Banco já contém todas as licenças Ativas do JSON.');
       return;
     }
 

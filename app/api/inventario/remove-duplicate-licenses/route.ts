@@ -12,7 +12,7 @@ type LicenseRecord = {
 
 export async function GET(req: NextRequest) {
   try {
-    // Buscar todas as licenças ativas, usando filtro de tipo mais flexível
+    // Buscar todas as licenças Ativas, usando filtro de tipo mais flexível
     const { data: licenses, error: fetchError } = await supabaseServer
       .from("inventory_items")
       .select("id, type, model, asset_id, responsible, equipment_state")
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     const activeLicenses = (licenses || []).filter((license: LicenseRecord) =>
-      ["ativa", "ativo"].includes(
+      ["Ativa", "ativo"].includes(
         (license.equipment_state || "").toString().trim().toLowerCase()
       )
     );

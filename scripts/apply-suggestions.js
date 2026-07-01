@@ -9,7 +9,7 @@ fs.copyFileSync(invPath, backupPath);
 const inventario = JSON.parse(fs.readFileSync(invPath,'utf8'));
 const suggestions = JSON.parse(fs.readFileSync(path.join(__dirname,'suggestions.json'),'utf8'));
 let applied = 0; const details = [];
-const licenses = inventario.filter(item=>item.type==='Licença'&&item.equipmentState&&String(item.equipmentState).toLowerCase()==='ativa');
+const licenses = inventario.filter(item=>item.type==='Licença'&&item.equipmentState&&String(item.equipmentState).toLowerCase()==='Ativa');
 for(const s of suggestions){ if(s.best && s.bestScore>=2){ // find matching item(s)
     const candidates = licenses.filter(item=>{ const name=(item.responsible||item.model||'').toLowerCase().replace(/\s+/g,' ').trim(); return name.includes(s.model.toLowerCase()) || (s.responsible && name.includes((s.responsible||'').toLowerCase())); });
     // fallback: match by model equality

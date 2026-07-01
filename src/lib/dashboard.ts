@@ -20,7 +20,7 @@ export const SECRETARIAS = [
   "Assessoria Especial de Controle Interno",
   "Assessoria Especial de Comunicação Social",
   "Assessoria Especial de Assuntos Parlamentares e Federativos",
-  "Assessoria Técnica e Administrativa",
+  "Assessoria Técnica e AdministrAtiva",
   "Consultoria Jurídica",
   "Ouvidoria",
   "Corregedoria",

@@ -7,13 +7,26 @@ import { useRouter } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
-import { equipmentData, isActiveLicense } from "@/lib/inventario";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
+
+type MyInventoryResponse = {
+  licenses: any[];
+};
 
 export default function LicencasPage() {
   const router = useRouter();
   const [loadingUser, setLoadingUser] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [licensesData, setLicensesData] = useState<any[]>([]);
+
+  const normalizeLicenseItem = (item: any) => ({
+    ...item,
+    assetId: item.asset_id ?? item.assetId ?? undefined,
+    equipmentId: item.equipment_id ?? item.equipmentId ?? undefined,
+    allocatedUser: item.allocated_user ?? item.allocatedUser ?? undefined,
+    equipmentState: item.equipment_state ?? item.equipmentState ?? undefined,
+    assetType: item.asset_type ?? item.assetType ?? undefined,
+  });
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -34,6 +47,11 @@ export default function LicencasPage() {
           return;
         }
 
+        const inventoryResponse = await fetchJson<MyInventoryResponse>(
+          "/api/inventario/meu-inventario"
+        );
+
+        setLicensesData((inventoryResponse.licenses ?? []).map(normalizeLicenseItem));
         setLoadingUser(false);
       } catch {
         router.replace("/dashboard?alert=no_permission_inventario");
@@ -46,8 +64,8 @@ export default function LicencasPage() {
   const licenses = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
-    return equipmentData
-      .filter((item) => isActiveLicense(item))
+    return licensesData
+      .slice()
       .filter((item) => {
         if (!normalizedSearch) return true;
 
@@ -59,22 +77,20 @@ export default function LicencasPage() {
           item.assetId,
           item.equipmentId,
           item.sector,
+          item.equipmentState,
         ]
           .filter((value): value is string => typeof value === "string")
           .map((value) => value.toLowerCase());
 
         return valuesToMatch.some((value) => value.includes(normalizedSearch));
       })
-      .slice()
       .sort((a, b) => {
-        // Ordenar primeiro pelo modelo (nome da licença) em ordem alfabética
         const modelA = (a.model || "").toString().trim();
         const modelB = (b.model || "").toString().trim();
 
         const modelSort = modelA.localeCompare(modelB, "pt-BR", { sensitivity: "base" });
         if (modelSort !== 0) return modelSort;
 
-        // Se o modelo for igual, ordenar pelo responsável/usuário
         const labelA = (a.responsible || a.allocatedUser || a.assetId || a.equipmentId || "")
           .toString()
           .trim();
@@ -84,7 +100,7 @@ export default function LicencasPage() {
 
         return labelA.localeCompare(labelB, "pt-BR", { sensitivity: "base" });
       });
-  }, [searchQuery]);
+  }, [searchQuery, licensesData]);
 
   if (loadingUser) {
     return (
@@ -113,7 +129,7 @@ export default function LicencasPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="gov-card rounded-3xl border border-slate-200 bg-white p-10 shadow-soft">
-          <PageHeader title={<h2 className="text-3xl font-bold text-gov-heading">Todas as Licenças Ativas</h2>} subtitle={"Lista completa de licenças de software ativas no inventário."} backHref="/inventario" />
+          <PageHeader title={<h2 className="text-3xl font-bold text-gov-heading">Todas as Licenças Ativas</h2>} subtitle={"Lista completa de licenças de software Ativas no inventário."} backHref="/inventario" />
 
           <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
             <label htmlFor="licenseSearch" className="block text-sm font-semibold text-slate-700">
@@ -132,14 +148,14 @@ export default function LicencasPage() {
           <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
             <p className="text-sm font-medium text-slate-600">Total de Licenças</p>
             <p className="mt-2 text-4xl font-bold text-gov-heading">{licenses.length}</p>
-            <p className="mt-1 text-sm text-slate-500">licenças de software ativas</p>
+            <p className="mt-1 text-sm text-slate-500">licenças de software Ativas</p>
           </div>
 
           {licenses.length > 0 ? (
             <SectorInventoryTable items={licenses} showExtendedFields={false} showEmail={true} showDetailsButton={false} />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-slate-600">Nenhuma licença ativa encontrada no inventário.</p>
+              <p className="text-slate-600">Nenhuma licença Ativa encontrada no inventário.</p>
             </div>
           )}
         </div>

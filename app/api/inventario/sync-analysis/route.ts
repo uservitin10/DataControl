@@ -25,24 +25,26 @@ export async function GET(req: NextRequest) {
       return `${assetId}|${equipmentId}|${type}`.toLowerCase().trim();
     };
 
-    // Mapear por chave
-    const dbMap = new Map();
-    const jsonMap = new Map();
+    type InventoryItem = Record<string, any>;
 
-    dbEquipments.forEach(eq => {
+    // Mapear por chave
+    const dbMap = new Map<string, InventoryItem[]>();
+    const jsonMap = new Map<string, InventoryItem[]>();
+
+    dbEquipments.forEach((eq: InventoryItem) => {
       const key = createKey(eq);
       if (!dbMap.has(key)) {
         dbMap.set(key, []);
       }
-      dbMap.get(key).push(eq);
+      dbMap.get(key)!.push(eq);
     });
 
-    inventarioData.forEach(eq => {
+    inventarioData.forEach((eq: InventoryItem) => {
       const key = createKey(eq);
       if (!jsonMap.has(key)) {
         jsonMap.set(key, []);
       }
-      jsonMap.get(key).push(eq);
+      jsonMap.get(key)!.push(eq);
     });
 
     // 1. DUPLICATAS NO BANCO - Identificar
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest) {
       .map(([key, items]) => ({
         key,
         count: items.length,
-        items: items.map((eq, idx) => ({
+        items: items.map((eq: InventoryItem, idx: number) => ({
           id: eq.id,
           assetId: eq.asset_id,
           equipmentId: eq.equipment_id,
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest) {
           isNewest: idx === 0, // O primeiro é o mais antigo, o último o mais novo
         })),
         toKeep: items[items.length - 1].id, // Manter o mais recente
-        toDelete: items.slice(0, -1).map(i => i.id),
+        toDelete: items.slice(0, -1).map((i: InventoryItem) => i.id),
       }));
 
     // 2. EQUIPAMENTOS APENAS NO BANCO (novos)
@@ -96,11 +98,14 @@ export async function GET(req: NextRequest) {
 
     // 5. ITENS COM DADOS DIFERENTES
     const itemsWithDifferences = Array.from(dbMap.entries())
-      .filter(([key, dbItems]) => jsonMap.has(key) && dbItems.length === 1 && jsonMap.get(key).length === 1)
       .map(([key, dbItems]) => {
         const jsonItems = jsonMap.get(key);
+        return { key, dbItems, jsonItems };
+      })
+      .filter(({ jsonItems, dbItems }) => jsonItems?.length === 1 && dbItems.length === 1)
+      .map(({ key, dbItems, jsonItems }) => {
         const dbEq = dbItems[0];
-        const jsonEq = jsonItems[0];
+        const jsonEq = jsonItems![0];
 
         const differences = [];
         if ((dbEq.sector || "").trim() !== (jsonEq.sector || "").trim())

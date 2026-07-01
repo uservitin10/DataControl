@@ -9,7 +9,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Tâmila Rayane Espíndola De Brito Lima/  Luiz Felipe Bertassoni Pinto",
-    "allocatedUser": "Tâmila Rayane Espíndola De Brito Lima/  Luiz Felipe Bertassoni Pinto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -549,7 +549,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Tâmila Rayane Espíndola De Brito Lima/  Luiz Felipe Bertassoni Pinto",
-    "allocatedUser": "Tâmila Rayane Espíndola De Brito Lima/  Luiz Felipe Bertassoni Pinto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -894,7 +894,7 @@
     "macIp": "",
     "sector": "SOF",
     "responsible": "Ramon Gomes Brandão",
-    "allocatedUser": "Ramon Gomes Brandão",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Licença Gartner - Technical Professionals Team Leader atribuída"
@@ -909,7 +909,7 @@
     "macIp": "",
     "sector": "SOF",
     "responsible": "Wertiz Dantas da Silva Junior",
-    "allocatedUser": "Wertiz Dantas da Silva Junior",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Licença Gartner - Technical Professionals Team Member atribuída"
@@ -924,7 +924,7 @@
     "macIp": "10.209.178.48",
     "sector": "COTIC",
     "responsible": "Dienny Rocha Meira dos Santos",
-    "allocatedUser": "Dienny Rocha Meira dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -954,7 +954,7 @@
     "macIp": "",
     "sector": "SOF",
     "responsible": "Ricardo Tadeu de Albuquerque Peixoto",
-    "allocatedUser": "Ricardo Tadeu de Albuquerque Peixoto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Licença Gartner - Technical Professionals Team Member atribuída"
@@ -1089,7 +1089,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Joao Pedro Mendes de Souza",
-    "allocatedUser": "Joao Pedro Mendes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1104,7 +1104,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Joao Pedro Mendes de Souza",
-    "allocatedUser": "Joao Pedro Mendes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1194,7 +1194,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Coordenadores - remoto",
-    "allocatedUser": "Coordenadores - remoto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": "Deposito"
@@ -1374,7 +1374,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lea Mendonça Nobrega",
-    "allocatedUser": "Lea Mendonça Nobrega",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Power BI Pro atribu├¡da"
@@ -1569,7 +1569,7 @@
     "macIp": "10.209.178.16",
     "sector": "COGEP",
     "responsible": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
-    "allocatedUser": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1584,7 +1584,7 @@
     "macIp": "10.209.178.46",
     "sector": "COTIC",
     "responsible": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
-    "allocatedUser": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1779,7 +1779,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Marcos César Chaves da Fonseca",
-    "allocatedUser": "Marcos César Chaves da Fonseca",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -1944,7 +1944,7 @@
     "macIp": "10.209.178.26",
     "sector": "DIORC",
     "responsible": "Elayne Maria da Silva Batista",
-    "allocatedUser": "Elayne Maria da Silva Batista",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1959,7 +1959,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Elayne Maria da Silva Batista",
-    "allocatedUser": "Elayne Maria da Silva Batista",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1974,7 +1974,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Elayne Maria da Silva Batista",
-    "allocatedUser": "Elayne Maria da Silva Batista",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -1989,7 +1989,7 @@
     "macIp": "",
     "sector": "CGTCO",
     "responsible": "Gustavo Andrade Bruzzeguez",
-    "allocatedUser": "Gustavo Andrade Bruzzeguez",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2004,7 +2004,7 @@
     "macIp": "",
     "sector": "CGTCO",
     "responsible": "Gustavo Andrade Bruzzeguez",
-    "allocatedUser": "Gustavo Andrade Bruzzeguez",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2019,7 +2019,7 @@
     "macIp": "",
     "sector": "CGTCO",
     "responsible": "Gustavo Andrade Bruzzeguez",
-    "allocatedUser": "Gustavo Andrade Bruzzeguez",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2034,7 +2034,7 @@
     "macIp": "10.209.178.45",
     "sector": "CGTCO",
     "responsible": "Gustavo Andrade Bruzzeguez",
-    "allocatedUser": "Gustavo Andrade Bruzzeguez",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2049,7 +2049,7 @@
     "macIp": "10.209.178.24",
     "sector": "CGEST",
     "responsible": "Ricardo de Assis Teixeira",
-    "allocatedUser": "Ricardo de Assis Teixeira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2064,7 +2064,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Ricardo de Assis Teixeira",
-    "allocatedUser": "Ricardo de Assis Teixeira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2079,7 +2079,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Ricardo de Assis Teixeira",
-    "allocatedUser": "Ricardo de Assis Teixeira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2094,7 +2094,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Ricardo de Assis Teixeira",
-    "allocatedUser": "Ricardo de Assis Teixeira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2109,7 +2109,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
-    "allocatedUser": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2124,7 +2124,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
-    "allocatedUser": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2139,7 +2139,7 @@
     "macIp": "10.209.178.41",
     "sector": "CONTB",
     "responsible": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
-    "allocatedUser": "Debora Lopes Ferreira Saldanha / Eveilton Souza de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2154,7 +2154,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Rafael Ibsen Souza Silva",
-    "allocatedUser": "Rafael Ibsen Souza Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2169,7 +2169,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Rafael Ibsen Souza Silva",
-    "allocatedUser": "Rafael Ibsen Souza Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2184,7 +2184,7 @@
     "macIp": "10.209.178.42",
     "sector": "CONTB",
     "responsible": "Rafael Ibsen Souza Silva",
-    "allocatedUser": "Rafael Ibsen Souza Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2199,7 +2199,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Jorge Toufic Arbex",
-    "allocatedUser": "Jorge Toufic Arbex",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2214,7 +2214,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Jorge Toufic Arbex",
-    "allocatedUser": "Jorge Toufic Arbex",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2229,7 +2229,7 @@
     "macIp": "10.209.178.38",
     "sector": "DIORC",
     "responsible": "Lucas Matheus Castro de Oliveira",
-    "allocatedUser": "Lucas Matheus Castro de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2244,7 +2244,7 @@
     "macIp": "10.209.178.11",
     "sector": "COTIC",
     "responsible": "Leonardo Della Justina do Nascimento",
-    "allocatedUser": "Leonardo Della Justina do Nascimento",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2259,7 +2259,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Leonardo Della Justina do Nascimento",
-    "allocatedUser": "Leonardo Della Justina do Nascimento",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2274,7 +2274,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Leonardo Della Justina do Nascimento",
-    "allocatedUser": "Leonardo Della Justina do Nascimento",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2289,7 +2289,7 @@
     "macIp": "10.209.178.55",
     "sector": "CONTB",
     "responsible": "Paulo Henrique da Rocha Leite",
-    "allocatedUser": "Paulo Henrique da Rocha Leite",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2304,7 +2304,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Paulo Henrique da Rocha Leite",
-    "allocatedUser": "Paulo Henrique da Rocha Leite",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2319,7 +2319,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Paulo Henrique da Rocha Leite",
-    "allocatedUser": "Paulo Henrique da Rocha Leite",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2334,7 +2334,7 @@
     "macIp": "",
     "sector": "CONTB",
     "responsible": "Paulo Henrique da Rocha Leite",
-    "allocatedUser": "Paulo Henrique da Rocha Leite",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2349,7 +2349,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Dienny Rocha Meira dos Santos",
-    "allocatedUser": "Dienny Rocha Meira dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2364,7 +2364,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Dienny Rocha Meira dos Santos",
-    "allocatedUser": "Dienny Rocha Meira dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2379,7 +2379,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Dienny Rocha Meira dos Santos",
-    "allocatedUser": "Dienny Rocha Meira dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2394,7 +2394,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Dienny Rocha Meira dos Santos",
-    "allocatedUser": "Dienny Rocha Meira dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2409,7 +2409,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
-    "allocatedUser": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2424,7 +2424,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
-    "allocatedUser": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2439,7 +2439,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
-    "allocatedUser": "Álvaro José de Andrade Carneiro / Henrique Eiti Otaguiri Nagazawa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2454,7 +2454,7 @@
     "macIp": "10.209.178.25",
     "sector": "COLOG",
     "responsible": "Patrícia Daniele Oliveira de Alarcão",
-    "allocatedUser": "Patrícia Daniele Oliveira de Alarcão",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2469,7 +2469,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Patrícia Daniele Oliveira de Alarcão",
-    "allocatedUser": "Patrícia Daniele Oliveira de Alarcão",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2484,7 +2484,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Patrícia Daniele Oliveira de Alarcão",
-    "allocatedUser": "Patrícia Daniele Oliveira de Alarcão",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2499,7 +2499,7 @@
     "macIp": "10.209.178.53",
     "sector": "COTIC",
     "responsible": "Eduardo do Nascimento Stuani",
-    "allocatedUser": "Eduardo do Nascimento Stuani",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2514,7 +2514,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
-    "allocatedUser": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2529,7 +2529,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
-    "allocatedUser": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2544,7 +2544,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
-    "allocatedUser": "Arthur Miguel Oliveira Almeida Aros / Matheus Gomes de Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2559,7 +2559,7 @@
     "macIp": "10.209.178.43",
     "sector": "COTIC",
     "responsible": "Vinicius Soares Jovito",
-    "allocatedUser": "Vinicius Soares Jovito",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2574,7 +2574,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
-    "allocatedUser": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2589,7 +2589,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
-    "allocatedUser": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2604,7 +2604,7 @@
     "macIp": "",
     "sector": "COTIC",
     "responsible": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
-    "allocatedUser": "Vinicius Soares Jovito / Eduardo do Nascimento Stuani",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2619,7 +2619,7 @@
     "macIp": "10.209.178.39",
     "sector": "COEFI",
     "responsible": "Jorge Toufic Arbex",
-    "allocatedUser": "Jorge Toufic Arbex",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2634,7 +2634,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lucas Matheus Castro de Oliveira",
-    "allocatedUser": "Lucas Matheus Castro de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2649,7 +2649,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lucas Matheus Castro de Oliveira",
-    "allocatedUser": "Lucas Matheus Castro de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2664,7 +2664,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lucas Matheus Castro de Oliveira",
-    "allocatedUser": "Lucas Matheus Castro de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2679,7 +2679,7 @@
     "macIp": "10.209.178.36",
     "sector": "COEFI",
     "responsible": "Carluska de Oliveira Paz Silva",
-    "allocatedUser": "Carluska de Oliveira Paz Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2694,7 +2694,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Carluska de Oliveira Paz Silva",
-    "allocatedUser": "Carluska de Oliveira Paz Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2709,7 +2709,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Carluska de Oliveira Paz Silva",
-    "allocatedUser": "Carluska de Oliveira Paz Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2724,7 +2724,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Rafael Saldanha Ferraz Gangana",
-    "allocatedUser": "Rafael Saldanha Ferraz Gangana",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2739,7 +2739,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Rafael Saldanha Ferraz Gangana",
-    "allocatedUser": "Rafael Saldanha Ferraz Gangana",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2754,7 +2754,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Rafael Saldanha Ferraz Gangana",
-    "allocatedUser": "Rafael Saldanha Ferraz Gangana",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2769,7 +2769,7 @@
     "macIp": "10.209.178.49",
     "sector": "COEFI",
     "responsible": "Rafael Saldanha Ferraz Gangana",
-    "allocatedUser": "Rafael Saldanha Ferraz Gangana",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2784,7 +2784,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Diego Paulino Galhardo",
-    "allocatedUser": "Diego Paulino Galhardo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2799,7 +2799,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Diego Paulino Galhardo",
-    "allocatedUser": "Diego Paulino Galhardo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2814,7 +2814,7 @@
     "macIp": "10.209.178.37",
     "sector": "COEFI",
     "responsible": "Diego Paulino Galhardo",
-    "allocatedUser": "Diego Paulino Galhardo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2829,7 +2829,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Oscar Zweiter Neto",
-    "allocatedUser": "Oscar Zweiter Neto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2844,7 +2844,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Oscar Zweiter Neto",
-    "allocatedUser": "Oscar Zweiter Neto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2859,7 +2859,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Oscar Zweiter Neto",
-    "allocatedUser": "Oscar Zweiter Neto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2874,7 +2874,7 @@
     "macIp": "10.209.178.34",
     "sector": "DIORC",
     "responsible": "Oscar Zweiter Neto",
-    "allocatedUser": "Oscar Zweiter Neto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2889,7 +2889,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Carla Maria Pinto Nunes de Souza",
-    "allocatedUser": "Carla Maria Pinto Nunes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2904,7 +2904,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Carla Maria Pinto Nunes de Souza",
-    "allocatedUser": "Carla Maria Pinto Nunes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2919,7 +2919,7 @@
     "macIp": "10.209.178.54",
     "sector": "COLOG",
     "responsible": "Carla Maria Pinto Nunes de Souza",
-    "allocatedUser": "Carla Maria Pinto Nunes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2934,7 +2934,7 @@
     "macIp": "10.209.178.10",
     "sector": "COLOG",
     "responsible": "Fabiana Oda",
-    "allocatedUser": "Fabiana Oda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2949,7 +2949,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Fabiana Oda",
-    "allocatedUser": "Fabiana Oda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2964,7 +2964,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Fabiana Oda",
-    "allocatedUser": "Fabiana Oda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2979,7 +2979,7 @@
     "macIp": "10.209.178.29",
     "sector": "COLOG",
     "responsible": "Divanildo Dantas De Lima",
-    "allocatedUser": "Divanildo Dantas De Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -2994,7 +2994,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Divanildo Dantas De Lima",
-    "allocatedUser": "Divanildo Dantas De Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3009,7 +3009,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Divanildo Dantas De Lima",
-    "allocatedUser": "Divanildo Dantas De Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3024,7 +3024,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Luiz Felipe Vendramini Gomes",
-    "allocatedUser": "Luiz Felipe Vendramini Gomes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3039,7 +3039,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Luiz Felipe Vendramini Gomes",
-    "allocatedUser": "Luiz Felipe Vendramini Gomes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3054,7 +3054,7 @@
     "macIp": "10.209.178.50",
     "sector": "COEFI",
     "responsible": "Bruno Henrique Bernardes Inocencio",
-    "allocatedUser": "Bruno Henrique Bernardes Inocencio",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3069,7 +3069,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Bruno Henrique Bernardes Inocencio",
-    "allocatedUser": "Bruno Henrique Bernardes Inocencio",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3084,7 +3084,7 @@
     "macIp": "",
     "sector": "COEFI",
     "responsible": "Bruno Henrique Bernardes Inocencio",
-    "allocatedUser": "Bruno Henrique Bernardes Inocencio",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3099,7 +3099,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Luiz Felipe Vendramini Gomes",
-    "allocatedUser": "Luiz Felipe Vendramini Gomes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3114,7 +3114,7 @@
     "macIp": "10.209.178.28",
     "sector": "COLOG",
     "responsible": "Luiz Felipe Vendramini Gomes",
-    "allocatedUser": "Luiz Felipe Vendramini Gomes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3129,7 +3129,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Alisson Rafael Rodrigues Alves",
-    "allocatedUser": "Alisson Rafael Rodrigues Alves",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3144,7 +3144,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Alisson Rafael Rodrigues Alves",
-    "allocatedUser": "Alisson Rafael Rodrigues Alves",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3159,7 +3159,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Alisson Rafael Rodrigues Alves",
-    "allocatedUser": "Alisson Rafael Rodrigues Alves",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3174,7 +3174,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Eduardo Moreira Araújo",
-    "allocatedUser": "Eduardo Moreira Araújo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Power BI Pro atribu├¡da"
@@ -3189,7 +3189,7 @@
     "macIp": "10.209.178.13",
     "sector": "COLOG",
     "responsible": "Joao Pedro Mendes de Souza",
-    "allocatedUser": "Joao Pedro Mendes de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3204,7 +3204,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Carla Cristina Araujo",
-    "allocatedUser": "Carla Cristina Araujo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3219,7 +3219,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Carla Cristina Araujo",
-    "allocatedUser": "Carla Cristina Araujo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3234,7 +3234,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Carla Cristina Araujo",
-    "allocatedUser": "Carla Cristina Araujo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3249,7 +3249,7 @@
     "macIp": "10.209.178.21",
     "sector": "CGEST",
     "responsible": "Carla Cristina Araujo",
-    "allocatedUser": "Carla Cristina Araujo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3264,7 +3264,7 @@
     "macIp": "10.209.178.23",
     "sector": "CGEST",
     "responsible": "Eduardo Moura da Silva",
-    "allocatedUser": "Eduardo Moura da Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3279,7 +3279,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Eduardo Moura da Silva",
-    "allocatedUser": "Eduardo Moura da Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3294,7 +3294,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Eduardo Moura da Silva",
-    "allocatedUser": "Eduardo Moura da Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3309,7 +3309,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Eduardo Moura da Silva",
-    "allocatedUser": "Eduardo Moura da Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3324,7 +3324,7 @@
     "macIp": "10.209.178.20",
     "sector": "CGEST",
     "responsible": "Lilian Chaves Maluf Fauda",
-    "allocatedUser": "Lilian Chaves Maluf Fauda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3339,7 +3339,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Lilian Chaves Maluf Fauda",
-    "allocatedUser": "Lilian Chaves Maluf Fauda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3354,7 +3354,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Lilian Chaves Maluf Fauda",
-    "allocatedUser": "Lilian Chaves Maluf Fauda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3369,7 +3369,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Lilian Chaves Maluf Fauda",
-    "allocatedUser": "Lilian Chaves Maluf Fauda",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3384,7 +3384,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
-    "allocatedUser": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3399,7 +3399,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
-    "allocatedUser": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3504,7 +3504,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "André Luiz Rodrigues",
-    "allocatedUser": "André Luiz Rodrigues",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3519,7 +3519,7 @@
     "macIp": "10.209.178.18",
     "sector": "COGEP",
     "responsible": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
-    "allocatedUser": "Carolina Menna Soares Pinto / Luciane de Sousa Piccini Lopes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3534,7 +3534,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lea Mendonça Nobrega",
-    "allocatedUser": "Lea Mendonça Nobrega",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3549,7 +3549,7 @@
     "macIp": "",
     "sector": "DIORC",
     "responsible": "Lea Mendonça Nobrega",
-    "allocatedUser": "Lea Mendonça Nobrega",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -3594,7 +3594,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "João Carlos Gonçalves Barreto",
-    "allocatedUser": "João Carlos Gonçalves Barreto",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Power BI Pro atribu├¡da"
@@ -3639,7 +3639,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Karina Rocha Martins",
-    "allocatedUser": "Karina Rocha Martins",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Adobe Creative Cloud - All Apps atribu├¡da"
@@ -3654,7 +3654,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Karine Patrício Costa",
-    "allocatedUser": "Karine Patrício Costa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Adobe Creative Cloud - All Apps atribu├¡da"
@@ -3669,7 +3669,7 @@
     "macIp": "",
     "sector": "SOF",
     "responsible": "Felipe Cesar Araujo Da Silva",
-    "allocatedUser": "Felipe Cesar Araujo Da Silva",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Licença Gartner - Technical Professionals Team Member atribuída"
@@ -3939,7 +3939,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Viviane Gomes De Barros Nóbrega",
-    "allocatedUser": "Viviane Gomes De Barros Nóbrega",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Adobe Creative Cloud - All Apps atribu├¡da"
@@ -4119,7 +4119,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "André do Nascimento Monteiro",
-    "allocatedUser": "André do Nascimento Monteiro",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4134,7 +4134,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Carlene Guimarães de Souza",
-    "allocatedUser": "Carlene Guimarães de Souza",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4164,7 +4164,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Geraldo Francisco da Silva Júnior",
-    "allocatedUser": "Geraldo Francisco da Silva Júnior",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4179,7 +4179,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Jessica Ellen Azevedo Orion Lopes",
-    "allocatedUser": "Jessica Ellen Azevedo Orion Lopes",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4194,7 +4194,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "José Amarildo Nunes de Lima",
-    "allocatedUser": "José Amarildo Nunes de Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4209,7 +4209,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Vinícius Araújo dos Santos",
-    "allocatedUser": "Vinícius Araújo dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Copilot Studio atribu├¡da"
@@ -4389,7 +4389,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Laurinei Pimentel Martins",
-    "allocatedUser": "Laurinei Pimentel Martins",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4404,7 +4404,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Mirian de Fátima Fiuza de Oliveira",
-    "allocatedUser": "Mirian de Fátima Fiuza de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4419,7 +4419,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Tatiane Braz De Oliveira",
-    "allocatedUser": "Tatiane Braz De Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4449,7 +4449,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Vinícius Pereira Andrade",
-    "allocatedUser": "Vinícius Pereira Andrade",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4464,7 +4464,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Marília Oliveira Barbosa Lima",
-    "allocatedUser": "Marília Oliveira Barbosa Lima",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4479,7 +4479,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Moisés dos Santos Carvalho",
-    "allocatedUser": "Moisés dos Santos Carvalho",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4629,7 +4629,7 @@
     "macIp": "",
     "sector": "",
     "responsible": "Marcus Vinicius Pereira Brandão",
-    "allocatedUser": "Marcus Vinicius Pereira Brandão",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",
     "notes": "Acrobat Pro DC atribu├¡da"
@@ -4659,7 +4659,7 @@
     "macIp": "10.209.178.12",
     "sector": "COLOG",
     "responsible": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
-    "allocatedUser": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4674,7 +4674,7 @@
     "macIp": "10.209.178.17",
     "sector": "COGEP",
     "responsible": "Thais Luna Magnago / Geovana Sena Aguiar",
-    "allocatedUser": "Thais Luna Magnago / Geovana Sena Aguiar",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4689,7 +4689,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Thais Luna Magnago / Geovana Sena Aguiar",
-    "allocatedUser": "Thais Luna Magnago / Geovana Sena Aguiar",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4704,7 +4704,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Thais Luna Magnago / Geovana Sena Aguiar",
-    "allocatedUser": "Thais Luna Magnago / Geovana Sena Aguiar",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4734,7 +4734,7 @@
     "macIp": "10.209.178.37",
     "sector": "COTIC",
     "responsible": "Marcos Sebastian Alsina",
-    "allocatedUser": "Marcos Sebastian Alsina",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4749,7 +4749,7 @@
     "macIp": "10.209.178.51",
     "sector": "COTIC",
     "responsible": "Vinicius Veronezze dos Reis Costa",
-    "allocatedUser": "Vinicius Veronezze dos Reis Costa",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4764,7 +4764,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
-    "allocatedUser": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4779,7 +4779,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
-    "allocatedUser": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4794,7 +4794,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
-    "allocatedUser": "Andrine Gonçalves Soares / Hilquias Rosa de Oliveira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4809,7 +4809,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Matheus Maurício Rodrigues Pereira",
-    "allocatedUser": "Matheus Maurício Rodrigues Pereira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4824,7 +4824,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Matheus Maurício Rodrigues Pereira",
-    "allocatedUser": "Matheus Maurício Rodrigues Pereira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4839,7 +4839,7 @@
     "macIp": "",
     "sector": "CGEST",
     "responsible": "Matheus Maurício Rodrigues Pereira",
-    "allocatedUser": "Matheus Maurício Rodrigues Pereira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4854,7 +4854,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
-    "allocatedUser": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4869,7 +4869,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
-    "allocatedUser": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4884,7 +4884,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
-    "allocatedUser": "Maristella Alves do Nascimento Salgado / João Remisson Teixeira Figueiredo",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4899,7 +4899,7 @@
     "macIp": "10.209.178.56",
     "sector": "COTIC",
     "responsible": "Matheus Maurício Rodrigues Pereira",
-    "allocatedUser": "Matheus Maurício Rodrigues Pereira",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4914,7 +4914,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Franciellen Euzébio Silva dos Santos",
-    "allocatedUser": "Franciellen Euzébio Silva dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4929,7 +4929,7 @@
     "macIp": "",
     "sector": "COGEP",
     "responsible": "Franciellen Euzébio Silva dos Santos",
-    "allocatedUser": "Franciellen Euzébio Silva dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4944,7 +4944,7 @@
     "macIp": "",
     "sector": "COLOG",
     "responsible": "André Luiz Rodrigues",
-    "allocatedUser": "André Luiz Rodrigues",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -4989,7 +4989,7 @@
     "macIp": "10.209.178.62",
     "sector": "COGEP",
     "responsible": "Franciellen Euzébio Silva dos Santos",
-    "allocatedUser": "Franciellen Euzébio Silva dos Santos",
+    "allocatedUser": "",
     "warranty": "",
     "equipmentState": "",
     "notes": ""
@@ -5019,336 +5019,6 @@
     "macIp": "",
     "sector": "",
     "responsible": "Júlio Vinícius Alves Leite",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Copilot Add-on atribuída"
-  },
-  {
-    "id": 336,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392502",
-    "equipmentId": "9TDLF83",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Bianca Andrioli de Moura Guimarães",
-    "allocatedUser": "Bianca Andrioli de Moura Guimarães",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 337,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392520",
-    "equipmentId": "CYDLF83",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Bianca Andrioli de Moura Guimarães",
-    "allocatedUser": "Bianca Andrioli de Moura Guimarães",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 338,
-    "type": "Desktop",
-    "model": "Positivo / Master C4400 Minipro rohs",
-    "assetType": "MGI",
-    "assetId": "12401574",
-    "equipmentId": "5A463W96D",
-    "macIp": "10.209.178.32",
-    "sector": "SAGE",
-    "responsible": "Bianca Andrioli de Moura Guimarães",
-    "allocatedUser": "Bianca Andrioli de Moura Guimarães",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 339,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392528",
-    "equipmentId": "FQHLF83",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Larissa Martins Vieira",
-    "allocatedUser": "Larissa Martins Vieira",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 340,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392570",
-    "equipmentId": "5BPLF83",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Larissa Martins Vieira",
-    "allocatedUser": "Larissa Martins Vieira",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 341,
-    "type": "Desktop",
-    "model": "Positivo / Master C4400 Minipro rohs",
-    "assetType": "MGI",
-    "assetId": "12401661",
-    "equipmentId": "5A4636140",
-    "macIp": "10.209.178.33",
-    "sector": "SAGE",
-    "responsible": "Larissa Martins Vieira",
-    "allocatedUser": "Larissa Martins Vieira",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 342,
-    "type": "Desktop",
-    "model": "Positivo / Master C4400 Minipro rohs",
-    "assetType": "MGI",
-    "assetId": "12401684",
-    "equipmentId": "5A463672E",
-    "macIp": "10.209.178.26",
-    "sector": "SAGE",
-    "responsible": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "allocatedUser": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 343,
-    "type": "Monitor",
-    "model": "AOC / 24P1U",
-    "assetType": "MPO",
-    "assetId": "749072",
-    "equipmentId": "GNSJ2XA003114",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "allocatedUser": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 344,
-    "type": "Monitor",
-    "model": "AOC / 24P1U",
-    "assetType": "MPO",
-    "assetId": "749076",
-    "equipmentId": "GNSJ2XA003256",
-    "macIp": "",
-    "sector": "SAGE",
-    "responsible": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "allocatedUser": "Lorena Ferrer Cavalcanti Randal Pompeu",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 345,
-    "type": "Desktop",
-    "model": "Daten / DC6A-S",
-    "assetType": "MPO",
-    "assetId": "47959600",
-    "equipmentId": "01047510010016",
-    "macIp": "10.209.178.41",
-    "sector": "CONTB",
-    "responsible": "Rafael Ibsen Souza Silva",
-    "allocatedUser": "Rafael Ibsen Souza Silva",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": ""
-  },
-  {
-    "id": 346,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392576",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Sem usuário alocado",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": "Adicionado como item faltante identificado na planilha"
-  },
-  {
-    "id": 347,
-    "type": "Monitor",
-    "model": "Dell / P2419Hc",
-    "assetType": "ME",
-    "assetId": "12392831",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Sem usuário alocado",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": "Adicionado como item faltante identificado na planilha"
-  },
-  {
-    "id": 348,
-    "type": "Desktop",
-    "model": "Daten / DC6A-S",
-    "assetType": "MPO",
-    "assetId": "47959663",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "Sem setor",
-    "responsible": "Sem usuário alocado",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "",
-    "notes": "Adicionado como item faltante identificado na planilha"
-  },
-  {
-    "id": 349,
-    "type": "Licença",
-    "model": "CDAO Executive Team Leader",
-    "assetType": "SW",
-    "assetId": "bruzzeguezgustavo.bruzzeguez@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Gustavo Bruzzeguez",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "CDAO Executive Team Leader atribuída"
-  },
-  {
-    "id": 350,
-    "type": "Licença",
-    "model": "CDAO Executive Team Member",
-    "assetType": "SW",
-    "assetId": "costadaniel.r.costa@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Everton Ramos",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "CDAO Executive Team Member atribuída"
-  },
-  {
-    "id": 351,
-    "type": "Licença",
-    "model": "Gartner for Technical Professionals Team Leader",
-    "assetType": "SW",
-    "assetId": "carneiroalvaro.carneiro@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Álvaro José de Andrade Carneiro",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Gartner for Technical Professionals Team Leader atribuída"
-  },
-  {
-    "id": 352,
-    "type": "Licença",
-    "model": "Gartner for Technical Professionals Team Member",
-    "assetType": "SW",
-    "assetId": "fonsecamarcos.fonseca@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Marcos Alsina",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Gartner for Technical Professionals Team Member atribuída"
-  },
-  {
-    "id": 353,
-    "type": "Licença",
-    "model": "Gartner for Technical Professionals Team Member",
-    "assetType": "SW",
-    "assetId": "liraleandro.lira@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Leandro Lira",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Gartner for Technical Professionals Team Member atribuída"
-  },
-  {
-    "id": 354,
-    "type": "Licença",
-    "model": "Gartner for Technical Professionals Team Member",
-    "assetType": "SW",
-    "assetId": "grimaldidaniel.grimaldi@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Wertiz Dantas da Silva Junior",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Gartner for Technical Professionals Team Member atribuída"
-  },
-  {
-    "id": 355,
-    "type": "Licença",
-    "model": "Gartner for Technical Professionals Team Member",
-    "assetType": "SW",
-    "assetId": "dantasana.dantas@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Monade Rassa Souza Costa",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Gartner for Technical Professionals Team Member atribuída"
-  },
-  {
-    "id": 356,
-    "type": "Licença",
-    "model": "Copilot Add-on",
-    "assetType": "SW",
-    "assetId": "melloleonardo.c.mello@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Leonardo Mello",
-    "allocatedUser": "",
-    "warranty": "",
-    "equipmentState": "Ativa",
-    "notes": "Copilot Add-on atribuída"
-  },
-  {
-    "id": 357,
-    "type": "Licença",
-    "model": "Copilot Add-on",
-    "assetType": "SW",
-    "assetId": "santosbasemate.santos@planejamento.gov.br",
-    "equipmentId": "",
-    "macIp": "",
-    "sector": "",
-    "responsible": "Rodolfo Vaz Oliveira Aguiar",
     "allocatedUser": "",
     "warranty": "",
     "equipmentState": "Ativa",

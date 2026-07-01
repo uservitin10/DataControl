@@ -11,7 +11,7 @@ const map=new Map();
 for(let i=0;i<matches.length;i++){
   const m=matches[i]; const email=m[0].toLowerCase(); const start=m.index; const prevEnd=i===0?0:matches[i-1].index+matches[i-1][0].length; let nameChunk=pasted.slice(prevEnd,start).trim().replace(/[\r\n]+/g,' ').replace(/[^\S\r\n]+/g,' ').trim(); if(!nameChunk||nameChunk.length<2){ const before=pasted.slice(Math.max(0,start-80),start); const m2=before.match(/([A-ZÀ-Ö][^A-ZÀ-Ö]{1,80})$/); nameChunk=m2?m2[1].trim():'';} if(nameChunk){map.set(nameChunk.toLowerCase(),email);} }
 console.log('map size',map.size);
-const licenses=inv.filter(item=>item.type==='Licença'&&item.equipmentState&&String(item.equipmentState).toLowerCase()==='ativa');
+const licenses=inv.filter(item=>item.type==='Licença'&&item.equipmentState&&String(item.equipmentState).toLowerCase()==='Ativa');
 const missing=licenses.filter(l=>!l.assetId||!String(l.assetId).trim());
 console.log('missing count',missing.length);
 function score(a,b){const at=(a||'').split(/\s+/).filter(t=>t.length>2); const bt=(b||'').split(/\s+/).filter(t=>t.length>2); let s=0; for(const x of at) for(const y of bt) if(x===y) s++; return s;}

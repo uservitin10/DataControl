@@ -20,20 +20,19 @@ async function syncLicensesToDatabase() {
       item.equipmentState.toLowerCase() === 'ativa'
     );
 
-    console.log(`✓ Encontradas ${licensesFromJson.length} licenças ativas no JSON`);
+    console.log(`✓ Encontradas ${licensesFromJson.length} licenças Ativas no JSON`);
 
-    // Buscar licenças do banco
+    // Buscar todas as licenças já presentes no banco, independentemente do estado
     const { data: licensesFromDb, error: fetchError } = await supabase
       .from('inventory_items')
       .select('*')
-      .eq('type', 'Licença')
-      .in('equipment_state', ['ativa', 'ativo']);
+      .eq('type', 'Licença');
 
     if (fetchError) {
       throw new Error(`Erro ao buscar licenças do banco: ${fetchError.message}`);
     }
 
-    console.log(`✓ Encontradas ${licensesFromDb.length} licenças ativas no banco`);
+    console.log(`✓ Encontradas ${licensesFromDb.length} licenças no banco`);
 
     // Criar um Set de chaves existentes no banco (modelo + email)
     const existingKeysInDb = new Set(
@@ -108,7 +107,7 @@ async function syncLicensesToDatabase() {
       responsible: jsonLicense.responsible || null,
       sector: jsonLicense.sector || null,
       warranty: jsonLicense.warranty || null,
-      equipment_state: 'ativa',
+      equipment_state: 'Ativa',
       notes: jsonLicense.notes || null,
     }));
 
@@ -122,7 +121,7 @@ async function syncLicensesToDatabase() {
     }
 
     console.log(`\n✓ ${insertedItems.length} licenças inseridas com sucesso!`);
-    console.log('\nTotal no banco agora: ' + (licensesFromDb.length + insertedItems.length) + ' licenças ativas');
+    console.log('\nTotal no banco agora: ' + (licensesFromDb.length + insertedItems.length) + ' licenças Ativas');
 
   } catch (error) {
     console.error('Erro:', error.message);

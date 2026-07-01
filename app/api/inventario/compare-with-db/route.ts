@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
+type InventoryItem = Record<string, any>;
+
 export async function GET(req: NextRequest) {
   try {
     // Buscar todos os equipamentos do banco
@@ -29,7 +31,7 @@ export async function GET(req: NextRequest) {
     const dbMap = new Map();
     const jsonMap = new Map();
 
-    dbEquipments.forEach(eq => {
+    dbEquipments.forEach((eq: InventoryItem) => {
       const key = createKey(eq);
       if (!dbMap.has(key)) {
         dbMap.set(key, []);
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
       dbMap.get(key).push(eq);
     });
 
-    inventarioData.forEach(eq => {
+    inventarioData.forEach((eq: InventoryItem) => {
       const key = createKey(eq);
       if (!jsonMap.has(key)) {
         jsonMap.set(key, []);
@@ -58,7 +60,7 @@ export async function GET(req: NextRequest) {
         .map(([key, items]) => ({
           key,
           count: items.length,
-          items: items.map(eq => ({
+          items: items.map((eq: InventoryItem) => ({
             id: eq.id,
             assetId: eq.asset_id,
             equipmentId: eq.equipment_id,
@@ -77,7 +79,7 @@ export async function GET(req: NextRequest) {
         .map(([key, items]) => ({
           key,
           count: items.length,
-          items: items.map(eq => ({
+          items: items.map((eq: InventoryItem) => ({
             id: eq.id,
             assetId: eq.assetId,
             equipmentId: eq.equipmentId,
@@ -95,7 +97,7 @@ export async function GET(req: NextRequest) {
         .map(([key, items]) => ({
           key,
           count: items.length,
-          items: items.map(eq => ({
+          items: items.map((eq: InventoryItem) => ({
             id: eq.id,
             assetId: eq.asset_id,
             equipmentId: eq.equipment_id,
@@ -111,7 +113,7 @@ export async function GET(req: NextRequest) {
         .map(([key, items]) => ({
           key,
           count: items.length,
-          items: items.map(eq => ({
+          items: items.map((eq: InventoryItem) => ({
             id: eq.id,
             assetId: eq.assetId,
             equipmentId: eq.equipmentId,

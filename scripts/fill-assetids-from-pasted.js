@@ -59,7 +59,7 @@ try {
     return null;
   }
 
-  const licenses = inventario.filter(item => item.type === 'Licença' && item.equipmentState && String(item.equipmentState).toLowerCase() === 'ativa');
+  const licenses = inventario.filter(item => item.type === 'Licença' && item.equipmentState && String(item.equipmentState).toLowerCase() === 'Ativa');
   let filled = 0;
   const details = [];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS } from "@/lib/ui-constants";
@@ -16,6 +16,8 @@ export default function InventarioPage() {
   const [userPresent, setUserPresent] = useState(false);
   const [displayNameState, setDisplayNameState] = useState<string | null>(null);
   const [roleState, setRoleState] = useState<string | null>(null);
+  const [inventoryEquipments, setInventoryEquipments] = useState<any[]>([]);
+  const [inventoryLicenses, setInventoryLicenses] = useState<any[]>([]);
 
   useEffect(() => {
       const checkAccess = async () => {
@@ -39,9 +41,18 @@ export default function InventarioPage() {
         setUserPresent(true);
         setDisplayNameState(profile.display_name ?? sessionUser.email ?? null);
         setRoleState(profile.role ?? null);
-        setLoadingUser(false);
+
+        const inventoryResponse = await fetchJson<{
+          equipments: any[];
+          licenses: any[];
+        }>("/api/inventario/meu-inventario");
+
+        setInventoryEquipments(inventoryResponse.equipments ?? []);
+        setInventoryLicenses(inventoryResponse.licenses ?? []);
       } catch {
         router.replace("/dashboard?alert=no_permission_inventario");
+      } finally {
+        setLoadingUser(false);
       }
     };
 
@@ -49,11 +60,11 @@ export default function InventarioPage() {
   }, [router]);
 
   const stats = {
-    total: equipmentData.length,
-    monitors: equipmentData.filter((i) => i.type === "Monitor").length,
-    desktops: equipmentData.filter((i) => i.type === "Desktop").length,
-    notebooks: equipmentData.filter((i) => i.type === "Notebook").length,
-    licenses: equipmentData.filter((i) => isActiveLicense(i)).length,
+    total: inventoryEquipments.length + inventoryLicenses.length,
+    monitors: inventoryEquipments.filter((i) => i.type === "Monitor").length,
+    desktops: inventoryEquipments.filter((i) => i.type === "Desktop").length,
+    notebooks: inventoryEquipments.filter((i) => i.type === "Notebook").length,
+    licenses: inventoryLicenses.length,
   };
 
   const extraSectorOptions = [
@@ -73,7 +84,7 @@ export default function InventarioPage() {
   const sectorSummaries = Array.from(
     new Set(
       [
-        ...equipmentData.map((i) => (i.sector ?? "").toString().trim()),
+        ...inventoryEquipments.map((i) => (i.sector ?? "").toString().trim()),
         ...extraSectorOptions,
         "Sem setor",
         "Licenças",
@@ -84,21 +95,17 @@ export default function InventarioPage() {
     .filter(Boolean)
     .sort()
     .map((sector) => {
-      let items: typeof equipmentData = [];
+      let items: any[] = [];
       
       if (sector === "Licenças") {
-        items = equipmentData.filter((item) => isActiveLicense(item));
+        items = inventoryLicenses;
       } else if (sector === "Sem setor") {
-        items = equipmentData.filter(
-          (item) =>
-            !(item.sector ?? "").toString().trim() &&
-            !isActiveLicense(item)
+        items = inventoryEquipments.filter(
+          (item) => !(item.sector ?? "").toString().trim()
         );
       } else {
-        items = equipmentData.filter(
-          (item) =>
-            (item.sector ?? "").toString().trim() === sector &&
-            !isActiveLicense(item)
+        items = inventoryEquipments.filter(
+          (item) => (item.sector ?? "").toString().trim() === sector
         );
       }
       
@@ -190,7 +197,7 @@ export default function InventarioPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-6">
-              <p className="text-sm font-medium text-slate-600">Licenças ativas</p>
+              <p className="text-sm font-medium text-slate-600">Licenças Ativas</p>
               <p className="mt-2 text-3xl font-bold text-emerald-700">{stats.licenses}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.licenses / stats.total) * 100) : 0}% do total</p>
             </div>
@@ -237,7 +244,7 @@ export default function InventarioPage() {
                     </div>
                     <p className="mt-4 text-sm text-slate-500">
                       {isLicensesCard
-                        ? "Todas as licenças ativas do inventário"
+                        ? "Todas as licenças Ativas do inventário"
                         : "Clique para ver a página de ativos deste setor."}
                     </p>
                   </>
@@ -249,7 +256,7 @@ export default function InventarioPage() {
                       key={summary.sector}
                       href="/inventario/licencas"
                       className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-slate-300 hover:bg-white"
-                      aria-label="Abrir página de licenças ativas"
+                      aria-label="Abrir página de licenças Ativas"
                     >
                       {cardContent}
                     </Link>

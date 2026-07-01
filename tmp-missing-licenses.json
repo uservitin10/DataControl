@@ -1,0 +1,90 @@
+[
+  {
+    "index": 0,
+    "model": "CDAO Executive Team Leader",
+    "responsible": "Gustavo Bruzzeguez",
+    "email": "bruzzeguezgustavo.bruzzeguez@planejamento.gov.br",
+    "key": "cdao executive team leader|bruzzeguezgustavo.bruzzeguez@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 1,
+    "model": "CDAO Executive Team Member",
+    "responsible": "Everton Ramos",
+    "email": "costadaniel.r.costa@planejamento.gov.br",
+    "key": "cdao executive team member|costadaniel.r.costa@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 2,
+    "model": "Gartner for Technical Professionals Team Leader",
+    "responsible": "Álvaro José de Andrade Carneiro",
+    "email": "carneiroalvaro.carneiro@planejamento.gov.br",
+    "key": "gartner for technical professionals team leader|carneiroalvaro.carneiro@planejamento.gov.br",
+    "bestScore": 3
+  },
+  {
+    "index": 4,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Marcos Alsina",
+    "email": "fonsecamarcos.fonseca@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|fonsecamarcos.fonseca@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 5,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Leandro Lira",
+    "email": "liraleandro.lira@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|liraleandro.lira@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 6,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Felipe Cesar Araujo Da Silva",
+    "email": "silvafelipe.csilva@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|silvafelipe.csilva@planejamento.gov.br",
+    "bestScore": 3
+  },
+  {
+    "index": 7,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Wertiz Dantas da Silva Junior",
+    "email": "grimaldidaniel.grimaldi@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|grimaldidaniel.grimaldi@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 9,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Mauro Tapajós Santos",
+    "email": "lessaana.lessa@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|lessaana.lessa@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 10,
+    "model": "Gartner for Technical Professionals Team Member",
+    "responsible": "Monade Rassa Souza Costa",
+    "email": "dantasana.dantas@planejamento.gov.br",
+    "key": "gartner for technical professionals team member|dantasana.dantas@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 27,
+    "model": "Copilot Add-on",
+    "responsible": "Leonardo Mello",
+    "email": "melloleonardo.c.mello@planejamento.gov.br",
+    "key": "copilot add-on|melloleonardo.c.mello@planejamento.gov.br",
+    "bestScore": 1
+  },
+  {
+    "index": 36,
+    "model": "Copilot Add-on",
+    "responsible": "Rodolfo Vaz Oliveira Aguiar",
+    "email": "santosbasemate.santos@planejamento.gov.br",
+    "key": "copilot add-on|santosbasemate.santos@planejamento.gov.br",
+    "bestScore": 1
+  }
+]

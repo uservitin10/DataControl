@@ -64,7 +64,7 @@ export default function LoginPage() {
           details: `email:${email} error:${signInError.message}`,
         });
       } catch (auditErr) {
-        console.warn("Falha ao gravar tentativa de login falha:", auditErr);
+        console.warn("Falha ao gravar tentAtiva de login falha:", auditErr);
       }
       return;
     }
