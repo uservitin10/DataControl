@@ -8,7 +8,7 @@ import { ROLE_LABELS } from "@/lib/ui-constants";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
-import { equipmentData, isActiveLicense } from "@/lib/inventario";
+import { equipmentData, getWarrantyExpiryStatus, isActiveLicense } from "@/lib/inventario";
 
 export default function InventarioPage() {
   const router = useRouter();
@@ -18,6 +18,35 @@ export default function InventarioPage() {
   const [roleState, setRoleState] = useState<string | null>(null);
   const [inventoryEquipments, setInventoryEquipments] = useState<any[]>([]);
   const [inventoryLicenses, setInventoryLicenses] = useState<any[]>([]);
+
+  const expiringInventorySummary = useMemo(() => {
+    const allItems = [...inventoryEquipments, ...inventoryLicenses];
+    let totalExpiring = 0;
+    let totalExpired = 0;
+    let totalLicenses = 0;
+    let totalWarranties = 0;
+
+    allItems.forEach((item) => {
+      const status = getWarrantyExpiryStatus(item.warranty);
+      if (!status || status.status === "ok") {
+        return;
+      }
+
+      totalExpiring += 1;
+      if (status.status === "expired") {
+        totalExpired += 1;
+      }
+
+      const typeValue = (item.type ?? "").toString().toLowerCase();
+      if (typeValue === "licença" || typeValue === "licenca") {
+        totalLicenses += 1;
+      } else {
+        totalWarranties += 1;
+      }
+    });
+
+    return { totalExpiring, totalExpired, totalLicenses, totalWarranties };
+  }, [inventoryEquipments, inventoryLicenses]);
 
   useEffect(() => {
       const checkAccess = async () => {
@@ -81,44 +110,45 @@ export default function InventarioPage() {
     "AGENDA",
   ];
 
-  const sectorSummaries = Array.from(
+  const equipmentSectorNames = Array.from(
     new Set(
       [
         ...inventoryEquipments.map((i) => (i.sector ?? "").toString().trim()),
         ...extraSectorOptions,
         "Sem setor",
-        "Licenças",
       ]
     )
   )
     .map((s) => (s ?? "").toString().trim())
     .filter(Boolean)
-    .sort()
-    .map((sector) => {
-      let items: any[] = [];
-      
-      if (sector === "Licenças") {
-        items = inventoryLicenses;
-      } else if (sector === "Sem setor") {
-        items = inventoryEquipments.filter(
-          (item) => !(item.sector ?? "").toString().trim()
-        );
-      } else {
-        items = inventoryEquipments.filter(
-          (item) => (item.sector ?? "").toString().trim() === sector
-        );
-      }
-      
-      return {
-        sector,
-        total: items.length,
-        monitors: items.filter((item) => item.type === "Monitor").length,
-        desktops: items.filter((item) => item.type === "Desktop").length,
-        notebooks: items.filter((item) => item.type === "Notebook").length,
-      };
-    });
+    .sort();
+
+  const sectorSummaries = equipmentSectorNames.map((sector) => {
+    const items = sector === "Sem setor"
+      ? inventoryEquipments.filter((item) => !(item.sector ?? "").toString().trim())
+      : inventoryEquipments.filter((item) => (item.sector ?? "").toString().trim() === sector);
+
+    return {
+      sector,
+      total: items.length,
+      monitors: items.filter((item) => item.type === "Monitor").length,
+      desktops: items.filter((item) => item.type === "Desktop").length,
+      notebooks: items.filter((item) => item.type === "Notebook").length,
+    };
+  });
+
+  const licensesSummary = {
+    sector: "Licenças",
+    total: inventoryLicenses.length,
+    monitors: 0,
+    desktops: 0,
+    notebooks: 0,
+  };
+
+  const allSectorSummaries = [...sectorSummaries, licensesSummary];
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
+  const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];
 
   if (loadingUser) {
     return (
@@ -203,6 +233,19 @@ export default function InventarioPage() {
             </div>
           </div>
 
+          {expiringInventorySummary.totalExpiring > 0 && (
+            <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+              <p className="text-sm font-semibold">
+                {expiringInventorySummary.totalExpiring} {expiringInventorySummary.totalExpiring === 1 ? "item" : "itens"} com garantia ou licença perto do vencimento.
+              </p>
+              <p className="mt-2 text-sm text-amber-900">
+                {expiringInventorySummary.totalWarranties > 0 && `${expiringInventorySummary.totalWarranties} garantia(s) próximas.`}
+                {expiringInventorySummary.totalLicenses > 0 && ` ${expiringInventorySummary.totalLicenses} licença(s) próximas.`}
+                {expiringInventorySummary.totalExpired > 0 && ` ${expiringInventorySummary.totalExpired} vencido(s).`}
+              </p>
+            </div>
+          )}
+
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -213,7 +256,7 @@ export default function InventarioPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {activeSectorSummaries.map((summary) => {
+              {visibleSectorSummaries.map((summary) => {
                 const isLicensesCard = summary.sector === "Licenças";
                 
                 const cardContent = (
@@ -229,18 +272,22 @@ export default function InventarioPage() {
                         <p className="text-slate-500">Total</p>
                         <p className="mt-1 text-lg font-semibold">{summary.total}</p>
                       </div>
-                      <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
-                        <p className="text-slate-500">Monitores</p>
-                        <p className="mt-1 text-lg font-semibold">{summary.monitors}</p>
-                      </div>
-                      <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
-                        <p className="text-slate-500">notebooks</p>
-                        <p className="mt-1 text-lg font-semibold">{summary.notebooks}</p>
-                      </div>
-                      <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
-                        <p className="text-slate-500">Desktops</p>
-                        <p className="mt-1 text-lg font-semibold">{summary.desktops}</p>
-                      </div>
+                      {isLicensesCard ? null : (
+                        <>
+                          <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
+                            <p className="text-slate-500">Monitores</p>
+                            <p className="mt-1 text-lg font-semibold">{summary.monitors}</p>
+                          </div>
+                          <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
+                            <p className="text-slate-500">Notebooks</p>
+                            <p className="mt-1 text-lg font-semibold">{summary.notebooks}</p>
+                          </div>
+                          <div className="rounded-2xl bg-white p-3 text-xs font-medium text-slate-700">
+                            <p className="text-slate-500">Desktops</p>
+                            <p className="mt-1 text-lg font-semibold">{summary.desktops}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <p className="mt-4 text-sm text-slate-500">
                       {isLicensesCard

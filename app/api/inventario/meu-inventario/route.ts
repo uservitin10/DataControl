@@ -37,25 +37,43 @@ async function fetchInventoryItemsByColumn(column: string, value: string) {
 }
 
 async function loadViewerEquipments(userId: string) {
-  let searchMethod: "allocated_user_id" | "user_id" = "allocated_user_id";
   const allocatedResult = await fetchInventoryItemsByColumn("allocated_user_id", userId);
-
   if (!allocatedResult.error) {
-    return { equipments: allocatedResult.data ?? [], searchMethod };
+    const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);
+    if (!userIdResult.error) {
+      const combinedItems = [
+        ...(allocatedResult.data ?? []),
+        ...(userIdResult.data ?? []),
+      ];
+      const uniqueItems = Array.from(
+        new Map(combinedItems.map((item) => [String(item.id), item])).values()
+      );
+      return {
+        equipments: uniqueItems,
+        searchMethod: "allocated_user_id",
+      };
+    }
+
+    return {
+      equipments: allocatedResult.data ?? [],
+      searchMethod: "allocated_user_id",
+    };
   }
 
   if (!isMissingColumnError(allocatedResult.error, "allocated_user_id")) {
     throw allocatedResult.error;
   }
 
-  searchMethod = "user_id";
   const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);
 
   if (userIdResult.error) {
     throw userIdResult.error;
   }
 
-  return { equipments: userIdResult.data ?? [], searchMethod };
+  return {
+    equipments: userIdResult.data ?? [],
+    searchMethod: "user_id",
+  };
 }
 
 // FIX: removido o loop de update a cada GET — normalização agora é apenas leitura
@@ -129,7 +147,7 @@ export async function GET(req: NextRequest) {
 
       const activeLicenses = licenses.filter((license) =>
         ["ativa", "ativo"].includes(
-          (license.equipment_state || "").toLowerCase()
+          (license.equipment_state || "").toString().toLowerCase()
         )
       );
 

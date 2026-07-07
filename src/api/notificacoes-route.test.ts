@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { GET, POST, PATCH } from "../../app/api/notificacoes/route";
+import { GET, POST, PATCH, DELETE } from "../../app/api/notificacoes/route";
 import { supabaseServer } from "@/lib/supabase-server";
 import { addAuditLog } from "@/lib/audit";
 import type { NextRequest } from "next/server";
@@ -76,5 +76,22 @@ describe("app/api/notificacoes/route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ success: true, data: { success: true } });
     expect(addAuditLog).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "mark_notifications_read" }));
+  });
+
+  it("DELETE removes a notification and writes an audit log", async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null });
+    const deleteFn = vi.fn(() => ({ eq }));
+    supabaseFromMock.mockImplementation(() => ({ delete: deleteFn }) as unknown as ReturnType<typeof supabaseServer.from>);
+
+    const request = {
+      nextUrl: { searchParams: new URLSearchParams("id=notif-1") },
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await DELETE(request);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, data: { success: true } });
+    expect(deleteFn).toHaveBeenCalledTimes(1);
+    expect(addAuditLog).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "delete_notification" }));
   });
 });

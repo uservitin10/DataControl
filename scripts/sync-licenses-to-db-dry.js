@@ -16,7 +16,7 @@ async function dryRun() {
     const licensesFromJson = inventarioData.filter(item => 
       item.type === 'Licença' && 
       item.equipmentState && 
-      item.equipmentState.toLowerCase() === 'ativa'
+      item.equipmentState.toLowerCase() === 'Ativa'
     );
 
     console.log(`✓ Encontradas ${licensesFromJson.length} licenças Ativas no JSON`);
@@ -25,7 +25,7 @@ async function dryRun() {
       .from('inventory_items')
       .select('*')
       .eq('type', 'Licença')
-      .in('equipment_state', ['Ativa', 'ativa', 'ativo']);
+      .in('equipment_state', ['Ativa', 'Ativa', 'ativo']);
 
     if (fetchError) {
       throw new Error(`Erro ao buscar licenças do banco: ${fetchError.message}`);

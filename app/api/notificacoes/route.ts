@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_NOTIFICACAO_FIELDS } from "@/lib/validation";
-import { apiSuccess, apiCreated, apiValidationError, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiCreated, apiValidationError, apiInternalError, apiNotFound } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async () => {
@@ -84,4 +84,37 @@ export async function PATCH(request: NextRequest) {
       return apiInternalError((err as Error).message);
     }
   }, { module: "notificacoes", action: "edit" });
+}
+
+export async function DELETE(request: NextRequest) {
+  return withAuth(request, async (user) => {
+    try {
+      const notificationId = request.nextUrl.searchParams.get("id");
+
+      if (!notificationId) {
+        return apiValidationError("O id da notificação é obrigatório.");
+      }
+
+      const { error } = await supabaseServer
+        .from("notificacoes")
+        .delete()
+        .eq("id", notificationId);
+
+      if (error) {
+        return apiNotFound("Notificação não encontrada");
+      }
+
+      await addAuditLog({
+        user_id: user.id,
+        action: "delete_notification",
+        resource_type: "notificacoes",
+        resource_id: notificationId,
+        details: "Notificação removida.",
+      });
+
+      return apiSuccess({ success: true });
+    } catch (err) {
+      return apiInternalError((err as Error).message);
+    }
+  }, { module: "notificacoes", action: "delete" });
 }

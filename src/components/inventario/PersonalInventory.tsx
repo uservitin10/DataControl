@@ -150,27 +150,6 @@ export function PersonalInventory() {
   const [activeSection, setActiveSection] = useState<"equipamentos" | "licencas" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filterViewerItems = useCallback((
-    items: InventoryItem[],
-    user: PersonalInventoryResponse["user"]
-  ) => {
-    const normalizedUserName = user.displayName?.trim().toLowerCase();
-
-    return items.filter((item) => {
-      const matchesUserId =
-        item.allocated_user_id === user.id || item.user_id === user.id;
-      const allocatedUserName = item.allocated_user?.trim().toLowerCase();
-      const matchesAllocatedName =
-        normalizedUserName && allocatedUserName
-          ? allocatedUserName === normalizedUserName ||
-            allocatedUserName.includes(normalizedUserName) ||
-            normalizedUserName.includes(allocatedUserName)
-          : false;
-
-      return matchesUserId || matchesAllocatedName;
-    });
-  }, []);
-
   const formatInventoryError = (error: unknown, fallbackMessage: string) => {
     if (!(error instanceof Error)) {
       return fallbackMessage;
@@ -190,22 +169,8 @@ export function PersonalInventory() {
         "/api/inventario/meu-inventario"
       );
 
-      if (role === "viewer") {
-        const filteredEquipments = filterViewerItems(response.equipments, response.user);
-        const filteredLicenses = filterViewerItems(response.licenses, response.user);
-
-        setData({
-          ...response,
-          equipments: filteredEquipments,
-          licenses: filteredLicenses,
-          totalEquipments: filteredEquipments.length,
-          totalLicenses: filteredLicenses.length,
-        });
-        void loadFileCountsFor([...filteredEquipments, ...filteredLicenses]);
-      } else {
-        setData(response);
-        void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
-      }
+      setData(response);
+      void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
     } catch (err) {
       setError(formatInventoryError(err, "Erro ao carregar inventário"));
     }
@@ -223,22 +188,8 @@ export function PersonalInventory() {
           "/api/inventario/meu-inventario"
         );
 
-        if (role === "viewer") {
-          const filteredEquipments = filterViewerItems(response.equipments, response.user);
-          const filteredLicenses = filterViewerItems(response.licenses, response.user);
-
-          setData({
-            ...response,
-            equipments: filteredEquipments,
-            licenses: filteredLicenses,
-            totalEquipments: filteredEquipments.length,
-            totalLicenses: filteredLicenses.length,
-          });
-          void loadFileCountsFor([...filteredEquipments, ...filteredLicenses]);
-        } else {
-          setData(response);
-          void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
-        }
+        setData(response);
+        void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
       } catch (err) {
         if (err instanceof Error) {
           setError(
@@ -256,7 +207,7 @@ export function PersonalInventory() {
     };
 
     void loadData();
-  }, [filterViewerItems]);
+  }, []);
 
   const resetForm = () => {
     setFormState(initialFormState);

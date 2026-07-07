@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EquipmentItem } from "@/types/inventario";
-import { getLegalResponsible, equipmentData } from "@/lib/inventario";
+import { getLegalResponsible, getWarrantyExpiryStatus, equipmentData } from "@/lib/inventario";
 
 const PAGE_SIZE = 10;
 
@@ -128,7 +128,24 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     <td className="px-4 py-3 text-sm text-slate-900">{item.legalResponsible ?? getLegalResponsible(item.sector)}</td>
                   )}
                   {showExtendedFields && (
-                    <td className="px-4 py-3 text-sm text-slate-900">{item.warranty ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm text-slate-900">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{item.warranty ?? "-"}</span>
+                        {item.warranty && getWarrantyExpiryStatus(item.warranty) ? (
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[0.65rem] font-semibold ${
+                              getWarrantyExpiryStatus(item.warranty)?.status === "expired"
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {getWarrantyExpiryStatus(item.warranty)?.status === "expired"
+                              ? "Vencido"
+                              : `Vence em ${getWarrantyExpiryStatus(item.warranty)?.daysUntilExpiry}d`}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
                   )}
                   <td className="px-4 py-3 text-sm text-slate-900">{item.equipmentState || "-"}</td>
                   {showDetailsButton && (

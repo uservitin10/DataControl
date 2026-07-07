@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
+import { getWarrantyExpiryStatus } from "@/lib/inventario";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
 
 type MyInventoryResponse = {
@@ -18,6 +19,29 @@ export default function LicencasPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [licensesData, setLicensesData] = useState<any[]>([]);
+
+  const expiringLicenseSummary = useMemo(() => {
+    const items: any[] = [];
+    let expired = 0;
+
+    for (const item of licensesData) {
+      const status = getWarrantyExpiryStatus(item.warranty);
+      if (!status || status.status === "ok") {
+        continue;
+      }
+
+      items.push(item);
+      if (status.status === "expired") {
+        expired += 1;
+      }
+    }
+
+    return {
+      items,
+      total: items.length,
+      expired,
+    };
+  }, [licensesData]);
 
   const normalizeLicenseItem = (item: any) => ({
     ...item,
@@ -150,6 +174,18 @@ export default function LicencasPage() {
             <p className="mt-2 text-4xl font-bold text-gov-heading">{licenses.length}</p>
             <p className="mt-1 text-sm text-slate-500">licenças de software Ativas</p>
           </div>
+
+          {expiringLicenseSummary.total > 0 && (
+            <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900 shadow-sm">
+              <p className="text-sm font-semibold">
+                {expiringLicenseSummary.total} licença(s) com prazo de validade próximo.
+              </p>
+              <p className="mt-2 text-sm text-amber-900">
+                {expiringLicenseSummary.expired > 0 && `${expiringLicenseSummary.expired} já vencida(s).`}
+                {expiringLicenseSummary.total - expiringLicenseSummary.expired > 0 && ` ${expiringLicenseSummary.total - expiringLicenseSummary.expired} vence(m) em até 30 dias.`}
+              </p>
+            </div>
+          )}
 
           {licenses.length > 0 ? (
             <SectorInventoryTable items={licenses} showExtendedFields={false} showEmail={true} showDetailsButton={false} />

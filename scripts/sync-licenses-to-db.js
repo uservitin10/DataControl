@@ -17,7 +17,7 @@ async function syncLicensesToDatabase() {
     const licensesFromJson = inventarioData.filter(item => 
       item.type === 'Licença' && 
       item.equipmentState && 
-      item.equipmentState.toLowerCase() === 'ativa'
+      item.equipmentState.toLowerCase() === 'Ativa'
     );
 
     console.log(`✓ Encontradas ${licensesFromJson.length} licenças Ativas no JSON`);

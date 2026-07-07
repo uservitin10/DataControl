@@ -10,6 +10,7 @@ import {
   isSemSetorValue,
   normalizeSectorName,
   isActiveLicense,
+  isLicenseType,
 } from "@/lib/inventario";
 
 type Props = {
@@ -55,12 +56,26 @@ export default async function SectorInventoryPage({ params }: Props) {
     normalizedSector === "cgtop" &&
     excludedCGTOPItems.has(`${item.model ?? ""}|${item.assetId ?? ""}`);
 
+  const isInvalidDesktop = (item: {
+    type?: string;
+    allocatedUser?: string;
+    assetId?: string;
+    equipmentId?: string;
+  }) =>
+    item.type === "Desktop" &&
+    !(item.allocatedUser ?? "").toString().trim() &&
+    !(item.assetId ?? "").toString().trim() &&
+    !(item.equipmentId ?? "").toString().trim();
+
   const sectorItems = equipmentData.filter((item) => {
     const normalizedItemSector = normalizeSectorName(item.sector);
     if (isExcludedCGTOPItem(item)) {
       return false;
     }
-    if (isActiveLicense(item)) {
+    if (isLicenseType(item.type)) {
+      return false;
+    }
+    if (isInvalidDesktop(item)) {
       return false;
     }
 

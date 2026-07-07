@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
@@ -19,6 +19,33 @@ export default function LoginPage() {
 
   useEffect(() => {
     const checkSession = async () => {
+      if (typeof window === "undefined") return;
+
+      const isRecoveryUrl = window.location.hash.includes("access_token=") || window.location.search.includes("type=recovery");
+      if (isRecoveryUrl) {
+        const authClient = supabase.auth as typeof supabase.auth & {
+          getSessionFromUrl?: () => Promise<{
+            data: { session: unknown | null };
+            error: { message: string } | null;
+          }>;
+        };
+
+        const recoveryResult = authClient.getSessionFromUrl
+          ? await authClient.getSessionFromUrl()
+          : { data: { session: null }, error: null };
+
+        const { data, error: recoveryError } = recoveryResult;
+        if (recoveryError) {
+          setError(translateError(recoveryError.message));
+          await supabase.auth.signOut();
+          return;
+        }
+        if (data.session) {
+          router.replace("/dashboard");
+          return;
+        }
+      }
+
       const { data } = await supabase.auth.getSession();
       if (data.session) router.replace("/dashboard");
     };
@@ -47,34 +74,59 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (signInError) {
-      const msg = translateError(signInError.message);
-      setError(msg);
-      try {
-        await logAuditEvent({
-          user_id: null,
-          action: "login_failed",
-          resource_type: "auth",
-          details: `email:${email} error:${signInError.message}`,
-        });
-      } catch (auditErr) {
-        console.warn("Falha ao gravar tentAtiva de login falha:", auditErr);
-      }
+  const navigateToDashboard = () => {
+    if (typeof window !== "undefined") {
+      window.location.assign("/dashboard");
       return;
     }
 
-    const userId = data.session?.user?.id || data.user?.id || null;
-    if (userId) {
-      await logAuthEvent(userId, "login", "Login via formulário");
+    router.replace("/dashboard");
+  };
+
+  const handleLogin = async (event?: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      setError("Informe seu email e senha para continuar.");
+      return;
     }
 
-    router.push("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
+      if (signInError) {
+        const msg = translateError(signInError.message);
+        setError(msg);
+        try {
+          await logAuditEvent({
+            user_id: null,
+            action: "login_failed",
+            resource_type: "auth",
+            details: `email:${normalizedEmail} error:${signInError.message}`,
+          });
+        } catch (auditErr) {
+          console.warn("Falha ao gravar tentAtiva de login falha:", auditErr);
+        }
+        return;
+      }
+
+      const userId = data.session?.user?.id || data.user?.id || null;
+      if (userId) {
+        await logAuthEvent(userId, "login", "Login via formulário");
+      }
+
+      navigateToDashboard();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
@@ -153,7 +205,12 @@ export default function LoginPage() {
               <p className="mb-1 text-xl font-semibold text-gov-heading">Bem-vindo</p>
               <p className="mb-6 text-sm text-gov-muted">Acesse sua conta para continuar</p>
 
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form
+                onSubmit={(event) => {
+                  void handleLogin(event);
+                }}
+                className="space-y-4"
+              >
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                     Email
@@ -188,7 +245,10 @@ export default function LoginPage() {
                 )}
 
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={(event) => {
+                    void handleLogin(event);
+                  }}
                   disabled={loading}
                   className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-60"
                 >
@@ -202,6 +262,15 @@ export default function LoginPage() {
                 >
                   Acesso ao portal
                 </button>
+                <div className="mt-2 text-right">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/login/forgot")}
+                    className="text-sm text-gov-primary hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
               </form>
             </>
           ) : (
