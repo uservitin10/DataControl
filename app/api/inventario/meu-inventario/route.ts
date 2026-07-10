@@ -36,7 +36,9 @@ async function fetchInventoryItemsByColumn(column: string, value: string) {
     .order("type", { ascending: true });
 }
 
-async function loadViewerEquipments(userId: string) {
+async function loadViewerEquipments(
+  userId: string
+): Promise<{ equipments: InventoryItemRecord[]; searchMethod: "allocated_user_id" | "user_id" }> {
   const allocatedResult = await fetchInventoryItemsByColumn("allocated_user_id", userId);
   if (!allocatedResult.error) {
     const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);

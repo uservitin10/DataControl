@@ -4,6 +4,7 @@ import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
+import { buildPasswordRecoveryRedirectPath, isPasswordRecoveryRedirect } from "@/lib/auth-flow";
 
 type Mode = "login" | "register";
 
@@ -21,29 +22,10 @@ export default function LoginPage() {
     const checkSession = async () => {
       if (typeof window === "undefined") return;
 
-      const isRecoveryUrl = window.location.hash.includes("access_token=") || window.location.search.includes("type=recovery");
+      const isRecoveryUrl = isPasswordRecoveryRedirect(window.location.search, window.location.hash);
       if (isRecoveryUrl) {
-        const authClient = supabase.auth as typeof supabase.auth & {
-          getSessionFromUrl?: () => Promise<{
-            data: { session: unknown | null };
-            error: { message: string } | null;
-          }>;
-        };
-
-        const recoveryResult = authClient.getSessionFromUrl
-          ? await authClient.getSessionFromUrl()
-          : { data: { session: null }, error: null };
-
-        const { data, error: recoveryError } = recoveryResult;
-        if (recoveryError) {
-          setError(translateError(recoveryError.message));
-          await supabase.auth.signOut();
-          return;
-        }
-        if (data.session) {
-          router.replace("/dashboard");
-          return;
-        }
+        router.replace(buildPasswordRecoveryRedirectPath(window.location.search, window.location.hash));
+        return;
       }
 
       const { data } = await supabase.auth.getSession();
@@ -60,6 +42,27 @@ export default function LoginPage() {
   };
 
   const translateError = (message: string) => errorTranslator[message] ?? message;
+
+  const getErrorMessage = (err: unknown) => {
+    if (!err) return "Ocorreu um erro inesperado.";
+    if (typeof err === "string") return translateError(err === "{}" ? "Ocorreu um erro inesperado." : err);
+    if (err instanceof Error && typeof err.message === "string") {
+      return translateError(err.message === "{}" || !err.message.trim() ? "Ocorreu um erro inesperado." : err.message);
+    }
+    if (typeof err === "object" && err !== null) {
+      const anyErr = err as { message?: unknown };
+      if (anyErr.message && typeof anyErr.message === "string") {
+        return translateError(anyErr.message === "{}" || !anyErr.message.trim() ? "Ocorreu um erro inesperado." : anyErr.message);
+      }
+      try {
+        const s = JSON.stringify(err);
+        if (s && s !== "{}") return s;
+      } catch {
+        // ignore
+      }
+    }
+    return "Ocorreu um erro inesperado.";
+  };
 
   const logAuthEvent = async (userId: string, action: string, details: string) => {
     try {
@@ -103,14 +106,14 @@ export default function LoginPage() {
       });
 
       if (signInError) {
-        const msg = translateError(signInError.message);
+        const msg = getErrorMessage(signInError);
         setError(msg);
         try {
           await logAuditEvent({
             user_id: null,
             action: "login_failed",
             resource_type: "auth",
-            details: `email:${normalizedEmail} error:${signInError.message}`,
+            details: `email:${normalizedEmail} error:${JSON.stringify(signInError)}`,
           });
         } catch (auditErr) {
           console.warn("Falha ao gravar tentAtiva de login falha:", auditErr);
@@ -141,7 +144,19 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (signUpError) {
-      setError(translateError(signUpError.message));
+      const msg = getErrorMessage(signUpError);
+      setError(msg);
+      console.warn("Signup error:", signUpError);
+      try {
+        await logAuditEvent({
+          user_id: null,
+          action: "signup_failed",
+          resource_type: "auth",
+          details: `email:${email} error:${JSON.stringify(signUpError)}`,
+        });
+      } catch (auditErr) {
+        console.warn("Falha ao gravar log de signup falha:", auditErr);
+      }
       return;
     }
 

@@ -4,11 +4,52 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
+import { buildPasswordResetRedirectUrl } from "@/lib/auth-flow";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const getStatusMessage = (error: unknown) => {
+    if (!error) return "Erro ao enviar instruções de recuperação.";
+    if (typeof error === "string") {
+      return error === "{}" ? "Erro ao enviar instruções de recuperação." : error;
+    }
+
+    if (error instanceof Error && typeof error.message === "string") {
+      return error.message === "{}" || !error.message.trim()
+        ? "Erro ao enviar instruções de recuperação."
+        : error.message;
+    }
+
+    if (typeof error === "object" && error !== null) {
+      const objectError = error as { message?: unknown };
+      if (objectError.message !== undefined) {
+        if (typeof objectError.message === "string") {
+          return objectError.message === "{}" || !objectError.message.trim()
+            ? "Erro ao enviar instruções de recuperação."
+            : objectError.message;
+        }
+
+        try {
+          const nestedMessage = JSON.stringify(objectError.message);
+          if (nestedMessage && nestedMessage !== "{}") return nestedMessage;
+        } catch {
+          // ignore
+        }
+      }
+
+      try {
+        const serialized = JSON.stringify(error);
+        if (serialized && serialized !== "{}") return serialized;
+      } catch {
+        // ignore
+      }
+    }
+
+    return "Erro ao enviar instruções de recuperação.";
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,17 +61,19 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      // Supabase v2 method for password reset. Uses client-side redirect back to login.
-      // If your SDK differs, adapt to the correct method signature.
-      const frontendUrl = process.env.NEXT_PUBLIC_APP_URL;
-      const redirectTo = `${frontendUrl?.replace(/\/$/, "") ?? window.location.origin}/login`;
+      const redirectTo = buildPasswordResetRedirectUrl(
+        process.env.NEXT_PUBLIC_APP_URL,
+        typeof window !== "undefined" ? window.location.origin : undefined
+      );
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });
 
       setLoading(false);
       if (error) {
-        setStatus(error.message || "Erro ao enviar instruções de recuperação.");
+        const message = getStatusMessage(error);
+        setStatus(message);
+        console.warn("Password reset error:", error);
         return;
       }
 
