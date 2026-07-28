@@ -1,0 +1,25 @@
+
+CREATE TABLE inventory_items (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    asset_id text,
+    equipment_id text,
+    type text,
+    model text,
+    sector text,
+    allocated_user text,
+    responsible text,
+    legal_responsible text,
+    warranty text,
+    equipment_state text,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    allocated_user_id uuid,
+    asset_type text,
+    mac_ip text,
+    bios text,
+    notes text,
+    subsector text,
+    sei_process_number text,
+    updated_at timestamp with time zone DEFAULT now(),
+    serial_number text
+);

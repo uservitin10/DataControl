@@ -8,8 +8,7 @@ import { AtivosTable } from "../ativos/AtivosTable";
 export const dynamic = "force-dynamic";
 
 export default async function LevantamentoPage() {
-  const supabase = await createClient();
-  const ativos = await listarAtivos(supabase);
+  const ativos = await listarAtivos();
 
   return (
     <main className="gov-page-bg min-h-screen">

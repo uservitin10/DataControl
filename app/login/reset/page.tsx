@@ -1,13 +1,34 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { fetchJson } from "@/lib/api";
 import { isPasswordRecoveryRedirect } from "@/lib/auth-flow";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordFallback() {
+  return (
+    <main className="gov-page-bg flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-lg">
+        <div className="gov-card p-8 border border-slate-200 bg-white shadow-soft text-center">
+          <p className="text-sm text-gov-muted">Validando seu link de recuperação...</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -16,11 +37,10 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   const isRecovery = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const search = window.location.search;
-    const hash = window.location.hash;
+    const search = searchParams?.toString() ? `?${searchParams.toString()}` : "";
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
     return isPasswordRecoveryRedirect(search, hash);
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isRecovery) {
@@ -28,50 +48,15 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const initialize = async () => {
-      try {
-        const { data, error: recoveryError } = await supabase.auth.getSession();
-        if (recoveryError) {
-          setError(recoveryError.message || "Não foi possível validar este link.");
-          return;
-        }
+    const token = searchParams?.get("token") ?? null;
 
-        if (data.session) {
-          setReady(true);
-          return;
-        }
+    if (!token) {
+      setError("Token de recuperação não encontrado.");
+      return;
+    }
 
-        if (typeof window !== "undefined") {
-          const authClient = supabase.auth as typeof supabase.auth & {
-            getSessionFromUrl?: () => Promise<{
-              data: { session: unknown | null };
-              error: { message: string } | null;
-            }>;
-          };
-
-          const recoveryResult = authClient.getSessionFromUrl
-            ? await authClient.getSessionFromUrl()
-            : { data: { session: null }, error: null };
-
-          if (recoveryResult.error) {
-            setError(recoveryResult.error.message || "Não foi possível validar este link.");
-            return;
-          }
-
-          if (recoveryResult.data.session) {
-            setReady(true);
-            return;
-          }
-        }
-
-        setReady(true);
-      } catch {
-        setError("Não foi possível validar este link de recuperação.");
-      }
-    };
-
-    void initialize();
-  }, [isRecovery]);
+    setReady(true);
+  }, [isRecovery, searchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -93,22 +78,27 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    const token = searchParams?.get("token") ?? null;
+
+    if (!token) {
+      setError("Token de recuperação não encontrado.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-
-      if (updateError) {
-        setError(updateError.message || "Não foi possível redefinir a senha.");
-        return;
-      }
+      await fetchJson("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token, password }),
+      });
 
       setStatus("Senha redefinida com sucesso. Você já pode entrar com a nova senha.");
       setPassword("");
       setConfirmPassword("");
       setTimeout(() => router.replace("/login"), 2000);
-    } catch {
-      setError("Erro inesperado ao redefinir a senha.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível redefinir a senha.");
     } finally {
       setLoading(false);
     }

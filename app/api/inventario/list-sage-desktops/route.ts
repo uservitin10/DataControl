@@ -1,23 +1,19 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
 export async function GET(req: NextRequest) {
   try {
-    const { data: sageDesktops, error: fetchError } = await supabaseServer
-      .from("inventory_items")
-      .select("*")
-      .eq("sector", "SAGE")
-      .eq("type", "Desktop")
-      .order("id", { ascending: true });
-
-    if (fetchError) {
-      return apiInternalError(`Erro: ${fetchError.message}`);
-    }
+    const result = await pool.query(
+      `SELECT * FROM inventory_items
+       WHERE sector = $1 AND type = $2
+       ORDER BY id ASC`,
+      ["SAGE", "Desktop"]
+    );
 
     return apiSuccess({
-      count: sageDesktops?.length || 0,
-      desktops: sageDesktops,
+      count: result.rows.length,
+      desktops: result.rows,
     });
   } catch (error) {
     return apiInternalError(`Erro: ${(error as Error).message}`);

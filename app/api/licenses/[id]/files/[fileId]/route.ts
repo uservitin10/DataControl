@@ -1,41 +1,42 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiValidationError, apiInternalError, apiForbidden } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
+import { withAuthenticatedClient } from "@/lib/db";
+import { s3Client } from "@/lib/minio";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import type { PoolClient } from "pg";
 
 const STORAGE_BUCKET = "documentos";
 
-async function userCanManageLicense(userId: string, role: string, licenseId: string) {
+async function userCanManageLicense(userId: string, role: string, licenseId: string, client: PoolClient) {
   if (role === "admin") {
     return true;
   }
 
-  const { data: licenseItem, error } = await supabaseServer
-    .from("inventory_items")
-    .select("allocated_user_id, user_id")
-    .eq("id", licenseId)
-    .single();
+  const result = await client.query(
+    `SELECT 1 FROM inventory_items WHERE id = $1 AND ($2 = allocated_user_id OR $2 = user_id) LIMIT 1`,
+    [licenseId, userId]
+  );
 
-  if (error || !licenseItem) {
-    return false;
-  }
-
-  return licenseItem.allocated_user_id === userId || licenseItem.user_id === userId;
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string; fileId: string }> }) {
   return withAuth(req, async (user) => {
     try {
       const { id: licenseId, fileId } = await context.params;
+      const userId = user.id || "";
 
-      const { data: fileRecord, error: selectError } = await supabaseServer
-        .from("license_files")
-        .select("id,license_id,file_url,created_by")
-        .eq("id", fileId)
-        .single();
+      const fileRecord = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) => {
+        const result = await client.query(
+          `SELECT id, license_id, file_url FROM license_files WHERE id = $1 LIMIT 1`,
+          [fileId]
+        );
+        return result.rows[0] ?? null;
+      });
 
-      if (selectError || !fileRecord) {
+      if (!fileRecord) {
         return apiValidationError("Arquivo não encontrado.");
       }
 
@@ -43,27 +44,41 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         return apiForbidden("Este arquivo não pertence a esta licença.");
       }
 
-      const canManage = await userCanManageLicense(user.id || "", user.role, licenseId);
+      const canManage = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) =>
+        userCanManageLicense(userId, user.role, licenseId, client)
+      );
+
       if (!canManage) {
         return apiForbidden("Apenas proprietário ou administrador pode excluir este arquivo.");
       }
 
-      const { error: deleteFileError } = await supabaseServer
-        .storage.from(STORAGE_BUCKET)
-        .remove([fileRecord.file_url]);
-
-      if (deleteFileError) {
-        return apiInternalError(deleteFileError.message);
+      try {
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: STORAGE_BUCKET,
+            Key: fileRecord.file_url,
+          })
+        );
+      } catch (deleteFileError) {
+        return apiInternalError(
+          deleteFileError instanceof Error
+            ? deleteFileError.message
+            : "Erro ao deletar arquivo do storage"
+        );
       }
 
-      const { error: deleteDbError } = await supabaseServer
-        .from("license_files")
-        .delete()
-        .eq("id", fileId);
+      const remainingFiles = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) => {
+        await client.query(`DELETE FROM license_files WHERE id = $1`, [fileId]);
 
-      if (deleteDbError) {
-        return apiInternalError(deleteDbError.message);
-      }
+        const result = await client.query(
+          `SELECT id, license_id, file_url, file_name, file_type, created_at
+           FROM license_files
+           WHERE license_id = $1
+           ORDER BY created_at DESC`,
+          [licenseId]
+        );
+        return result.rows;
+      });
 
       await addAuditLog({
         user_id: user.id,
@@ -72,17 +87,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         resource_id: fileId,
         details: JSON.stringify({ licenseId }),
       });
-
-      // ✅ Retornar lista atualizada para evitar GET extra no frontend
-      const { data: remainingFiles, error: listError } = await supabaseServer
-        .from("license_files")
-        .select("id,license_id,file_url,file_name,file_type,created_at")
-        .eq("license_id", licenseId)
-        .order("created_at", { ascending: false });
-
-      if (listError) {
-        return apiSuccess({ deleted: true, remainingFiles: [] });
-      }
 
       return apiSuccess({ deleted: true, remainingFiles: remainingFiles ?? [] });
     } catch (err) {

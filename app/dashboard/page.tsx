@@ -164,10 +164,10 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => router.push("/dashboard/profile")}
                 className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
-                aria-label={displayName || user?.email}
-                title={displayName || user?.email}
+                aria-label={displayName || user?.email || "Usuário"}
+                title={displayName || user?.email || "Usuário"}
               >
-                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || user?.email}</span>
+                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || user?.email || "Usuário"}</span>
                 <span className="gov-badge">{roleLabel[role]}</span>
               </button>
             ) : null}

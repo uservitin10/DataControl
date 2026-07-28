@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
 type InventoryItem = Record<string, any>;
@@ -7,14 +7,10 @@ type InventoryItem = Record<string, any>;
 export async function GET(req: NextRequest) {
   try {
     // Buscar todos os equipamentos do banco
-    const { data: dbEquipments, error: dbError } = await supabaseServer
-      .from("inventory_items")
-      .select("*")
-      .order("id", { ascending: true });
-
-    if (dbError) {
-      return apiInternalError(`Erro ao buscar do banco: ${dbError.message}`);
-    }
+    const dbResult = await pool.query(
+      `SELECT * FROM inventory_items ORDER BY id ASC`
+    );
+    const dbEquipments = dbResult.rows;
 
     // Importar o arquivo JSON local
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);

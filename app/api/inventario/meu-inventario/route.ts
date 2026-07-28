@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiInternalError, apiCreated, apiValidationError } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
@@ -28,12 +28,15 @@ function isMissingColumnError(error: unknown, column: string): boolean {
 }
 
 async function fetchInventoryItemsByColumn(column: string, value: string) {
-  return supabaseServer
-    .from("inventory_items")
-    .select("*")
-    .eq(column, value)
-    .order("sector", { ascending: true })
-    .order("type", { ascending: true });
+  try {
+    const res = await pool.query(
+      `SELECT * FROM inventory_items WHERE ${column} = $1 ORDER BY sector ASC, type ASC`,
+      [value]
+    );
+    return { data: res.rows, error: null } as { data: Record<string, unknown>[] | null; error: unknown | null };
+  } catch (err) {
+    return { data: null, error: err } as { data: Record<string, unknown>[] | null; error: unknown | null };
+  }
 }
 
 async function loadViewerEquipments(
@@ -96,22 +99,31 @@ function splitInventoryItems(items: InventoryItemRecord[]) {
 export async function GET(req: NextRequest) {
   return withAuth(req, async (user) => {
     try {
-      const { data: profileData, error: profileError } = await supabaseServer
-        .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .single();
+      let profileData: Record<string, unknown> | null = null;
+      try {
+        const r = await pool.query(
+          `SELECT display_name FROM profiles WHERE id = $1`,
+          [user.id]
+        );
+        profileData = r.rows[0] ?? null;
+      } catch (e) {
+        profileData = null;
+      }
 
-      if (profileError || !profileData) {
+      if (!profileData) {
         return apiInternalError("Perfil do usuário não encontrado");
       }
 
-      const fixedDisplayName = sanitizeText(profileData.display_name || user.nome);
+      const fixedDisplayName = sanitizeText(profileData.display_name as string || user.nome);
       if (fixedDisplayName !== profileData.display_name) {
-        await supabaseServer
-          .from("profiles")
-          .update({ display_name: fixedDisplayName })
-          .eq("id", user.id);
+        try {
+          await pool.query(
+            `UPDATE profiles SET display_name = $1 WHERE id = $2`,
+            [fixedDisplayName, user.id]
+          );
+        } catch (e) {
+          // ignore update failure
+        }
       }
 
       const displayName = fixedDisplayName;
@@ -130,17 +142,14 @@ export async function GET(req: NextRequest) {
         searchMethod = viewerResult.searchMethod;
       } else {
         // admin/editor vê tudo
-        const { data, error } = await supabaseServer
-          .from("inventory_items")
-          .select("*")
-          .order("sector", { ascending: true })
-          .order("type", { ascending: true });
-
-        if (error) {
-          return apiInternalError(error.message);
+        try {
+          const r = await pool.query(
+            `SELECT * FROM inventory_items ORDER BY sector ASC, type ASC`
+          );
+          equipments = r.rows;
+        } catch (e: any) {
+          return apiInternalError(e?.message || String(e));
         }
-
-        equipments = data;
       }
 
       // FIX: normalização sem side-effects (sem update no banco a cada GET)
@@ -203,13 +212,37 @@ export async function POST(req: NextRequest) {
           notes: notes || null,
           created_by: user.id,
         };
-        const { data: createdItem, error: insertError } = await supabaseServer
-          .from('inventory_items')
-          .insert([insertPayload])
-          .select()
-          .single();
-        if (insertError) {
-          return apiInternalError(insertError.message);
+        let createdItem: Record<string, unknown> | null = null;
+        try {
+          const cols = [
+            'type','model','serial_number','asset_id','equipment_id','asset_type','mac_ip','responsible','allocated_user','user_id','sector','warranty','equipment_state','notes','created_by'
+          ];
+          const values = [
+            insertPayload.type,
+            insertPayload.model,
+            insertPayload.serial_number,
+            insertPayload.asset_id,
+            insertPayload.equipment_id,
+            insertPayload.asset_type,
+            insertPayload.mac_ip,
+            insertPayload.responsible,
+            insertPayload.allocated_user,
+            insertPayload.user_id,
+            insertPayload.sector,
+            insertPayload.warranty,
+            insertPayload.equipment_state,
+            insertPayload.notes,
+            insertPayload.created_by,
+          ];
+
+          const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+          const res = await pool.query(
+            `INSERT INTO inventory_items (${cols.join(',')}) VALUES (${placeholders}) RETURNING *`,
+            values
+          );
+          createdItem = res.rows[0];
+        } catch (insertError: any) {
+          return apiInternalError(insertError?.message || String(insertError));
         }
 
         try {
@@ -267,29 +300,46 @@ export async function PATCH(req: NextRequest) {
           return apiValidationError('Email do responsável é obrigatório para licenças.');
         }
 
-        const { data: updatedItem, error: updateError } = await supabaseServer
-          .from('inventory_items')
-          .update({
+        let updatedItem: Record<string, unknown> | null = null;
+        try {
+          const values = [
             type,
             model,
             serial_number,
-            asset_id: asset_id || null,
-            equipment_id: equipment_id || null,
-            asset_type: type,
-            mac_ip: mac_ip || null,
-            responsible: sanitizeText(responsible),
-            sector: sector || null,
-            warranty: warranty || null,
-            equipment_state: equipment_state || null,
-            notes: notes || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-          .select()
-          .single();
+            asset_id || null,
+            equipment_id || null,
+            type,
+            mac_ip || null,
+            sanitizeText(responsible),
+            sector || null,
+            warranty || null,
+            equipment_state || null,
+            notes || null,
+            new Date().toISOString(),
+id,
+          ];
 
-        if (updateError) {
-          return apiInternalError(updateError.message);
+          const res = await pool.query(
+            `UPDATE inventory_items SET
+              type = $1,
+              model = $2,
+              serial_number = $3,
+              asset_id = $4,
+              equipment_id = $5,
+              asset_type = $6,
+              mac_ip = $7,
+              responsible = $8,
+              sector = $9,
+              warranty = $10,
+              equipment_state = $11,
+              notes = $12,
+              updated_at = $13
+             WHERE id = $14 RETURNING *`,
+            values
+          );
+          updatedItem = res.rows[0];
+        } catch (updateError: any) {
+          return apiInternalError(updateError?.message || String(updateError));
         }
 
         try {
@@ -325,13 +375,10 @@ export async function DELETE(req: NextRequest) {
           return apiValidationError('ID do item é obrigatório.');
         }
 
-        const { error: deleteError } = await supabaseServer
-          .from('inventory_items')
-          .delete()
-          .eq('id', id);
-
-        if (deleteError) {
-          return apiInternalError(deleteError.message);
+        try {
+          await pool.query(`DELETE FROM inventory_items WHERE id = $1`, [id]);
+        } catch (deleteError: any) {
+          return apiInternalError(deleteError?.message || String(deleteError));
         }
 
         try {

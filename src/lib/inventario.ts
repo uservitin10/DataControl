@@ -47,6 +47,14 @@ export function normalizeType(type?: string): string {
     .trim();
 }
 
+export function getEquipmentTypeCount(
+  items: EquipmentItem[],
+  typeName: string
+): number {
+  const normalized = normalizeType(typeName);
+  return items.filter((item) => normalizeType(item.type) === normalized).length;
+}
+
 export function isLicenseType(type?: string): boolean {
   return normalizeType(type) === "licenca";
 }
@@ -176,10 +184,45 @@ export function isSemSetorValue(sector?: string): boolean {
   return normalized === "sem setor" || normalized === "se setor" || normalized === "semsetor";
 }
 
-export function getAllSectors(): string[] {
+// Lista completa de setores conhecidos da empresa
+const KNOWN_SECTORS = [
+  "COTIC",
+  "CONTB",
+  "DIORC",
+  "CGTCO",
+  "CGEST",
+  "COLOG",
+  "COEFI",
+  "SAGE",
+  "AECI",
+  "ASPAR",
+  "AESP",
+  "AREIN",
+  "ASTAD",
+  "ASTEC",
+  "COGEP",
+  "CONJUR",
+  "CORREGEDORIA",
+  "GM",
+  "OUVIDORIA",
+  "SMA",
+  "SEAID",
+  "SEAI",
+  "SEPLAN",
+  "SOF",
+];
+
+export function getAllSectors(items?: EquipmentItem[]): string[] {
+  const itemsToProcess = items ?? equipmentData;
   const sectorMap = new Map<string, string>();
 
-  equipmentData.forEach((item) => {
+  // Adiciona todos os setores conhecidos ao mapa
+  KNOWN_SECTORS.forEach((sector) => {
+    sectorMap.set(normalizeSectorName(sector), sector);
+  });
+
+  // Adiciona setores encontrados nos itens
+  itemsToProcess.forEach((item) => {
     const normalized = normalizeSectorName(item.sector);
     const original = (item.sector ?? "").toString().trim();
 
@@ -190,7 +233,7 @@ export function getAllSectors(): string[] {
 
   const sectorNames = Array.from(sectorMap.values());
 
-  if (equipmentData.some((item) => !normalizeSectorName(item.sector))) {
+  if (itemsToProcess.some((item) => !normalizeSectorName(item.sector))) {
     sectorNames.push("Sem setor");
   }
 

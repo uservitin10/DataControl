@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/Logo";
 // BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
@@ -34,9 +34,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const { data: session, status } = useSession();
+
   const handleLogout = async () => {
-    const { data } = await supabase.auth.getSession();
-    const userId = data.session?.user?.id;
+    const userId = session?.user?.id ?? null;
 
     if (userId) {
       try {
@@ -51,7 +52,7 @@ export default function ProfilePage() {
       }
     }
 
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.push("/login");
   };
   const [isEditing, setIsEditing] = useState(false);
@@ -65,32 +66,32 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-
-      if (!user) {
+      if (status === "loading") return;
+      if (!session?.user?.id) {
         router.replace("/login");
         return;
       }
 
-      setEmail(user.email ?? "");
+      setEmail(session.user.email ?? "");
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, display_name")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        setRole(profile.role as Role);
-        setDisplayName(profile.display_name ?? "");
+      try {
+        const response = await fetch(`/api/profile/me`);
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setRole(result.data.role as Role);
+          setDisplayName(result.data.display_name ?? "");
+        } else {
+          console.warn("Falha ao carregar perfil:", result.error || "Erro desconhecido");
+        }
+      } catch (error) {
+        console.warn("Falha ao carregar perfil:", error);
       }
 
       setLoading(false);
     };
 
     void load();
-  }, [router]);
+  }, [router, session, status]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -102,44 +103,36 @@ export default function ProfilePage() {
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user?.id;
-
-    if (!userId) return;
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ display_name: displayName })
-      .eq("id", userId);
-
-    if (profileError) {
-      setMessage({ type: "error", text: profileError.message });
-      setSaving(false);
+    if (!session?.user?.id) {
+      router.replace("/login");
       return;
     }
 
-    const authUpdates: { email?: string; password?: string } = {};
-    if (email) {
-      authUpdates.email = email;
-    }
-    if (newPassword) {
-      authUpdates.password = newPassword;
-    }
+    try {
+      const response = await fetch("/api/profile/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          display_name: displayName,
+          password: newPassword || undefined,
+        }),
+      });
 
-    if (Object.keys(authUpdates).length > 0) {
-      const { error: authError } = await supabase.auth.updateUser(authUpdates);
-      if (authError) {
-        setMessage({ type: "error", text: authError.message });
-        setSaving(false);
-        return;
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao atualizar perfil.");
       }
-    }
 
-    setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
-    setNewPassword("");
-    setConfirmPassword("");
-    setIsEditing(false);
-    setSaving(false);
+      setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
+      setNewPassword("");
+      setConfirmPassword("");
+      setIsEditing(false);
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Erro ao atualizar perfil." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {

@@ -1,21 +1,17 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { getSession, signIn } from "next-auth/react";
 import { logAuditEvent } from "@/lib/api";
 import { buildPasswordRecoveryRedirectPath, isPasswordRecoveryRedirect } from "@/lib/auth-flow";
 
-type Mode = "login" | "register";
-
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -28,8 +24,8 @@ export default function LoginPage() {
         return;
       }
 
-      const { data } = await supabase.auth.getSession();
-      if (data.session) router.replace("/dashboard");
+      const session = await getSession();
+      if (session) router.replace("/dashboard");
     };
     void checkSession();
   }, [router]);
@@ -64,7 +60,7 @@ export default function LoginPage() {
     return "Ocorreu um erro inesperado.";
   };
 
-  const logAuthEvent = async (userId: string, action: string, details: string) => {
+  const logAuthEvent = async (userId: string | null, action: string, details: string) => {
     try {
       await logAuditEvent({
         user_id: userId,
@@ -100,20 +96,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const result = await signIn("credentials", {
         email: normalizedEmail,
         password,
+        redirect: false,
       });
 
-      if (signInError) {
-        const msg = getErrorMessage(signInError);
+      if (result?.error) {
+        const msg = getErrorMessage(result.error);
         setError(msg);
         try {
           await logAuditEvent({
             user_id: null,
             action: "login_failed",
             resource_type: "auth",
-            details: `email:${normalizedEmail} error:${JSON.stringify(signInError)}`,
+            details: `email:${normalizedEmail} error:${JSON.stringify(result.error)}`,
           });
         } catch (auditErr) {
           console.warn("Falha ao gravar tentAtiva de login falha:", auditErr);
@@ -121,61 +118,13 @@ export default function LoginPage() {
         return;
       }
 
-      const userId = data.session?.user?.id || data.user?.id || null;
-      if (userId) {
-        await logAuthEvent(userId, "login", "Login via formulário");
-      }
-
+      await logAuthEvent(null, "login", "Login via formulário");
       navigateToDashboard();
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName, role: "viewer" } },
-    });
-    setLoading(false);
-    if (signUpError) {
-      const msg = getErrorMessage(signUpError);
-      setError(msg);
-      console.warn("Signup error:", signUpError);
-      try {
-        await logAuditEvent({
-          user_id: null,
-          action: "signup_failed",
-          resource_type: "auth",
-          details: `email:${email} error:${JSON.stringify(signUpError)}`,
-        });
-      } catch (auditErr) {
-        console.warn("Falha ao gravar log de signup falha:", auditErr);
-      }
-      return;
-    }
-
-    const userId = data.user?.id;
-    if (userId) {
-      await logAuthEvent(userId, "create_account", "Cadastro de novo usuário via formulário");
-    }
-
-    setSuccess("Cadastro realizado! Verifique seu email para confirmar a conta.");
-    setEmail("");
-    setPassword("");
-    setDisplayName("");
-  };
-
-  const switchMode = (newMode: Mode) => {
-    setMode(newMode);
-    setError("");
-    setSuccess("");
-  };
 
   return (
     <main className="gov-page-bg flex min-h-screen items-center justify-center px-4 py-10">
@@ -190,33 +139,11 @@ export default function LoginPage() {
         </div>
 
         <div className="gov-card p-8 border border-slate-200 bg-white shadow-soft">
-          <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1 shadow-inner">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={`rounded-xl py-3 text-sm font-semibold transition ${
-                mode === "login"
-                  ? "bg-gov-primary text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("register")}
-              className={`rounded-xl py-3 text-sm font-semibold transition ${
-                mode === "register"
-                  ? "bg-gov-primary text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Cadastrar
-            </button>
+          <div className="mb-6 rounded-2xl bg-slate-100 p-4 text-center text-sm text-slate-700">
+            Use suas credenciais para entrar no portal ou crie uma conta.
           </div>
 
-          {mode === "login" ? (
-            <>
+          <>
               <p className="mb-1 text-xl font-semibold text-gov-heading">Bem-vindo</p>
               <p className="mb-6 text-sm text-gov-muted">Acesse sua conta para continuar</p>
 
@@ -272,11 +199,17 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => router.push("/sistemas")}
+                  onClick={() => router.push("/dashboard")}
                   className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full"
                 >
                   Acesso ao portal
                 </button>
+                <div className="text-center text-sm text-slate-600 mb-4">
+                  Ainda não tem conta?{' '}
+                  <Link href="/register" className="text-gov-primary hover:underline">
+                    Cadastre-se
+                  </Link>
+                </div>
                 <div className="mt-2 text-right">
                   <button
                     type="button"
@@ -288,77 +221,6 @@ export default function LoginPage() {
                 </div>
               </form>
             </>
-          ) : (
-            <>
-              <p className="mb-1 text-xl font-semibold text-gov-heading">Criar conta</p>
-              <p className="mb-6 text-sm text-gov-muted">Preencha os dados para se cadastrar</p>
-
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                    Nome
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="gov-input bg-white border-slate-300 text-slate-900"
-                    placeholder="Seu nome completo"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="gov-input bg-white border-slate-300 text-slate-900"
-                    placeholder="voce@empresa.com"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                    Senha
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="gov-input bg-white border-slate-300 text-slate-900"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <p className="text-sm text-gov-muted">
-                  O cadastro será criado como usuário padrão. Roles de administrador devem ser definidas por um administrador.
-                </p>
-
-                {error && (
-                  <div className="gov-status-error rounded-xl p-4 text-sm">
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="gov-status-success rounded-xl p-4 text-sm">
-                    {success}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-60"
-                >
-                  {loading ? "Cadastrando..." : "Criar Conta"}
-                </button>
-              </form>
-            </>
-          )}
         </div>
       </div>
     </main>

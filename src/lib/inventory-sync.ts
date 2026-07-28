@@ -1,10 +1,6 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { addAuditLog } from "@/lib/audit";
 
-/**
- * Normaliza strings para comparação
- * Remove acentos, converte para lowercase e remove espaços múltiplos
- */
 export function normalizeString(str: string): string {
   return (str || "")
     .toLowerCase()
@@ -13,32 +9,18 @@ export function normalizeString(str: string): string {
     .trim();
 }
 
-/**
- * Calcula similaridade entre dois nomes (0 a 1)
- * 1 = match perfeito, 0 = sem match
- */
 export function calculateNameSimilarity(name1: string, name2: string): number {
   const n1 = normalizeString(name1);
   const n2 = normalizeString(name2);
-
-  if (n1 === n2) return 1; // Match exato
-
-  // Verificar se um contém o outro
+  if (n1 === n2) return 1;
   if (n1.includes(n2) || n2.includes(n1)) return 0.8;
-
-  // Comparar palavras individuais
   const words1 = n1.split(/\s+/);
   const words2 = n2.split(/\s+/);
   const commonWords = words1.filter((w) => words2.includes(w)).length;
   const totalWords = Math.max(words1.length, words2.length);
-
   return totalWords > 0 ? commonWords / totalWords : 0;
 }
 
-/**
- * Busca usuários candidatos para sincronização de dados legados
- * Retorna usuários com score de similaridade
- */
 export async function findUserCandidatesForLegacyData(
   allocatedUserName: string,
   minSimilarity = 0.7
@@ -48,24 +30,14 @@ export async function findUserCandidatesForLegacyData(
   }
 
   try {
-    const { data: users, error } = await supabaseServer
-      .from("profiles")
-      .select("id, email, display_name")
-      .neq("display_name", null);
+    const { rows: users } = await pool.query(
+      `SELECT id, email, display_name FROM profiles WHERE display_name IS NOT NULL`
+    );
 
-    if (error || !users) {
-      console.error("[Inventory Sync] Erro ao buscar usuários:", error);
-      return [];
-    }
-
-    // Calcular similaridade com cada usuário
     const candidates = users
       .map((user) => ({
         ...user,
-        similarity: calculateNameSimilarity(
-          allocatedUserName,
-          user.display_name || ""
-        ),
+        similarity: calculateNameSimilarity(allocatedUserName, user.display_name || ""),
       }))
       .filter((u) => u.similarity >= minSimilarity)
       .sort((a, b) => b.similarity - a.similarity);
@@ -77,30 +49,21 @@ export async function findUserCandidatesForLegacyData(
   }
 }
 
-/**
- * Sincroniza um item de inventário legado com seu allocated_user_id
- */
 export async function syncLegacyInventoryItem(
   itemId: number,
   userId: string,
   allocatedUserName: string
 ) {
   try {
-    const { error } = await supabaseServer
-      .from("inventory_items")
-      .update({
-        allocated_user_id: userId,
-        // Opcional: adicionar um campo para marcar como sincronizado
-        notes: `[SINCRONIZADO] ${new Date().toLocaleDateString("pt-BR")} - De: "${allocatedUserName}"`,
-      })
-      .eq("id", itemId);
+    const notes = `[SINCRONIZADO] ${new Date().toLocaleDateString("pt-BR")} - De: "${allocatedUserName}"`;
+    const { rowCount } = await pool.query(
+      `UPDATE inventory_items SET allocated_user_id = $1, notes = $2 WHERE id = $3`,
+      [userId, notes, itemId]
+    );
 
-    if (error) {
-      console.error(
-        `[Inventory Sync] Erro ao sincronizar item ${itemId}:`,
-        error
-      );
-      return { success: false, error };
+    if (rowCount === 0) {
+      console.error(`[Inventory Sync] Item ${itemId} não encontrado`);
+      return { success: false, error: "Item não encontrado" };
     }
 
     return { success: true };
@@ -110,9 +73,6 @@ export async function syncLegacyInventoryItem(
   }
 }
 
-/**
- * Registra uso de fallback para auditoria
- */
 export async function logFallbackUsage(payload: {
   userId: string;
   displayName: string;
@@ -144,33 +104,21 @@ export async function logFallbackUsage(payload: {
   }
 }
 
-/**
- * Obter estatísticas de uso de fallback
- */
 export async function getFallbackUsageStats() {
   try {
-    // Contar equipamentos com allocated_user_id nulo (dados legados)
-    const { data: legacyItems, error: legacyError } = await supabaseServer
-      .from("inventory_items")
-      .select("allocated_user, count", { count: "exact" })
-      .is("allocated_user_id", null);
+    const { rows: legacyItems } = await pool.query(
+      `SELECT allocated_user FROM inventory_items WHERE allocated_user_id IS NULL`
+    );
 
-    if (legacyError) {
-      console.error("[Fallback Stats] Erro ao buscar dados legados:", legacyError);
-      return { totalLegacyItems: 0, legacyByUser: {} };
-    }
-
-    // Agrupar por usuário
     const legacyByUser: { [key: string]: number } = {};
-    (legacyItems || []).forEach((item) => {
-      const it = item as Record<string, unknown>;
-      const allocated = (it.allocated_user as string) || "";
+    legacyItems.forEach((item) => {
+      const allocated = (item.allocated_user as string) || "";
       const name = normalizeString(allocated);
       legacyByUser[name] = (legacyByUser[name] || 0) + 1;
     });
 
     return {
-      totalLegacyItems: legacyItems?.length || 0,
+      totalLegacyItems: legacyItems.length,
       legacyByUser,
     };
   } catch (err) {
@@ -179,24 +127,13 @@ export async function getFallbackUsageStats() {
   }
 }
 
-/**
- * Obter dados de auditoria de fallback
- */
 export async function getFallbackAuditLogs(limit = 50) {
   try {
-    const { data, error } = await supabaseServer
-      .from("audit_logs")
-      .select("*")
-      .eq("action", "fallback_inventory_access")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error("[Fallback Audit] Erro ao buscar logs:", error);
-      return [];
-    }
-
-    return data || [];
+    const { rows } = await pool.query(
+      `SELECT * FROM audit_logs WHERE action = $1 ORDER BY created_at DESC LIMIT $2`,
+      ["fallback_inventory_access", limit]
+    );
+    return rows;
   } catch (err) {
     console.error("[Fallback Audit] Erro inesperado:", err);
     return [];

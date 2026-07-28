@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { apiCreated, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { sanitizeText } from "@/lib/text";
@@ -15,21 +15,18 @@ export async function POST(req: NextRequest) {
         return apiValidationError("A mensagem da reclamação é obrigatória.");
       }
 
-      const { data, error } = await supabaseServer
-        .from("notificacoes")
-        .insert({
-          tipo,
-          mensagem,
-          lida: false,
-        })
-        .select()
-        .single();
+      const result = await pool.query(
+        `INSERT INTO notificacoes (tipo, mensagem, lida)
+         VALUES ($1, $2, false)
+         RETURNING id, tipo, mensagem, lida, created_at`,
+        [tipo, mensagem]
+      );
 
-      if (error) {
-        return apiInternalError(error.message);
+      if (result.rows.length === 0) {
+        return apiInternalError("Erro ao criar notificação.");
       }
 
-      return apiCreated(data);
+      return apiCreated(result.rows[0]);
     } catch (err) {
       return apiInternalError((err as Error).message);
     }

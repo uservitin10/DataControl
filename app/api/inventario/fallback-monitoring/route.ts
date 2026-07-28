@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import {
   apiSuccess,
@@ -82,13 +82,14 @@ export async function GET(req: NextRequest) {
       let userDetails: Record<string, unknown>[] = [];
 
       if (userIds.length > 0) {
-        const { data, error } = await supabaseServer
-          .from("profiles")
-          .select("id, display_name, email")
-          .in("id", userIds);
-
-        if (!error && data) {
-          userDetails = data;
+        try {
+          const result = await pool.query(
+            `SELECT id, display_name, email FROM profiles WHERE id = ANY($1::text[])`,
+            [userIds]
+          );
+          userDetails = result.rows;
+        } catch (e) {
+          // preserve original behavior: if profiles can't be fetched, continue without details
         }
       }
 

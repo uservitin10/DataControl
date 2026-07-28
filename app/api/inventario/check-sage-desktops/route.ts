@@ -1,20 +1,16 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
 // Endpoint público para diagnóstico (sem autenticação)
 export async function GET(req: NextRequest) {
   try {
     // Buscar todos os desktops do setor SAGE
-    const { data: sageDesktops, error: fetchError } = await supabaseServer
-      .from("inventory_items")
-      .select("*")
-      .eq("sector", "SAGE")
-      .eq("type", "Desktop");
-
-    if (fetchError) {
-      return apiInternalError(`Erro ao buscar desktops: ${fetchError.message}`);
-    }
+    const result = await pool.query(
+      `SELECT * FROM inventory_items WHERE sector = $1 AND type = $2`,
+      ["SAGE", "Desktop"]
+    );
+    const sageDesktops = result.rows;
 
     // Filtrar apenas os incompletos - aqueles sem as informações essenciais mostradas na UI
     const incompleteDesktops = (sageDesktops || []).filter((desktop) => {

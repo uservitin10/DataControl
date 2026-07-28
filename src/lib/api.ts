@@ -1,98 +1,60 @@
-import { supabase } from "@/lib/supabase";
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+    this.name = "ApiError";
+  }
+}
 
-const parseJsonResponse = async (res: Response) => {
+const parseError = async (res: Response) => {
   const data = await res.json().catch(() => null);
+  return data?.error || `Erro na requisição (${res.status}).`;
+};
+
+export async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const isFormData = options.body instanceof FormData;
+
+  const res = await fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...options.headers,
+    },
+  });
+
   if (!res.ok) {
-    const message = data?.error || `Erro na requisição (${res.status}).`;
-    throw new Error(message);
+    throw new ApiError(await parseError(res), res.status);
   }
-  return data;
-};
 
-/**
- * Obtém o token de autenticação do Supabase
- */
-export const getAuthToken = async (): Promise<string | null> => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
-};
-
-/**
- * Cria headers com autenticação
- */
-const createAuthHeaders = async (headers: HeadersInit = {}): Promise<HeadersInit> => {
-  const token = await getAuthToken();
-  const headersObj = {
-    ...headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-  return headersObj;
-};
-
-/**
- * Extrai dados da resposta padronizada da API
- */
-const extractApiData = <T>(response: unknown): T => {
-  // Se a resposta tem a estrutura padronizada { success, data }
-  if (response && typeof response === "object") {
-    const obj = response as Record<string, unknown>;
-    if ("success" in obj) {
-      return (obj["data"] ?? response) as T;
-    }
+  if (res.status === 204) {
+    return undefined as T;
   }
-  // Caso contrário, retorna como está
-  return response as T;
-};
 
-export const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> => {
-  const headers = await createAuthHeaders(init?.headers);
-  const res = await fetch(input, { ...init, headers });
-  const data = await parseJsonResponse(res);
-  return extractApiData<T>(data);
-};
+  return res.json() as Promise<T>;
+}
 
-export const postJson = async <T>(input: RequestInfo, body: unknown): Promise<T> => {
-  const headers = await createAuthHeaders({ "Content-Type": "application/json" });
-  const res = await fetch(input, {
+export async function postJson<T>(url: string, body: unknown): Promise<T> {
+  return fetchJson<T>(url, {
     method: "POST",
-    headers,
     body: JSON.stringify(body),
   });
-  const data = await parseJsonResponse(res);
-  return extractApiData<T>(data);
-};
+}
 
-export const patchJson = async <T>(input: RequestInfo, body: unknown): Promise<T> => {
-  const headers = await createAuthHeaders({ "Content-Type": "application/json" });
-  const res = await fetch(input, {
+export async function patchJson<T>(url: string, body: unknown): Promise<T> {
+  return fetchJson<T>(url, {
     method: "PATCH",
-    headers,
     body: JSON.stringify(body),
   });
-  const data = await parseJsonResponse(res);
-  return extractApiData<T>(data);
-};
-
-export type AuditLogPayload = {
+}
+export interface AuditEventPayload {
   user_id: string | null;
   action: string;
-  resource_type?: string | null;
-  resource_id?: string | null;
-  details?: string | null;
-  ip_address?: string | null;
-};
+  resource_type: string;
+  details?: string;
+}
 
-export const logAuditEvent = async (payload: AuditLogPayload): Promise<unknown> => {
-  const res = await fetch("/api/audit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new Error(errorBody?.error || `Erro ao gravar log de auditoria (${res.status}).`);
-  }
-  return await res.json();
+export const logAuditEvent = async (payload: AuditEventPayload) => {
+  return postJson<{ success: true }>("/api/audit", payload);
 };

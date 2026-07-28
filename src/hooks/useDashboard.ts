@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { /* useRouter */ } from "next/navigation";
-import { User } from "@supabase/supabase-js";
 import type { DashboardForm, Registro, Role, View } from "@/types/dashboard";
+import type { ClientUser } from "@/lib/auth-client";
 import { EMPTY_FORM, AREAS } from "@/lib/dashboard";
 import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
-import { loadClientUser, getClientUserState } from "@/lib/auth";
+import { loadClientUser, getClientUserState } from "@/lib/auth-client";
 import {
   DOCUMENTS_BUCKET,
   PREVIEWS_BUCKET,
@@ -12,6 +12,7 @@ import {
   deleteFromStorage,
   fetchSignedUrl,
   fetchPublicUrl,
+  buildStorageProxyUrl,
   generateStoragePath,
   ALLOWED_PREVIEW_TYPES,
   ALLOWED_DOCUMENT_EXTENSIONS,
@@ -30,7 +31,7 @@ const normalizeFonteDados = (fonte?: string) => {
 
 export function useDashboard() {
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ClientUser | null>(null);
   const [role, setRole] = useState<Role>("viewer");
   const [displayName, setDisplayName] = useState("");
   const [permissions, setPermissions] = useState<Permissions>(DEFAULT_PERMISSIONS.viewer);
@@ -266,41 +267,53 @@ export function useDashboard() {
 
   const handleVisualizarArquivo = async (arquivoPath: string, nome: string) => {
     const ext = arquivoPath.split(".").pop()?.toLowerCase();
-    let fileUrl: string | null = null;
+    const proxyUrl = buildStorageProxyUrl(DOCUMENTS_BUCKET, arquivoPath);
+    let fileUrl: string | null = proxyUrl;
 
-    try {
-      fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, arquivoPath, 86400);
-    } catch (signedUrlError) {
-      setError((signedUrlError as Error).message || "Não foi possível gerar o link de visualização.");
-      return;
-    }
-
-    if (!fileUrl) {
-      setError("Não foi possível gerar o link de visualização.");
-      return;
-    }
-
-    setDownloadUrl(fileUrl);
+    setDownloadUrl(proxyUrl);
     setViewingNome(nome);
 
-    
     if (ext === "pbix") {
+      try {
+        fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, arquivoPath, 86400);
+      } catch (signedUrlError) {
+        setError((signedUrlError as Error).message || "Não foi possível gerar o link de visualização.");
+        return;
+      }
+
+      if (!fileUrl) {
+        setError("Não foi possível gerar o link de visualização.");
+        return;
+      }
+
       window.open(fileUrl, "_blank");
       return;
     }
 
     if (["xlsx", "xls", "docx", "doc", "pptx", "ppt"].includes(ext ?? "")) {
+      try {
+        fileUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, arquivoPath, 86400);
+      } catch (signedUrlError) {
+        setError((signedUrlError as Error).message || "Não foi possível gerar o link de visualização.");
+        return;
+      }
+
+      if (!fileUrl) {
+        setError("Não foi possível gerar o link de visualização.");
+        return;
+      }
+
       setViewingUrl(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`);
       return;
     }
 
-    setViewingUrl(fileUrl);
+    setViewingUrl(proxyUrl);
   };
 
   const getPreviewUrl = async (previewPath?: string) => {
     if (!previewPath) return null;
     try {
-      return await fetchPublicUrl(PREVIEWS_BUCKET, previewPath);
+      return buildStorageProxyUrl(PREVIEWS_BUCKET, previewPath);
     } catch (previewError) {
       console.error((previewError as Error).message);
       return null;

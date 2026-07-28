@@ -1,8 +1,6 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import {
   atualizarAtivo,
   criarAtivo,
@@ -56,27 +54,20 @@ function formParaInput(formData: FormData): Partial<LevantamentoAtivoInput> {
 }
 
 export async function criarAtivoAction(formData: FormData) {
-  const supabase = await createClient();
   const input = formParaInput(formData);
-
-  await criarAtivo(supabase, input);
-
+  await criarAtivo(input);
   revalidatePath("/ativos");
   redirect("/ativos");
 }
 
 export async function atualizarAtivoAction(id: string, formData: FormData) {
-  const supabase = await createClient();
   const input = formParaInput(formData);
-
-  await atualizarAtivo(supabase, id, input);
-
+  await atualizarAtivo(id, input);
   revalidatePath("/ativos");
   redirect("/ativos");
 }
 
 export async function excluirAtivoAction(id: string) {
-  const supabase = await createClient();
-  await excluirAtivo(supabase, id);
+  await excluirAtivo(id);
   revalidatePath("/ativos");
 }

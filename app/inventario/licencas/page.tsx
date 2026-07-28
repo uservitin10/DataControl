@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 // BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
 import { getWarrantyExpiryStatus } from "@/lib/inventario";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
@@ -16,6 +16,7 @@ type MyInventoryResponse = {
 
 export default function LicencasPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [loadingUser, setLoadingUser] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [licensesData, setLicensesData] = useState<any[]>([]);
@@ -54,16 +55,14 @@ export default function LicencasPage() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData.session?.user ?? null;
-      if (!sessionUser) {
+      if (!session?.user?.id) {
         router.replace("/dashboard?alert=no_permission_inventario");
         return;
       }
 
       try {
         const profile = await fetchJson<{ role: string }>(
-          `/api/profile?id=${encodeURIComponent(sessionUser.id)}`
+          `/api/profile/me`
         );
 
         if (profile.role !== "admin") {
@@ -83,7 +82,7 @@ export default function LicencasPage() {
     };
 
     void checkAccess();
-  }, [router]);
+  }, [router, session]);
 
   const licenses = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();

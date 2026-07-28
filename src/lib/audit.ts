@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 
 const isAuditTableMissing = (error: unknown) => {
   if (!error) return false;
@@ -16,8 +16,8 @@ const isAuditTableMissing = (error: unknown) => {
       : undefined;
 
   return (
-    maybeCode === "PGRST205" ||
-    (typeof message === "string" && message.includes("Could not find the table 'public.audit_logs'"))
+    maybeCode === "42P01" ||
+    (typeof message === "string" && message.includes("audit_logs"))
   );
 };
 
@@ -31,11 +31,16 @@ export const addAuditLog = async (payload: {
 }) => {
   const { user_id, action, resource_type, resource_id, details, ip_address } = payload;
 
-  const { data, error } = await supabaseServer
-    .from("audit_logs")
-    .insert({ user_id, action, resource_type, resource_id, details, ip_address });
+  try {
+    const result = await pool.query(
+      `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      [user_id, action, resource_type ?? null, resource_id ?? null, details ?? null, ip_address ?? null]
+    );
 
-  if (error) {
+    return { success: true, data: result.rows[0] };
+  } catch (error) {
     if (isAuditTableMissing(error)) {
       console.warn("Audit logging não configurado: tabela audit_logs não encontrada.", { payload });
       return { success: false, skipped: true };
@@ -44,6 +49,4 @@ export const addAuditLog = async (payload: {
     console.error("Erro ao criar log de auditoria:", error);
     return { success: false, error };
   }
-
-  return { success: true, data };
 };

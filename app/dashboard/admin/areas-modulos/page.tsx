@@ -14,9 +14,9 @@ export default function AdminAreasModulosPage() {
   useEffect(() => {
     async function checkPermissions() {
       try {
-        const profile = await fetchJson<{ role: string }>("/api/profile");
+        const profile = await fetchJson<{ success: boolean; data: { role: string } }>("/api/profile");
 
-        if (profile.role !== "admin") {
+if (profile.data.role !== "admin") {
           router.push("/dashboard");
           return;
         }

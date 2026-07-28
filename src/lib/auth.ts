@@ -1,84 +1,58 @@
-import { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
-import { fetchJson } from "@/lib/api";
-import { DEFAULT_PERMISSIONS, resolvePermissions, type Permissions } from "@/lib/permissions";
-import type { Role } from "@/types/dashboard";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import pool from "@/lib/db";
 
-export type ClientProfile = {
-  role: Role;
-  display_name: string;
-  permissions?: Partial<Permissions>;
-};
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Senha", type: "password" },
+      },
+      authorize: async (credentials) => {
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+        if (!email || !password) return null;
 
-export type AuthClientUser = {
-  user: User | null;
-  role: Role;
-  displayName: string;
-  permissions: Permissions;
-  profile?: ClientProfile | null;
-  profileFetchError?: Error | null;
-};
+        const result = await pool.query(
+          `SELECT id, email, display_name, role, password_hash, must_reset_password
+           FROM profiles WHERE email = $1`,
+          [email]
+        );
+        const user = result.rows[0];
+        if (!user || !user.password_hash) return null;
 
-export function getClientUserState(clientUser: AuthClientUser) {
-  if (clientUser.profileFetchError) {
-    console.warn("Erro ao carregar perfil:", clientUser.profileFetchError.message || clientUser.profileFetchError);
-  }
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) return null;
 
-  return {
-    role: clientUser.role,
-    displayName: clientUser.displayName,
-    permissions: clientUser.permissions,
-    profileFetchError: clientUser.profileFetchError,
-  };
-}
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.display_name,
+          role: user.role,
+          mustResetPassword: user.must_reset_password,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.role = user.role;
+        token.mustResetPassword = user.mustResetPassword;
+      }
+      return token;
+    },
+    session: ({ session, token }) => {
+      session.user.id = token.sub as string;
+      session.user.role = token.role as string;
+      session.user.mustResetPassword = token.mustResetPassword as boolean;
+      return session;
+    },
+  },
+});
 
-export async function getSessionUser(): Promise<User | null> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user ?? null;
-}
-
-export async function fetchUserProfile(userId: string): Promise<ClientProfile> {
-  return fetchJson<ClientProfile>(`/api/profile?id=${encodeURIComponent(userId)}`);
-}
-
-export async function loadClientUser(): Promise<AuthClientUser> {
-  const user = await getSessionUser();
-
-  if (!user) {
-    return {
-      user: null,
-      role: "viewer",
-      displayName: "Visitante",
-      permissions: DEFAULT_PERMISSIONS.viewer,
-      profile: null,
-      profileFetchError: null,
-    };
-  }
-
-  try {
-    const profile = await fetchUserProfile(user.id);
-    const role = profile.role ?? "viewer";
-    const displayName = profile.display_name || user.email || "Visitante";
-    const permissions = resolvePermissions(role, profile.permissions);
-
-    return {
-      user,
-      role,
-      displayName,
-      permissions,
-      profile,
-      profileFetchError: null,
-    };
-  } catch (error) {
-    return {
-      user,
-      role: "viewer",
-      displayName: user.email || "Usuário",
-      permissions: resolvePermissions("viewer"),
-      profile: null,
-      profileFetchError: error instanceof Error ? error : new Error(String(error)),
-    };
-  }
-}
+export { loadClientUser, getClientUserState } from "@/lib/auth-client";

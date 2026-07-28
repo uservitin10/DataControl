@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { User } from "@supabase/supabase-js";
 import type { Sistema, SistemaForm, Role } from "@/types/dashboard";
+import type { ClientUser } from "@/lib/auth-client";
 import { fetchSistemasApi, createSistemaApi, updateSistemaApi, deleteSistemaApi } from "@/lib/sistemas";
 import { DEFAULT_PERMISSIONS, type Permissions } from "@/lib/permissions";
-import { loadClientUser, getClientUserState } from "@/lib/auth";
+import { loadClientUser, getClientUserState } from "@/lib/auth-client";
 
 const EMPTY_FORM: SistemaForm = {
   sigla: "",
@@ -28,7 +28,8 @@ const validateSistemaForm = (form: SistemaForm): string | null => {
 };
 
 export function useSistemas() {
-  const [user, setUser] = useState<User | null>(null);
+  const STORAGE_KEY = "horus.sistemas.filters";
+  const [user, setUser] = useState<ClientUser | null>(null);
   const [role, setRole] = useState<Role>("viewer");
   const [displayName, setDisplayName] = useState<string>("");
   const [permissions, setPermissions] = useState<Permissions>(DEFAULT_PERMISSIONS.viewer);
@@ -78,7 +79,13 @@ export function useSistemas() {
         return true;
       })
       .filter((s) => !filtroHomologados || (s.url_homologacao && s.url_homologacao.length > 0))
-      .filter((s) => !filtroAcessiveis || (s.url_producao && s.url_producao.length > 0))
+      .filter((s) => {
+        if (!filtroAcessiveis) return true;
+        const hasProducao = Boolean(s.url_producao && s.url_producao.length > 0);
+        const hasHomologacao = Boolean(s.url_homologacao && s.url_homologacao.length > 0);
+        const hasAcessoBd = Boolean(s.acesso_bd && s.acesso_bd.toString().trim().length > 0);
+        return hasProducao || hasHomologacao || hasAcessoBd;
+      })
       .filter((s) => !filtroTipoAcesso || (s.tipo_acesso === filtroTipoAcesso))
       .filter((s) => !filtroSecretaria || (s.secretaria === filtroSecretaria));
   }, [sistemas, busca, filtroAmbiente, filtroHomologados, filtroAcessiveis, filtroTipoAcesso, filtroSecretaria]);
@@ -95,16 +102,40 @@ export function useSistemas() {
         setDisplayName(clientUserState.displayName);
         setPermissions(clientUserState.permissions);
 
-        // Se for viewer, inicializa os filtros como true
-        if (clientUser.role === "viewer") {
-          setFiltroHomologados(true);
-          setFiltroAcessiveis(true);
-          setFiltroTipoAcesso("publico");
-        } else {
-          // admin, editor, painel_editor, sistema_editor, inventario_editor - mostrar todos
-          setFiltroHomologados(false);
-          setFiltroAcessiveis(false);
-          setFiltroTipoAcesso("");
+        // Carregar filtros salvos do localStorage (se houver)
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const saved = JSON.parse(raw) as Partial<Record<string, unknown>>;
+            if (typeof saved.busca === "string") setBusca(String(saved.busca));
+            if (typeof saved.filtroAmbiente === "string") setFiltroAmbiente(saved.filtroAmbiente as any);
+            if (typeof saved.filtroHomologados === "boolean") setFiltroHomologados(Boolean(saved.filtroHomologados));
+            if (typeof saved.filtroAcessiveis === "boolean") setFiltroAcessiveis(Boolean(saved.filtroAcessiveis));
+            if (typeof saved.filtroTipoAcesso === "string") setFiltroTipoAcesso(saved.filtroTipoAcesso as any);
+            if (typeof saved.filtroSecretaria === "string") setFiltroSecretaria(String(saved.filtroSecretaria));
+          } else {
+            // Se não houver salvo, aplicar comportamento padrão por role
+            if (clientUser.role === "viewer") {
+              setFiltroHomologados(true);
+              setFiltroAcessiveis(true);
+              setFiltroTipoAcesso("publico");
+            } else {
+              setFiltroHomologados(false);
+              setFiltroAcessiveis(false);
+              setFiltroTipoAcesso("");
+            }
+          }
+        } catch (err) {
+          // fallback para comportamento padrão se localStorage falhar
+          if (clientUser.role === "viewer") {
+            setFiltroHomologados(true);
+            setFiltroAcessiveis(true);
+            setFiltroTipoAcesso("publico");
+          } else {
+            setFiltroHomologados(false);
+            setFiltroAcessiveis(false);
+            setFiltroTipoAcesso("");
+          }
         }
 
       } catch (err) {
@@ -116,6 +147,23 @@ export function useSistemas() {
 
     initUser();
   }, []);
+
+  // Persistir filtros no localStorage sempre que mudarem
+  useEffect(() => {
+    try {
+      const toSave = {
+        busca,
+        filtroAmbiente,
+        filtroHomologados,
+        filtroAcessiveis,
+        filtroTipoAcesso,
+        filtroSecretaria,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (err) {
+      // ignore storage errors
+    }
+  }, [busca, filtroAmbiente, filtroHomologados, filtroAcessiveis, filtroTipoAcesso, filtroSecretaria]);
 
   // Carregar sistemas
   const fetchSistemas = useCallback(async () => {
@@ -243,6 +291,11 @@ export function useSistemas() {
     setFiltroAcessiveis(false);
     setFiltroTipoAcesso("");
     setFiltroSecretaria("");
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   return {

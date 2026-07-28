@@ -1,11 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+// app/api/modulos/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { validateAuth } from "@/lib/api-guard";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-);
+import pool from "@/lib/db";
 
 // GET - Fetch single modulo (admin only)
 export async function GET(
@@ -23,15 +19,16 @@ export async function GET(
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    const { data, error } = await supabase
-      .from("modulos")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const result = await pool.query(
+      "SELECT * FROM modulos WHERE id = $1 LIMIT 1",
+      [id]
+    );
 
-    if (error) throw error;
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Modulo not found" }, { status: 404 });
+    }
 
-    return NextResponse.json(data);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error("Error fetching modulo:", error);
     return NextResponse.json(
@@ -66,20 +63,19 @@ export async function PATCH(
       );
     }
 
-    const { data, error } = await supabase
-      .from("modulos")
-      .update({
-        nome: nome.trim(),
-        descricao: descricao?.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select()
-      .single();
+    const result = await pool.query(
+      `UPDATE modulos
+       SET nome = $1, descricao = $2, updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [nome.trim(), descricao?.trim() || null, id]
+    );
 
-    if (error) throw error;
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Modulo not found" }, { status: 404 });
+    }
 
-    return NextResponse.json(data);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error("Error updating modulo:", error);
     return NextResponse.json(
@@ -105,12 +101,7 @@ export async function DELETE(
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    const { error } = await supabase
-      .from("modulos")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
+    await pool.query("DELETE FROM modulos WHERE id = $1", [id]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

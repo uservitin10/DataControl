@@ -1,7 +1,10 @@
 import type { Sistema } from "@/types/dashboard";
 import { fetchJson, postJson, patchJson } from "@/lib/api";
 
-export const fetchSistemasApi = async () => fetchJson<Sistema[]>("/api/sistemas");
+export const fetchSistemasApi = async () => {
+  const response = await fetchJson<{ success: true; data: Sistema[] }>("/api/sistemas");
+  return response.data ?? [];
+};
 
 export const createSistemaApi = async (body: Partial<Sistema>) => postJson<Sistema>("/api/sistemas", body);
 

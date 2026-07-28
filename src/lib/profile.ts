@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import { withAuthenticatedClient } from "@/lib/db";
 import { sanitizeText } from "@/lib/text";
 import type { Role } from "@/types/dashboard";
 
@@ -8,19 +8,20 @@ export type ProfileRecord = {
 };
 
 export async function getProfileById(id: string): Promise<ProfileRecord | null> {
-  const { data, error } = await supabaseServer
-    .from("profiles")
-    .select("role, display_name")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    return null;
-  }
+  const data = await withAuthenticatedClient(
+    { id, role: "" }, // contexto mínimo: a policy select_own_profile libera quando auth.uid() = id
+    async (client) => {
+      const result = await client.query(
+        `SELECT role, display_name FROM profiles WHERE id = $1`,
+        [id]
+      );
+      return result.rows[0] ?? null;
+    }
+  );
 
   return data
     ? {
-        ...data,
+        role: data.role,
         display_name: sanitizeText(data.display_name || ""),
       }
     : null;

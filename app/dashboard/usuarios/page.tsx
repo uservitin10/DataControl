@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 // BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 import { fetchJson, patchJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
@@ -44,29 +44,33 @@ export default function UsuariosPage() {
 
   const fetchUsuarios = async () => {
     try {
-      const response = await fetchJson<{ data: Profile[]; total: number }>("/api/usuarios");
-      setUsuarios(response?.data ?? []);
+      const response = await fetchJson<{ data: { data: Profile[]; total: number } }>("/api/usuarios");
+      const usuariosData = response?.data?.data;
+      setUsuarios(Array.isArray(usuariosData) ? usuariosData : []);
+
+      if (response?.data && !Array.isArray(usuariosData)) {
+        setError("Resposta inesperada ao carregar usuários.");
+      }
     } catch (fetchError) {
       setUsuarios([]);
       setError((fetchError as Error).message);
     }
   };
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData.session?.user ?? null;
-      if (!sessionUser) {
+      if (status === "loading") return;
+      if (!session?.user?.id) {
         router.replace("/login");
         return;
       }
 
       try {
-        const profile = await fetchJson<{ role: Role }>(
-          `/api/profile?id=${encodeURIComponent(sessionUser.id)}`
-        );
+        const profile = await fetchJson<{ success: boolean; data: { role: Role } }>(`/api/profile/me`);
 
-        if (profile.role !== "admin") {
+        if (profile.data.role !== "admin") {
           router.replace("/dashboard");
           return;
         }
@@ -80,7 +84,7 @@ export default function UsuariosPage() {
       setLoading(false);
     };
     void load();
-  }, [router]);
+  }, [router, session, status]);
 
   const ALL_MODULES: Array<{ key: PermissionModule; label: string }> = [
     { key: "dashboard", label: "Painel" },
@@ -111,9 +115,14 @@ export default function UsuariosPage() {
     setSuccess("");
 
     try {
-      const profile = await fetchJson<{ role: Role; display_name?: string; permissions: Permissions }>(
-        `/api/profile?id=${encodeURIComponent(usuario.id)}`
-      );
+      // Antes buscava "/api/profile/me" (perfil de quem está logado, sem "permissions"
+      // no retorno). Agora busca o perfil do usuário que foi clicado na tabela,
+      // via "/api/profile?id=...", que é a rota que realmente retorna "permissions".
+      const response = await fetchJson<{
+        success: boolean;
+        data: { role: Role; display_name?: string; permissions?: Permissions };
+      }>(`/api/profile?id=${encodeURIComponent(usuario.id)}`);
+      const profile = response.data;
 
       setSelectedUser(usuario);
       const roleToUse = profile.role ?? usuario.role;

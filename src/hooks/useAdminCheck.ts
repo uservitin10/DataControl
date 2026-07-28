@@ -1,43 +1,32 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 
 export function useAdminCheck() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session) {
-          router.push("/login");
-          return;
-        }
-
-        const userMetadata = session.user.user_metadata;
-        const role = userMetadata?.role || "viewer";
-
-        if (role !== "admin") {
-          router.push("/dashboard");
-          return;
-        }
-
-        setIsAdmin(true);
-      } catch (error) {
-        console.error("Erro ao verificar permissões:", error);
-        router.push("/login");
-      } finally {
-        setLoading(false);
-      }
+    if (status === "loading") {
+      return;
     }
 
-    checkAdmin();
-  }, [router]);
+    if (!session?.user?.id) {
+      router.replace("/login");
+      return;
+    }
+
+    const role = session.user.role || "viewer";
+    if (role !== "admin") {
+      router.replace("/dashboard");
+      return;
+    }
+
+    setIsAdmin(true);
+    setLoading(false);
+  }, [router, session, status]);
 
   return { isAdmin, loading };
 }

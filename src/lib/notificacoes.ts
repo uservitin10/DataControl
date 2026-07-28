@@ -1,7 +1,10 @@
 import type { Notificacao } from "@/types/dashboard";
 import { fetchJson, postJson } from "@/lib/api";
 
-export const fetchNotificacoesApi = async () => fetchJson<Notificacao[]>("/api/notificacoes");
+export const fetchNotificacoesApi = async () => {
+  const response = await fetchJson<{ success: boolean; data: Notificacao[] }>("/api/notificacoes");
+  return response.data;
+};
 
 export const createNotificacaoApi = async (body: Omit<Notificacao, "id" | "created_at">) =>
   postJson<Notificacao>("/api/notificacoes", body);

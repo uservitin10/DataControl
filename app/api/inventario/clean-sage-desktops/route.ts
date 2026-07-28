@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
@@ -8,15 +8,11 @@ export async function GET(req: NextRequest) {
   return withAuth(req, async (user) => {
     try {
       // Buscar todos os desktops do setor SAGE
-      const { data: sageDesktops, error: fetchError } = await supabaseServer
-        .from("inventory_items")
-        .select("*")
-        .eq("sector", "SAGE")
-        .eq("type", "Desktop");
-
-      if (fetchError) {
-        return apiInternalError(`Erro ao buscar desktops: ${fetchError.message}`);
-      }
+      const result = await pool.query(
+        `SELECT * FROM inventory_items WHERE sector = $1 AND type = $2`,
+        ["SAGE", "Desktop"]
+      );
+      const sageDesktops = result.rows;
 
       // Filtrar apenas os incompletos - aqueles sem as informações essenciais mostradas na UI
       const incompleteDesktops = (sageDesktops || []).filter((desktop) => {
@@ -59,15 +55,11 @@ export async function DELETE(req: NextRequest) {
   return withAuth(req, async (user) => {
     try {
       // Buscar todos os desktops do setor SAGE
-      const { data: sageDesktops, error: fetchError } = await supabaseServer
-        .from("inventory_items")
-        .select("*")
-        .eq("sector", "SAGE")
-        .eq("type", "Desktop");
-
-      if (fetchError) {
-        return apiInternalError(`Erro ao buscar desktops: ${fetchError.message}`);
-      }
+      const result = await pool.query(
+        `SELECT * FROM inventory_items WHERE sector = $1 AND type = $2`,
+        ["SAGE", "Desktop"]
+      );
+      const sageDesktops = result.rows;
 
       // Filtrar apenas os incompletos - aqueles sem as informações essenciais mostradas na UI
       const incompleteDesktops = (sageDesktops || []).filter((desktop) => {
@@ -96,13 +88,13 @@ export async function DELETE(req: NextRequest) {
       // Remover os desktops incompletos
       const desktopIds = incompleteDesktops.map((d) => d.id);
 
-      const { error: deleteError } = await supabaseServer
-        .from("inventory_items")
-        .delete()
-        .in("id", desktopIds);
-
-      if (deleteError) {
-        return apiInternalError(`Erro ao remover: ${deleteError.message}`);
+      try {
+        await pool.query(
+          `DELETE FROM inventory_items WHERE id = ANY($1::uuid[])`,
+          [desktopIds]
+        );
+      } catch (deleteError: any) {
+        return apiInternalError(`Erro ao remover: ${deleteError?.message || String(deleteError)}`);
       }
 
       // Registrar auditoria

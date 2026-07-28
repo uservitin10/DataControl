@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: horus_admin
+      POSTGRES_PASSWORD: acessoaobancohorus
+      POSTGRES_DB: horus_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  minio:
+    image: minio/minio:latest
+    container_name: database-minio-1
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: horus_minio_admin
+      MINIO_ROOT_PASSWORD: acessoaominiohorus
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+volumes:
+  pgdata:
+  minio_data:

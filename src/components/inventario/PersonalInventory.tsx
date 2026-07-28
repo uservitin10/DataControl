@@ -10,6 +10,7 @@ import {
   uploadToStorage,
   fetchSignedUrl,
   resolveDocumentViewerUrl,
+  buildStorageProxyUrl,
   listEquipmentFiles,
   uploadEquipmentFiles,
   deleteEquipmentFile,
@@ -165,12 +166,14 @@ export function PersonalInventory() {
 
   const fetchInventory = async (role: Role | null) => {
     try {
-      const response = await fetchJson<PersonalInventoryResponse>(
-        "/api/inventario/meu-inventario"
-      );
+      const response = await fetchJson<{
+        success: true;
+        data: PersonalInventoryResponse;
+      }>("/api/inventario/meu-inventario");
 
-      setData(response);
-      void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
+      const inventory = response.data;
+      setData(inventory);
+      void loadFileCountsFor([...(inventory.equipments || []), ...(inventory.licenses || [])]);
     } catch (err) {
       setError(formatInventoryError(err, "Erro ao carregar inventário"));
     }
@@ -179,17 +182,23 @@ export function PersonalInventory() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const profile = await fetchJson<{ role: Role }>("/api/profile");
-        const role = profile.role;
+        const profileResponse = await fetchJson<{
+          success: true;
+          data: { role: Role };
+        }>("/api/profile");
+        const profileData = profileResponse.data;
+        const role = profileData?.role ?? "viewer";
         setUserRole(role);
         setCanCreate(role === "admin" || role === "editor");
 
-        const response = await fetchJson<PersonalInventoryResponse>(
-          "/api/inventario/meu-inventario"
-        );
+        const inventoryResponse = await fetchJson<{
+          success: true;
+          data: PersonalInventoryResponse;
+        }>("/api/inventario/meu-inventario");
 
-        setData(response);
-        void loadFileCountsFor([...(response.equipments || []), ...(response.licenses || [])]);
+        const inventory = inventoryResponse.data;
+        setData(inventory);
+        void loadFileCountsFor([...(inventory.equipments || []), ...(inventory.licenses || [])]);
       } catch (err) {
         if (err instanceof Error) {
           setError(
@@ -297,8 +306,8 @@ export function PersonalInventory() {
 
       const previewEntries = await Promise.all(
         imageFiles.map(async (file) => {
-          const signedUrl = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 86400);
-          return signedUrl ? ([file.id, signedUrl] as const) : null;
+          const proxyUrl = buildStorageProxyUrl(DOCUMENTS_BUCKET, file.file_url);
+          return proxyUrl ? ([file.id, proxyUrl] as const) : null;
         })
       );
 
@@ -416,27 +425,51 @@ export function PersonalInventory() {
     setViewingFileText(null);
 
     try {
-      const viewerUrl = await resolveDocumentViewerUrl(DOCUMENTS_BUCKET, file.file_url);
+      const proxyUrl = buildStorageProxyUrl(DOCUMENTS_BUCKET, file.file_url);
+
+      if (file.file_type.startsWith("image/")) {
+        setViewingFileName(file.file_name);
+        setViewingFileUrl(proxyUrl);
+        setViewingFileType(file.file_type);
+        setViewingFileText(null);
+        return;
+      }
 
       if (file.file_type.startsWith("text/") || file.file_name.endsWith(".csv")) {
-        const signed = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 86400);
-        if (!signed) throw new Error("Não foi possível gerar o link de visualização.");
-        const res = await fetch(signed);
+        const res = await fetch(proxyUrl);
         if (!res.ok) throw new Error("Falha ao carregar conteúdo do arquivo.");
         const text = await res.text();
         setViewingFileName(file.file_name);
         setViewingFileType(file.file_type);
         setViewingFileText(text);
-        setViewingFileUrl(signed);
+        setViewingFileUrl(proxyUrl);
         return;
       }
 
-      if (!viewerUrl) {
+      if (["xlsx", "xls", "docx", "doc", "pptx", "ppt"].includes(file.file_name.split(".").pop()?.toLowerCase() ?? "")) {
+        const signed = await fetchSignedUrl(DOCUMENTS_BUCKET, file.file_url, 86400);
+        if (!signed) throw new Error("Não foi possível gerar o link de visualização.");
+        setViewingFileName(file.file_name);
+        setViewingFileUrl(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(signed)}`);
+        setViewingFileType(file.file_type);
+        setViewingFileText(null);
+        return;
+      }
+
+      if (file.file_type === "application/pdf") {
+        setViewingFileName(file.file_name);
+        setViewingFileUrl(proxyUrl);
+        setViewingFileType(file.file_type);
+        setViewingFileText(null);
+        return;
+      }
+
+      if (!proxyUrl) {
         throw new Error("Não foi possível gerar o link de visualização.");
       }
 
       setViewingFileName(file.file_name);
-      setViewingFileUrl(viewerUrl);
+      setViewingFileUrl(proxyUrl);
       setViewingFileType(file.file_type);
     } catch (err) {
       setFileError(err instanceof Error ? err.message : "Erro ao gerar link de visualização.");

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import {
   apiSuccess,
@@ -26,14 +26,17 @@ export async function GET(req: NextRequest) {
       }
 
       // Buscar todos os itens legados (sem allocated_user_id)
-      const { data: legacyItems, error } = await supabaseServer
-        .from("inventory_items")
-        .select("id, allocated_user, type, model, sector")
-        .is("allocated_user_id", null)
-        .order("allocated_user", { ascending: true });
-
-      if (error) {
-        return apiInternalError(error.message);
+      let legacyItems: Record<string, unknown>[] = [];
+      try {
+        const res = await pool.query(
+          `SELECT id, allocated_user, type, model, sector
+           FROM inventory_items
+           WHERE allocated_user_id IS NULL
+           ORDER BY allocated_user ASC`,
+        );
+        legacyItems = res.rows;
+      } catch (e: any) {
+        return apiInternalError(e?.message || String(e));
       }
 
       // Agrupar por usuário
@@ -96,17 +99,22 @@ export async function POST(req: NextRequest) {
       }
 
       // Buscar o item legado
-      const { data: item, error: itemError } = await supabaseServer
-        .from("inventory_items")
-        .select("allocated_user")
-        .eq("id", itemId)
-        .single();
-
-      if (itemError || !item) {
+      let itemAllocatedUser = "";
+      let originalAllocatedUser: unknown = null;
+      try {
+        const r = await pool.query(
+          `SELECT allocated_user FROM inventory_items WHERE id = $1`,
+          [itemId]
+        );
+        const itemRow = r.rows[0];
+        if (!itemRow) {
+          return apiInternalError("Item não encontrado");
+        }
+        originalAllocatedUser = itemRow.allocated_user;
+        itemAllocatedUser = sanitizeText(itemRow.allocated_user || "");
+      } catch (e) {
         return apiInternalError("Item não encontrado");
       }
-
-      const itemAllocatedUser = sanitizeText(item.allocated_user || "");
 
       // Sincronizar
       const result = await syncLegacyInventoryItem(
@@ -126,7 +134,7 @@ export async function POST(req: NextRequest) {
         resource_type: "inventory_items",
         resource_id: String(itemId),
         details: JSON.stringify({
-          fromAllocatedUser: item.allocated_user,
+          fromAllocatedUser: originalAllocatedUser,
           toUserId: userId,
         }),
       });
@@ -173,12 +181,13 @@ export async function PUT(req: NextRequest) {
       // Buscar todos os items deste usuário legado
       const sanitizedAllocatedUserName = sanitizeText(allocatedUserName);
 
-      const { data: items, error: itemsError } = await supabaseServer
-        .from("inventory_items")
-        .select("id, allocated_user")
-        .is("allocated_user_id", null);
-
-      if (itemsError || !items) {
+      let items: Record<string, unknown>[] = [];
+      try {
+        const r = await pool.query(
+          `SELECT id, allocated_user FROM inventory_items WHERE allocated_user_id IS NULL`
+        );
+        items = r.rows;
+      } catch (e) {
         return apiInternalError("Erro ao buscar items");
       }
 
@@ -192,7 +201,7 @@ export async function PUT(req: NextRequest) {
       // Sincronizar cada item
       for (const item of matchingItems) {
         const result = await syncLegacyInventoryItem(
-          item.id,
+          item.id as number,
           userId,
           sanitizedAllocatedUserName
         );
@@ -200,7 +209,7 @@ export async function PUT(req: NextRequest) {
         if (result.success) {
           syncedCount++;
         } else {
-          errors.push({ itemId: item.id, error: result.error });
+          errors.push({ itemId: item.id as number, error: result.error });
         }
       }
 

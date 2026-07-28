@@ -1,0 +1,1 @@
+UPDATE profiles SET password_hash = '$2b$10$yS00o3tkhN5KWlypnrOZJe0IVVf.weX0jEiATRH/YlGDkkT0Blcoq' WHERE email = 'victorodrigues.cc@gmail.com';

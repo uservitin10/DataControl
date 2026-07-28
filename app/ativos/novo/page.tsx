@@ -7,10 +7,9 @@ import { AtivoForm } from "../AtivoForm";
 import { criarAtivoAction } from "../actions";
 
 export default async function NovoAtivoPage() {
-  const supabase = await createClient();
   const [profiles, areas] = await Promise.all([
-    listarProfiles(supabase),
-    listarAreas(supabase),
+    listarProfiles(),
+    listarAreas(),
   ]);
 
   return (

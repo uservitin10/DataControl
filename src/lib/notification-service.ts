@@ -1,17 +1,13 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 
 export async function getAdminIds(): Promise<string[]> {
-  const { data, error } = await supabaseServer
-    .from("profiles")
-    .select("id")
-    .eq("role", "admin");
-
-  if (error || !data) {
+  try {
+    const result = await pool.query("SELECT id FROM profiles WHERE role = $1", ["admin"]);
+    return result.rows.map((row) => String((row as Record<string, unknown>)?.id)).filter(Boolean);
+  } catch (error) {
     console.warn("[Notification Service] Falha ao buscar admins:", error);
     return [];
   }
-
-  return data.map((row) => String((row as Record<string, unknown>)?.id)).filter(Boolean);
 }
 
 export async function notifyAdmins(message: string, type = "system") {
@@ -29,8 +25,13 @@ export async function notifyAdmins(message: string, type = "system") {
     created_at: new Date().toISOString(),
   }));
 
-  const { error } = await supabaseServer.from("notificacoes").insert(notifications);
-  if (error) {
+  try {
+    await pool.query(
+      `INSERT INTO notificacoes (user_id, tipo, mensagem, lida, created_at)
+       VALUES ${notifications.map((_, index) => `($${index * 5 + 1}, $${index * 5 + 2}, $${index * 5 + 3}, $${index * 5 + 4}, $${index * 5 + 5})`).join(", ")}`,
+      notifications.flatMap((notification) => [notification.user_id, notification.tipo, notification.mensagem, notification.lida, notification.created_at])
+    );
+  } catch (error) {
     console.error("[Notification Service] Erro ao criar notificações:", error);
     return { success: false, error };
   }

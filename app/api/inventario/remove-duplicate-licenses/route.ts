@@ -1,8 +1,8 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
 type LicenseRecord = {
-  id: number;
+  id: string; // Corrigido para string (UUID)
   type?: string | null;
   model?: string | null;
   asset_id?: string | null;
@@ -12,28 +12,32 @@ type LicenseRecord = {
 
 export async function GET(req: NextRequest) {
   try {
-    // Buscar todas as licenças Ativas, usando filtro de tipo mais flexível
-    const { data: licenses, error: fetchError } = await supabaseServer
-      .from("inventory_items")
-      .select("id, type, model, asset_id, responsible, equipment_state")
-      .ilike("type", "%lic%")
-      .order("asset_id", { ascending: true })
-      .order("id", { ascending: true });
-
-    if (fetchError) {
+    // Buscar todas as licenças usando filtro flexível no tipo
+    let licenses: LicenseRecord[] = [];
+    try {
+      const selectResult = await pool.query(
+        `SELECT id, type, model, asset_id, responsible, equipment_state
+         FROM inventory_items
+         WHERE type ILIKE $1
+         ORDER BY asset_id ASC, id ASC`,
+        ["%lic%"]
+      );
+      licenses = selectResult.rows as LicenseRecord[];
+    } catch (fetchError: any) {
       return NextResponse.json(
-        { error: `Erro ao buscar licenças: ${fetchError.message}` },
+        { error: `Erro ao buscar licenças: ${fetchError?.message || String(fetchError)}` },
         { status: 500 }
       );
     }
 
+    // Corrigido a verificação para comparar tudo em caixa baixa
     const activeLicenses = (licenses || []).filter((license: LicenseRecord) =>
-      ["Ativa", "ativo"].includes(
+      ["ativa", "ativo"].includes(
         (license.equipment_state || "").toString().trim().toLowerCase()
       )
     );
 
-    // Agrupar por asset_id (email) para encontrar duplicatas
+    // Agrupar por asset_id para encontrar duplicatas
     const groupedByAsset: Record<string, LicenseRecord[]> = {};
     activeLicenses.forEach((l: LicenseRecord) => {
       const key = (l.asset_id || "").toString().trim().toLowerCase() || `_no_email_${l.id}`;
@@ -48,7 +52,7 @@ export async function GET(req: NextRequest) {
       asset: string;
       count: number;
       records: Array<{
-        id: number;
+        id: string;
         model?: string | null;
         responsible?: string | null;
         asset_id?: string | null;
@@ -56,7 +60,7 @@ export async function GET(req: NextRequest) {
         delete: boolean;
       }>;
     }> = [];
-    const idsToDelete: number[] = [];
+    const idsToDelete: string[] = [];
 
     for (const [key, items] of Object.entries(groupedByAsset)) {
       if (items.length > 1) {
@@ -73,7 +77,7 @@ export async function GET(req: NextRequest) {
           })),
         });
 
-        // Manter o primeiro, marcar o resto para deletar
+        // Manter o primeiro e marcar os restantes para exclusão
         items.forEach((item: LicenseRecord, idx: number) => {
           if (idx > 0) {
             idsToDelete.push(item.id);
@@ -82,33 +86,33 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Se há duplicatas e método é POST com action=remove, deletar
+    // Se action=remove, efetuar a deleção no Postgres
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
     if (action === "remove" && idsToDelete.length > 0) {
-      const { error: deleteError } = await supabaseServer
-        .from("inventory_items")
-        .delete()
-        .in("id", idsToDelete);
+      try {
+        await pool.query(
+          `DELETE FROM inventory_items WHERE id = ANY($1::uuid[])`, // Corrigido para ::uuid[]
+          [idsToDelete]
+        );
 
-      if (deleteError) {
+        return NextResponse.json({
+          message: `✓ ${idsToDelete.length} licenças duplicadas removidas com sucesso!`,
+          deletedCount: idsToDelete.length,
+          deletedIds: idsToDelete,
+          duplicatesRemoved: duplicates,
+        });
+      } catch (deleteError: any) {
         return NextResponse.json(
           {
-            error: `Erro ao deletar duplicatas: ${deleteError.message}`,
+            error: `Erro ao deletar duplicatas: ${deleteError?.message || String(deleteError)}`,
             duplicates,
             idsToDelete,
           },
           { status: 500 }
         );
       }
-
-      return NextResponse.json({
-        message: `✓ ${idsToDelete.length} licenças duplicadas removidas com sucesso!`,
-        deletedCount: idsToDelete.length,
-        deletedIds: idsToDelete,
-        duplicatesRemoved: duplicates,
-      });
     }
 
     // Retornar relatório de duplicatas encontradas

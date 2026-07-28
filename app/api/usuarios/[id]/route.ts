@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import { apiSuccess, apiValidationError, apiNotFound, apiInternalError, apiForbidden } from "@/lib/api-response";
@@ -18,13 +18,15 @@ export async function GET(req: NextRequest, { params }: Params) {
         return apiForbidden("Acesso negado.");
       }
 
-      const { data: profile, error } = await supabaseServer
-        .from("profiles")
-        .select("id, email, display_name, role, created_at")
-        .eq("id", id)
-        .single();
+      const profileResult = await pool.query(
+        `SELECT id, email, display_name, role, created_at
+         FROM profiles
+         WHERE id = $1`,
+        [id]
+      );
 
-      if (error || !profile) {
+      const profile = profileResult.rows[0] ?? null;
+      if (!profile) {
         return apiNotFound("Usuário não encontrado.");
       }
 
@@ -34,46 +36,43 @@ export async function GET(req: NextRequest, { params }: Params) {
       };
 
       // Permissões do role (tabela role_permissions)
-      const { data: rolePerms } = await supabaseServer
-        .from("role_permissions")
-        .select("can_view, can_edit, can_create, can_delete, module:module_id(name)")
-        .eq("role", role);
+      const rolePermsResult = await pool.query(
+        `SELECT rp.can_view, rp.can_edit, rp.can_delete, m.name AS module_name
+         FROM role_permissions rp
+         JOIN modules m ON m.id = rp.module_id
+         WHERE rp.role = $1`,
+        [role]
+      );
 
-      if (Array.isArray(rolePerms)) {
-        rolePerms.forEach((row) => {
-          const r = row as Record<string, unknown>;
-          const mod = normalizePermissionModule(
-            Array.isArray(r.module) ? (r.module[0] as Record<string, unknown>)?.name as string | undefined : undefined
-          );
-          if (!mod) return;
-          permissions[mod] = {
-            view: Boolean(r.can_view),
-            edit: Boolean(r.can_edit),
-            create: Boolean(r.can_create ?? r.can_edit),
-            delete: Boolean(r.can_delete),
-          };
-        });
-      }
+      rolePermsResult.rows.forEach((row: Record<string, unknown>) => {
+        const mod = normalizePermissionModule(typeof row.module_name === "string" ? row.module_name : undefined);
+        if (!mod) return;
+        permissions[mod] = {
+          view: Boolean(row.can_view),
+          edit: Boolean(row.can_edit),
+          create: Boolean(row.can_create ?? row.can_edit),
+          delete: Boolean(row.can_delete),
+        };
+      });
 
       // Permissões individuais sobrescrevem as do role (tabela user_permissions)
-      const { data: userPerms } = await supabaseServer
-        .from("user_permissions")
-        .select("module, can_view, can_edit, can_create, can_delete")
-        .eq("user_id", id);
+      const userPermsResult = await pool.query(
+        `SELECT module, can_view, can_edit, can_create, can_delete
+         FROM user_permissions
+         WHERE user_id = $1`,
+        [id]
+      );
 
-      if (Array.isArray(userPerms)) {
-        userPerms.forEach((row) => {
-          const r = row as Record<string, unknown>;
-          const mod = normalizePermissionModule(r.module as string | undefined);
-          if (!mod) return;
-          permissions[mod] = {
-            view: Boolean(r.can_view),
-            edit: Boolean(r.can_edit),
-            create: Boolean(r.can_create),
-            delete: Boolean(r.can_delete),
-          };
-        });
-      }
+      userPermsResult.rows.forEach((row: Record<string, unknown>) => {
+        const mod = normalizePermissionModule(typeof row.module === "string" ? row.module : undefined);
+        if (!mod) return;
+        permissions[mod] = {
+          view: Boolean(row.can_view),
+          edit: Boolean(row.can_edit),
+          create: Boolean(row.can_create),
+          delete: Boolean(row.can_delete),
+        };
+      });
 
       return apiSuccess({ ...profile, permissions });
     } catch (err) {
@@ -106,11 +105,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
 
       if (role) {
-        const { error } = await supabaseServer
-          .from("profiles")
-          .update({ role })
-          .eq("id", id);
-        if (error) return apiInternalError(error.message);
+        try {
+          await pool.query("UPDATE profiles SET role = $1 WHERE id = $2", [role, id]);
+        } catch (error) {
+          return apiInternalError((error as Error).message);
+        }
       }
 
       if (permissions && Object.keys(permissions).length > 0) {
@@ -130,10 +129,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           .filter(Boolean);
 
         if (rows.length > 0) {
-          const { error } = await supabaseServer
-            .from("user_permissions")
-            .upsert(rows as Record<string, unknown>[], { onConflict: "user_id, module" });
-          if (error) return apiInternalError(error.message);
+          try {
+            await pool.query(
+              `INSERT INTO user_permissions (user_id, module, can_view, can_edit, can_create, can_delete)
+               VALUES ${rows.map((_, index) => `($${index * 6 + 1}, $${index * 6 + 2}, $${index * 6 + 3}, $${index * 6 + 4}, $${index * 6 + 5}, $${index * 6 + 6})`).join(", ")}
+               ON CONFLICT (user_id, module) DO UPDATE SET
+                 can_view = EXCLUDED.can_view,
+                 can_edit = EXCLUDED.can_edit,
+                 can_create = EXCLUDED.can_create,
+                 can_delete = EXCLUDED.can_delete`,
+              (rows as Array<Record<string, unknown>>).flatMap((row) => [row.user_id, row.module, row.can_view, row.can_edit, row.can_create, row.can_delete])
+            );
+          } catch (error) {
+            return apiInternalError((error as Error).message);
+          }
         }
       }
 
@@ -173,24 +182,21 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       }
 
       // Verifica se o usuário possui itens de inventário relacionados antes de excluir
-      const { count, error: countError } = await supabaseServer
-        .from("inventory_items")
-        .select("id", { count: "exact", head: true })
-        .or(`allocated_user_id.eq.${id},created_by.eq.${id}`);
+      const inventoryCountResult = await pool.query(
+        `SELECT COUNT(*)::int AS count
+         FROM inventory_items
+         WHERE allocated_user_id = $1 OR created_by = $1`,
+        [id]
+      );
 
-      if (countError) {
-        return apiInternalError(countError.message);
-      }
-
-      if (count && count > 0) {
+      if (inventoryCountResult.rows[0]?.count > 0) {
         return apiValidationError(
           "Não é possível remover este usuário enquanto ele tiver itens de inventário relacionados. Reatribua ou exclua os itens primeiro."
         );
       }
 
-      // Remove o usuário do auth (o cascade cuida do profiles via FK)
-      const { error } = await supabaseServer.auth.admin.deleteUser(id);
-      if (error) return apiInternalError(error.message);
+      // Remove o usuário localmente; a regra de FK cuida do restante
+      await pool.query("DELETE FROM profiles WHERE id = $1", [id]);
 
       try {
         const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");

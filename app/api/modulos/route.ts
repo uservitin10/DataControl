@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAuth } from "@/lib/api-guard";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 
 // GET - List all modulos (admin only)
 export async function GET(request: NextRequest) {
@@ -14,16 +14,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    const { data, error } = await supabaseServer
-      .from("modulos")
-      .select("*")
-      .order("nome", { ascending: true });
+    const result = await pool.query(
+      "SELECT * FROM modulos ORDER BY nome ASC"
+    );
 
-    if (error) {
-      throw new Error(error.message || JSON.stringify(error));
-    }
-
-    return NextResponse.json(data || []);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
     console.error("Error fetching modulos:", error);
     const message =
@@ -57,20 +52,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabaseServer
-      .from("modulos")
-      .insert([
-        {
-          nome: nome.trim(),
-          descricao: descricao?.trim() || null,
-          created_at: new Date().toISOString(),
-        },
-      ])
-      .select();
+    const result = await pool.query(
+      `INSERT INTO modulos (nome, descricao, created_at)
+       VALUES ($1, $2, NOW())
+       RETURNING *`,
+      [nome.trim(), descricao?.trim() || null]
+    );
 
-    if (error) throw error;
-
-    return NextResponse.json(data[0], { status: 201 });
+    return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error) {
     console.error("Error creating modulo:", error);
     return NextResponse.json(

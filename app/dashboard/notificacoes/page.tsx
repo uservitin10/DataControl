@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
 import { deleteNotificacaoApi, fetchNotificacoesApi, markNotificacoesLidasApi } from "@/lib/notificacoes";
 import type { Notificacao } from "@/types/dashboard";
@@ -13,11 +13,15 @@ import type { Notificacao } from "@/types/dashboard";
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
 type ProfileResponse = {
-  role: Role;
+  success: boolean;
+  data: {
+    role: Role;
+  };
 };
 
 export default function NotificacoesPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<Notificacao | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,23 +35,20 @@ export default function NotificacoesPage() {
       setLoading(true);
       setError(null);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-
-      if (!user) {
+      if (!session?.user?.id) {
         router.replace("/login");
         return;
       }
 
       try {
-        const profile = await fetchJson<ProfileResponse>(`/api/profile?id=${encodeURIComponent(user.id)}`);
+        const profile = await fetchJson<ProfileResponse>(`/api/profile/me`);
 
-        if (profile.role !== "admin") {
+if (profile.data.role !== "admin") {
           router.replace("/dashboard");
           return;
         }
 
-        setRole(profile.role);
+        setRole(profile.data.role);
 
         const notifications = await fetchNotificacoesApi();
         setNotificacoes(notifications ?? []);
@@ -59,7 +60,7 @@ export default function NotificacoesPage() {
     };
 
     void load();
-  }, [router]);
+  }, [router, session]);
 
   const handleMarcarLidas = async () => {
     setSaving(true);

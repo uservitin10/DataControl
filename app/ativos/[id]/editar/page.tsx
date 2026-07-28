@@ -17,12 +17,10 @@ export default async function EditarAtivoPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-
   const [ativo, profiles, areas] = await Promise.all([
-    buscarAtivoPorId(supabase, id),
-    listarProfiles(supabase),
-    listarAreas(supabase),
+    buscarAtivoPorId(id),
+    listarProfiles(),
+    listarAreas(),
   ]);
 
   if (!ativo) notFound();

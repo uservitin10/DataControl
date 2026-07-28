@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
 import { ROLE_LABELS } from "@/lib/ui-constants";
 
@@ -28,20 +27,27 @@ export default function UserBadge() {
     requestAnimationFrame(removePlaceholder);
     const load = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const sessionUser = sessionData.session?.user ?? null;
-        if (!sessionUser) {
+        const session = await fetchJson<{ user?: { id?: string; email?: string; name?: string; role?: string } }>(
+          "/api/auth/session"
+        );
+
+        const userId = session?.user?.id;
+        if (!userId) {
           setLoading(false);
           return;
         }
 
-        const profile = (await fetchJson(`/api/profile?id=${encodeURIComponent(sessionUser.id)}`)) as {
-          role?: string | null;
-          display_name?: string | null;
-        } | null;
+        const profileResponse = await fetchJson<{
+          success: true;
+          data: {
+            role?: string | null;
+            display_name?: string | null;
+          };
+        }>(`/api/profile/me`);
         if (!mounted) return;
-        setDisplayName(profile?.display_name ?? sessionUser.email ?? "Usuário");
-        setRole(profile?.role ?? null);
+        const profileData = profileResponse.data ?? {};
+        setDisplayName(profileData.display_name ?? session.user?.email ?? session.user?.name ?? "Usuário");
+        setRole(profileData.role ?? null);
       } catch {
         // ignore
       } finally {
@@ -53,7 +59,7 @@ export default function UserBadge() {
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, []);
 
   if (loading) return null;
   if (!displayName) return null;

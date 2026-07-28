@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_NOTIFICACAO_FIELDS } from "@/lib/validation";
@@ -8,17 +8,14 @@ import { apiSuccess, apiCreated, apiValidationError, apiInternalError, apiNotFou
 export async function GET(request: NextRequest) {
   return withAuth(request, async () => {
     try {
-      const { data, error } = await supabaseServer
-        .from("notificacoes")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(20);
+      const result = await pool.query(
+        `SELECT *
+         FROM notificacoes
+         ORDER BY created_at DESC
+         LIMIT 20`
+      );
 
-      if (error) {
-        return apiInternalError(error.message);
-      }
-
-      return apiSuccess(data ?? []);
+      return apiSuccess(result.rows ?? []);
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
@@ -39,10 +36,14 @@ export async function POST(req: NextRequest) {
       // Limpar e manter apenas campos permitidos
       const cleanBody = sanitizeObject(body, ALLOWED_NOTIFICACAO_FIELDS);
       
-      const { data, error } = await supabaseServer.from("notificacoes").insert(cleanBody);
-      if (error) {
-        return apiInternalError(error.message);
-      }
+      const columns = Object.keys(cleanBody);
+      const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");
+      const values = columns.map((column) => cleanBody[column]);
+
+      const result = await pool.query(
+        `INSERT INTO notificacoes (${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
+        values
+      );
 
       await addAuditLog({
         user_id: user.id,
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
         details: `Notificação criada: ${cleanBody.tipo ?? "sem tipo"}`,
       });
 
-      return apiCreated(data);
+      return apiCreated(result.rows);
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
@@ -62,14 +63,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(request: NextRequest) {
   return withAuth(request, async (user) => {
     try {
-      const { error } = await supabaseServer
-        .from("notificacoes")
-        .update({ lida: true })
-        .eq("lida", false);
-
-      if (error) {
-        return apiInternalError(error.message);
-      }
+      await pool.query("UPDATE notificacoes SET lida = true WHERE lida = false");
 
       await addAuditLog({
         user_id: user.id,
@@ -95,12 +89,8 @@ export async function DELETE(request: NextRequest) {
         return apiValidationError("O id da notificação é obrigatório.");
       }
 
-      const { error } = await supabaseServer
-        .from("notificacoes")
-        .delete()
-        .eq("id", notificationId);
-
-      if (error) {
+      const deleteResult = await pool.query("DELETE FROM notificacoes WHERE id = $1", [notificationId]);
+      if (deleteResult.rowCount === 0) {
         return apiNotFound("Notificação não encontrada");
       }
 

@@ -1,55 +1,26 @@
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import type { RespostaLevantamento, RespostaLevantamentoInsert, EstatisticasLevantamento } from "@/types/levantamento";
 
-/**
- * Lista todas as respostas ordenadas por data de criação (mais recentes primeiro)
- */
 export async function getRespostas(): Promise<RespostaLevantamento[]> {
-  const { data, error } = await supabaseServer
-    .from("levantamento_ativos")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Erro ao buscar respostas: ${error.message}`);
-  }
-
-  return data || [];
+  const { rows } = await pool.query(
+    `SELECT * FROM levantamento_ativos ORDER BY created_at DESC`
+  );
+  return rows;
 }
 
-/**
- * Busca uma resposta específica por ID
- */
 export async function getRespostaPorId(id: string): Promise<RespostaLevantamento | null> {
-  const { data, error } = await supabaseServer
-    .from("levantamento_ativos")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") {
-      return null; // Não encontrado
-    }
-    throw new Error(`Erro ao buscar resposta: ${error.message}`);
-  }
-
-  return data;
+  const { rows } = await pool.query(
+    `SELECT * FROM levantamento_ativos WHERE id = $1`,
+    [id]
+  );
+  return rows[0] ?? null;
 }
 
-/**
- * Retorna estatísticas gerais do levantamento
- */
 export async function getEstatisticas(): Promise<EstatisticasLevantamento> {
-  const { data, error } = await supabaseServer
-    .from("levantamento_ativos")
-    .select("status, secretaria");
+  const { rows: respostas } = await pool.query(
+    `SELECT status, secretaria FROM levantamento_ativos`
+  );
 
-  if (error) {
-    throw new Error(`Erro ao buscar estatísticas: ${error.message}`);
-  }
-
-  const respostas = data || [];
   const setores = new Set(respostas.map((r) => r.secretaria));
 
   return {
@@ -61,61 +32,47 @@ export async function getEstatisticas(): Promise<EstatisticasLevantamento> {
   };
 }
 
-/**
- * Cria uma nova resposta de levantamento
- */
 export async function criarResposta(payload: RespostaLevantamentoInsert): Promise<RespostaLevantamento> {
-  const { data, error } = await supabaseServer
-    .from("levantamento_ativos")
-    .insert(payload)
-    .select()
-    .single();
+  const columns = Object.keys(payload);
+  const values = Object.values(payload);
+  const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
 
-  if (error) {
-    throw new Error(`Erro ao criar resposta: ${error.message}`);
-  }
-
-  return data;
+  const { rows } = await pool.query(
+    `INSERT INTO levantamento_ativos (${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
+    values
+  );
+  return rows[0];
 }
 
-/**
- * Atualiza uma resposta existente
- */
 export async function atualizarResposta(
   id: string,
   payload: Partial<RespostaLevantamentoInsert>
 ): Promise<RespostaLevantamento> {
-  const { data, error } = await supabaseServer
-    .from("levantamento_ativos")
-    .update(payload)
-    .eq("id", id)
-    .select()
-    .single();
+  const columns = Object.keys(payload);
+  const values = Object.values(payload);
+  const setClause = columns.map((col, i) => `${col} = $${i + 1}`).join(", ");
 
-  if (error) {
-    throw new Error(`Erro ao atualizar resposta: ${error.message}`);
+  const { rows } = await pool.query(
+    `UPDATE levantamento_ativos SET ${setClause} WHERE id = $${columns.length + 1} RETURNING *`,
+    [...values, id]
+  );
+
+  if (rows.length === 0) {
+    throw new Error(`Erro ao atualizar resposta: registro ${id} não encontrado`);
   }
 
-  return data;
+  return rows[0];
 }
 
-/**
- * Salva um rascunho (cria ou atualiza com status 'rascunho')
- */
 export async function salvarRascunho(
   id: string | null,
   payload: RespostaLevantamentoInsert
 ): Promise<RespostaLevantamento> {
-  const dataComStatus = {
-    ...payload,
-    status: "rascunho" as const,
-  };
+  const dataComStatus = { ...payload, status: "rascunho" as const };
 
   if (!id) {
-    // Criar novo rascunho
     return criarResposta(dataComStatus);
   }
 
-  // Atualizar rascunho existente
   return atualizarResposta(id, dataComStatus);
 }

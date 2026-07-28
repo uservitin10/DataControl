@@ -1,4 +1,4 @@
-import { fetchJson, getAuthToken } from "@/lib/api";
+import { fetchJson } from "@/lib/api";
 const STORAGE_API = "/api/storage";
 
 export const DOCUMENTS_BUCKET = "documentos";
@@ -112,53 +112,31 @@ export const generateStoragePath = (name: string, file: File, suffix = "") => {
   return `${Date.now()}_${nomeSeguro}${suffix}.${ext}`;
 };
 
-const parseStorageError = async (res: Response) => {
-  const errorData = await res.json().catch(() => null);
-  return errorData?.error || `Erro no storage (${res.status}).`;
-};
-
 export const uploadToStorage = async (bucket: string, path: string, file: File) => {
-  const token = await getAuthToken();
-  if (!token) throw new Error("Token não fornecido");
-
   const formData = new FormData();
   formData.append("bucket", bucket);
   formData.append("path", path);
   formData.append("file", file);
 
-  const res = await fetch(STORAGE_API, {
+  await fetchJson(STORAGE_API, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     body: formData,
   });
-
-  if (!res.ok) {
-    throw new Error(await parseStorageError(res));
-  }
 
   return true;
 };
 
 export const deleteFromStorage = async (bucket: string, path: string) => {
-  const token = await getAuthToken();
-  if (!token) throw new Error("Token não fornecido");
-
-  const res = await fetch(STORAGE_API, {
+  await fetchJson(STORAGE_API, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify({ bucket, path }),
   });
 
-  if (!res.ok) {
-    throw new Error(await parseStorageError(res));
-  }
-
   return true;
+};
+
+export const buildStorageProxyUrl = (bucket: string, path: string) => {
+  return `${STORAGE_API}?type=proxy&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
 };
 
 export const fetchSignedUrl = async (
@@ -166,46 +144,20 @@ export const fetchSignedUrl = async (
   path: string,
   expires = 3600
 ) => {
-  const token = await getAuthToken();
-
-  const res = await fetch(
-    `${STORAGE_API}?type=signed&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}&expires=${expires}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+  const response = await fetchJson<{ data?: { signedUrl?: string | null } }>(
+    `${STORAGE_API}?type=signed&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}&expires=${expires}`
   );
-
-  if (!res.ok) {
-    throw new Error(await parseStorageError(res));
-  }
-
-  const response = await res.json();
-  return response.data?.signedUrl as string | null;
+  return response.data?.signedUrl ?? null;
 };
 
 export const fetchPublicUrl = async (
   bucket: string,
   path: string
 ) => {
-  const token = await getAuthToken();
-
-  const res = await fetch(
-    `${STORAGE_API}?type=public&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+  const response = await fetchJson<{ data?: { publicUrl?: string | null } }>(
+    `${STORAGE_API}?type=public&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`
   );
-
-  if (!res.ok) {
-    throw new Error(await parseStorageError(res));
-  }
-
-  const response = await res.json();
-  return response.data?.publicUrl as string | null;
+  return response.data?.publicUrl ?? null;
 };
 
 export const resolveDocumentViewerUrl = async (

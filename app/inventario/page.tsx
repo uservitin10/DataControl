@@ -6,9 +6,15 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS } from "@/lib/ui-constants";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
-import { equipmentData, getWarrantyExpiryStatus, isActiveLicense } from "@/lib/inventario";
+import {
+  getAllSectors,
+  getWarrantyExpiryStatus,
+  isActiveLicense,
+  normalizeType,
+  getEquipmentTypeCount,
+} from "@/lib/inventario";
 
 export default function InventarioPage() {
   const router = useRouter();
@@ -48,102 +54,101 @@ export default function InventarioPage() {
     return { totalExpiring, totalExpired, totalLicenses, totalWarranties };
   }, [inventoryEquipments, inventoryLicenses]);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-      const checkAccess = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData.session?.user ?? null;
-      if (!sessionUser) {
-        router.replace("/dashboard?alert=no_permission_inventario");
-        return;
-      }
+    if (status === "loading") return;
 
+    if (!session?.user?.id) {
+      router.replace("/dashboard?alert=no_permission_inventario");
+      return;
+    }
+
+    const loadData = async () => {
       try {
-        const profile = await fetchJson<{ role: string; display_name?: string }>(
-          `/api/profile?id=${encodeURIComponent(sessionUser.id)}`
-        );
+        const profile = await fetchJson<{
+          success: boolean;
+          data: { role: string; display_name?: string };
+        }>(`/api/profile/me`);
 
-        if (profile.role !== "admin") {
+        if (profile.data.role !== "admin") {
           router.replace("/dashboard?alert=no_permission_inventario");
           return;
         }
 
         setUserPresent(true);
-        setDisplayNameState(profile.display_name ?? sessionUser.email ?? null);
-        setRoleState(profile.role ?? null);
+        setDisplayNameState(profile.data.display_name ?? session.user?.email ?? null);
+        setRoleState(profile.data.role ?? null);
 
         const inventoryResponse = await fetchJson<{
-          equipments: any[];
-          licenses: any[];
-        }>("/api/inventario/meu-inventario");
+          success: boolean;
+          data: {
+            equipments: any[];
+            licenses: any[];
+          };
+        }>("/api/inventario");
 
-        setInventoryEquipments(inventoryResponse.equipments ?? []);
-        setInventoryLicenses(inventoryResponse.licenses ?? []);
-      } catch {
+        // Extração correta a partir da propriedade .data
+        const equipmentsList = inventoryResponse.data?.equipments ?? [];
+        const licensesList = inventoryResponse.data?.licenses ?? [];
+
+        setInventoryEquipments(equipmentsList);
+        setInventoryLicenses(licensesList);
+      } catch (err) {
+        console.error("Erro ao carregar inventário:", err);
         router.replace("/dashboard?alert=no_permission_inventario");
       } finally {
         setLoadingUser(false);
       }
     };
 
-    void checkAccess();
-  }, [router]);
+    void loadData();
+  }, [status, session?.user?.id, router]);
 
-  const stats = {
-    total: inventoryEquipments.length + inventoryLicenses.length,
-    monitors: inventoryEquipments.filter((i) => i.type === "Monitor").length,
-    desktops: inventoryEquipments.filter((i) => i.type === "Desktop").length,
-    notebooks: inventoryEquipments.filter((i) => i.type === "Notebook").length,
-    licenses: inventoryLicenses.length,
-  };
-
-  const extraSectorOptions = [
-    "SEPLAN",
-    "SE",
-    "SEAID",
-    "CONJUR",
-    "ASTEC",
-    "ASPAR",
-    "IMPRENSA",
-    "AECI",
-    "CGEST",
-    "COLOG",
-    "AGENDA",
-  ];
-
-  const equipmentSectorNames = Array.from(
-    new Set(
-      [
-        ...inventoryEquipments.map((i) => (i.sector ?? "").toString().trim()),
-        ...extraSectorOptions,
-        "Sem setor",
-      ]
-    )
-  )
-    .map((s) => (s ?? "").toString().trim())
-    .filter(Boolean)
-    .sort();
-
-  const sectorSummaries = equipmentSectorNames.map((sector) => {
-    const items = sector === "Sem setor"
-      ? inventoryEquipments.filter((item) => !(item.sector ?? "").toString().trim())
-      : inventoryEquipments.filter((item) => (item.sector ?? "").toString().trim() === sector);
-
+  const stats = useMemo(() => {
+    const totalEquipments = inventoryEquipments.length;
+    const totalLicenses = inventoryLicenses.length;
     return {
-      sector,
-      total: items.length,
-      monitors: items.filter((item) => item.type === "Monitor").length,
-      desktops: items.filter((item) => item.type === "Desktop").length,
-      notebooks: items.filter((item) => item.type === "Notebook").length,
+      total: totalEquipments + totalLicenses,
+      monitors: getEquipmentTypeCount(inventoryEquipments, "Monitor"),
+      desktops: getEquipmentTypeCount(inventoryEquipments, "Desktop"),
+      notebooks: getEquipmentTypeCount(inventoryEquipments, "Notebook"),
+      licenses: inventoryLicenses.length,
     };
-  });
+  }, [inventoryEquipments, inventoryLicenses]);
 
-  const licensesSummary = {
-    sector: "Licenças",
-    total: inventoryLicenses.length,
-    monitors: 0,
-    desktops: 0,
-    notebooks: 0,
-  };
+  const equipmentSectorNames = useMemo(() => {
+    return getAllSectors(inventoryEquipments);
+  }, [inventoryEquipments]);
+
+  const sectorSummaries = useMemo(() => {
+    return equipmentSectorNames.map((sector) => {
+      const items =
+        sector === "Sem setor"
+          ? inventoryEquipments.filter((item) => !(item.sector ?? "").toString().trim())
+          : inventoryEquipments.filter(
+              (item) => (item.sector ?? "").toString().trim() === sector
+            );
+
+      return {
+        sector,
+        total: items.length,
+        monitors: getEquipmentTypeCount(items, "Monitor"),
+        desktops: getEquipmentTypeCount(items, "Desktop"),
+        notebooks: getEquipmentTypeCount(items, "Notebook"),
+      };
+    });
+  }, [equipmentSectorNames, inventoryEquipments]);
+
+  const licensesSummary = useMemo(() => {
+    return {
+      sector: "Licenças",
+      total: inventoryLicenses.length,
+      monitors: 0,
+      desktops: 0,
+      notebooks: 0,
+    };
+  }, [inventoryLicenses]);
 
   const allSectorSummaries = [...sectorSummaries, licensesSummary];
 
@@ -256,7 +261,7 @@ export default function InventarioPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {visibleSectorSummaries.map((summary) => {
+              {visibleSectorSummaries.map((summary, index) => {
                 const isLicensesCard = summary.sector === "Licenças";
                 
                 const cardContent = (
@@ -300,7 +305,7 @@ export default function InventarioPage() {
                 if (isLicensesCard) {
                   return (
                     <Link
-                      key={summary.sector}
+                      key={`${summary.sector}-${index}`}
                       href="/inventario/licencas"
                       className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-slate-300 hover:bg-white"
                       aria-label="Abrir página de licenças Ativas"
@@ -312,7 +317,7 @@ export default function InventarioPage() {
 
                 return (
                   <Link
-                    key={summary.sector}
+                    key={`${summary.sector}-${index}`}
                     href={`${
                       summary.sector === "Sem setor"
                         ? "/inventario/sem-setor"

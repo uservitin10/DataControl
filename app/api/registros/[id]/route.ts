@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import { validateObject, sanitizeObject, VALIDATION_SCHEMAS, ALLOWED_REGISTRO_FIELDS } from "@/lib/validation";
@@ -13,17 +13,16 @@ export async function GET(
     try {
       const { id } = await params;
 
-      const { data, error } = await supabaseServer
-        .from("registros")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const result = await pool.query(
+        `SELECT * FROM registros WHERE id = $1 LIMIT 1`,
+        [id]
+      );
 
-      if (error) {
+      if (result.rows.length === 0) {
         return apiNotFound("Registro não encontrado");
       }
 
-      return apiSuccess(data);
+      return apiSuccess(result.rows[0]);
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
@@ -48,14 +47,22 @@ export async function PATCH(
       // Limpar e manter apenas campos permitidos
       const patchBody = sanitizeObject(body, ALLOWED_REGISTRO_FIELDS);
 
-      const { data, error } = await supabaseServer
-        .from("registros")
-        .update(patchBody)
-        .eq("id", id)
-        .select()
-        .single();
+      const colunas = Object.keys(patchBody);
+      const valores = Object.values(patchBody);
 
-      if (error) {
+      if (colunas.length === 0) {
+        return apiValidationError("Nenhum campo para atualizar.");
+      }
+
+      const setSql = colunas.map((col, i) => `${col} = $${i + 1}`).join(", ");
+      const idParam = `$${colunas.length + 1}`;
+
+      const result = await pool.query(
+        `UPDATE registros SET ${setSql} WHERE id = ${idParam} RETURNING *`,
+        [...valores, id]
+      );
+
+      if (result.rows.length === 0) {
         return apiNotFound("Registro não encontrado");
       }
 
@@ -74,7 +81,7 @@ export async function PATCH(
         console.error("Falha ao gravar auditoria (não bloqueante):", auditErr);
       }
 
-      return apiSuccess(data);
+      return apiSuccess(result.rows[0]);
     } catch (err) {
       return apiInternalError((err as Error).message);
     }
@@ -88,10 +95,13 @@ export async function DELETE(
   return withAuth(req, async (user) => {
     try {
       const { id } = await params;
-      
-      const { error } = await supabaseServer.from("registros").delete().eq("id", id);
 
-      if (error) {
+      const result = await pool.query(
+        `DELETE FROM registros WHERE id = $1`,
+        [id]
+      );
+
+      if (result.rowCount === 0) {
         return apiNotFound("Registro não encontrado");
       }
 

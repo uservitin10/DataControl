@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import pool from '@/lib/db';
 import { withAuth } from '@/lib/api-guard';
 import { NextRequest } from 'next/server';
 
@@ -17,19 +17,17 @@ export async function POST(req: NextRequest) {
 
         try {
           if (isLicense) {
-            const { count, error } = await supabaseServer
-              .from('license_files')
-              .select('id', { count: 'exact', head: true })
-              .eq('license_id', itemId);
-
-            countsRecord[itemId] = error ? 0 : (count ?? 0);
+            const result = await pool.query(
+              `SELECT COUNT(*) AS count FROM license_files WHERE license_id = $1`,
+              [itemId]
+            );
+            countsRecord[itemId] = parseInt(result.rows[0].count || '0', 10);
           } else {
-            const { count, error } = await supabaseServer
-              .from('equipment_files')
-              .select('id', { count: 'exact', head: true })
-              .eq('equipment_id', itemId);
-
-            countsRecord[itemId] = error ? 0 : (count ?? 0);
+            const result = await pool.query(
+              `SELECT COUNT(*) AS count FROM equipment_files WHERE equipment_id = $1`,
+              [itemId]
+            );
+            countsRecord[itemId] = parseInt(result.rows[0].count || '0', 10);
           }
         } catch {
           countsRecord[itemId] = 0;

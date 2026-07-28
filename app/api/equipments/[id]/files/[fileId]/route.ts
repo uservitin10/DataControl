@@ -1,41 +1,42 @@
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiValidationError, apiInternalError, apiForbidden } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
+import { withAuthenticatedClient } from "@/lib/db";
+import { s3Client } from "@/lib/minio";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import type { PoolClient } from "pg";
 
 const STORAGE_BUCKET = "documentos";
 
-async function userCanManageEquipment(userId: string, role: string, equipmentId: string) {
+async function userCanManageEquipment(userId: string, role: string, equipmentId: string, client: PoolClient) {
   if (role === "admin") {
     return true;
   }
 
-  const { data: equipment, error } = await supabaseServer
-    .from("inventory_items")
-    .select("allocated_user_id, user_id")
-    .eq("id", equipmentId)
-    .single();
+  const result = await client.query(
+    `SELECT 1 FROM inventory_items WHERE id = $1 AND ($2 = allocated_user_id OR $2 = user_id) LIMIT 1`,
+    [equipmentId, userId]
+  );
 
-  if (error || !equipment) {
-    return false;
-  }
-
-  return equipment.allocated_user_id === userId || equipment.user_id === userId;
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string; fileId: string }> }) {
   return withAuth(req, async (user) => {
     try {
       const { id: equipmentId, fileId } = await context.params;
+      const userId = user.id || "";
 
-      const { data: fileRecord, error: selectError } = await supabaseServer
-        .from("equipment_files")
-        .select("id,equipment_id,file_url,created_by")
-        .eq("id", fileId)
-        .single();
+      const fileRecord = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) => {
+        const result = await client.query(
+          `SELECT id, equipment_id, file_url FROM equipment_files WHERE id = $1 LIMIT 1`,
+          [fileId]
+        );
+        return result.rows[0] ?? null;
+      });
 
-      if (selectError || !fileRecord) {
+      if (!fileRecord) {
         return apiValidationError("Arquivo não encontrado.");
       }
 
@@ -43,27 +44,41 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         return apiForbidden("Este arquivo não pertence a este equipamento.");
       }
 
-      const canManage = await userCanManageEquipment(user.id || "", user.role, equipmentId);
+      const canManage = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) =>
+        userCanManageEquipment(userId, user.role, equipmentId, client)
+      );
+
       if (!canManage) {
         return apiForbidden("Apenas proprietário ou administrador pode excluir este arquivo.");
       }
 
-      const { error: deleteFileError } = await supabaseServer
-        .storage.from(STORAGE_BUCKET)
-        .remove([fileRecord.file_url]);
-
-      if (deleteFileError) {
-        return apiInternalError(deleteFileError.message);
+      try {
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: STORAGE_BUCKET,
+            Key: fileRecord.file_url,
+          })
+        );
+      } catch (deleteFileError) {
+        return apiInternalError(
+          deleteFileError instanceof Error
+            ? deleteFileError.message
+            : "Erro ao deletar arquivo do storage"
+        );
       }
 
-      const { error: deleteDbError } = await supabaseServer
-        .from("equipment_files")
-        .delete()
-        .eq("id", fileId);
+      const remainingFiles = await withAuthenticatedClient({ id: userId, role: user.role }, async (client) => {
+        await client.query(`DELETE FROM equipment_files WHERE id = $1`, [fileId]);
 
-      if (deleteDbError) {
-        return apiInternalError(deleteDbError.message);
-      }
+        const result = await client.query(
+          `SELECT id, equipment_id, file_url, file_name, file_type, created_at
+           FROM equipment_files
+           WHERE equipment_id = $1
+           ORDER BY created_at DESC`,
+          [equipmentId]
+        );
+        return result.rows;
+      });
 
       await addAuditLog({
         user_id: user.id,
@@ -72,17 +87,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         resource_id: fileId,
         details: JSON.stringify({ equipmentId }),
       });
-
-      // ✅ Retornar lista atualizada para evitar GET extra no frontend
-      const { data: remainingFiles, error: listError } = await supabaseServer
-        .from("equipment_files")
-        .select("id,equipment_id,file_url,file_name,file_type,created_at")
-        .eq("equipment_id", equipmentId)
-        .order("created_at", { ascending: false });
-
-      if (listError) {
-        return apiSuccess({ deleted: true, remainingFiles: [] });
-      }
 
       return apiSuccess({ deleted: true, remainingFiles: remainingFiles ?? [] });
     } catch (err) {

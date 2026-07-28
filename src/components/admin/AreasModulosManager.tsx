@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { fetchJson } from "@/lib/api";
 
 interface Area {
@@ -25,35 +24,15 @@ export default function AreasModulosManager() {
   const [modulos, setModulos] = useState<Modulo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-
   // Form states
   const [activeTab, setActiveTab] = useState<"areas" | "modulos">("areas");
   const [formData, setFormData] = useState({ nome: "", descricao: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Get auth token
   useEffect(() => {
-    async function getToken() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.access_token) {
-        setAuthToken(session.access_token);
-      }
-    }
-
-    getToken();
+    void fetchData();
   }, []);
-
-  // Load areas and modulos
-  useEffect(() => {
-    if (authToken) {
-      fetchData();
-    }
-  }, [authToken]);
 
   const fetchData = async () => {
     try {
@@ -79,11 +58,6 @@ export default function AreasModulosManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!authToken) {
-      setError("Token de autenticação não encontrado");
-      return;
-    }
-
     if (!formData.nome.trim()) {
       setError("Nome é obrigatório");
       return;
@@ -100,24 +74,10 @@ export default function AreasModulosManager() {
 
       const method = editingId ? "PATCH" : "POST";
 
-      const response = await fetch(endpoint, {
+      await fetchJson(endpoint, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
         body: JSON.stringify(formData),
       });
-
-      if (response.status === 401) {
-        setError("Você não tem permissão para fazer esta ação");
-        return;
-      }
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Erro ao salvar");
-      }
 
       await fetchData();
       setFormData({ nome: "", descricao: "" });
@@ -137,32 +97,15 @@ export default function AreasModulosManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!authToken) {
-      setError("Token de autenticação não encontrado");
-      return;
-    }
-
     if (!confirm("Tem certeza que deseja deletar?")) return;
 
     try {
       const endpoint =
         activeTab === "areas" ? `/api/areas/${id}` : `/api/modulos/${id}`;
 
-      const response = await fetch(endpoint, {
+      await fetchJson(endpoint, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
       });
-
-      if (response.status === 401) {
-        setError("Você não tem permissão para deletar");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Erro ao deletar");
-      }
 
       await fetchData();
     } catch (err) {

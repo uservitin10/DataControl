@@ -7,28 +7,27 @@ import { Logo } from "@/components/Logo";
 // BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 import { PersonalInventory } from "@/components/inventario/PersonalInventory";
 
 export default function MeuInventarioPage() {
   const router = useRouter();
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
     const checkAccess = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionUser = sessionData.session?.user ?? null;
-
-      if (!sessionUser) {
+      if (status === "loading") return;
+      if (!session?.user?.id) {
         router.replace("/login");
         return;
       }
-
       setLoadingUser(false);
     };
 
     void checkAccess();
-  }, [router]);
+  }, [router, session, status]);
 
   if (loadingUser) {
     return (

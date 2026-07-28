@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { jwtDecode } from "jwt-decode";
-import { supabaseServer } from "@/lib/supabase-server";
+import pool from "@/lib/db";
 import { getProfileById } from "@/lib/profile";
 import { sanitizeText } from "@/lib/text";
 import type { Role } from "@/types/dashboard";
@@ -48,15 +49,33 @@ type ValidateAuthResult = {
 /**
  * Extrai e valida o token de autenticação da requisição
  */
-export function extractToken(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
+export type ExtractedToken = string | JWTPayload;
 
-  if (!token) {
-    return null;
+export async function extractToken(request: NextRequest): Promise<ExtractedToken | null> {
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.replace("Bearer ", "");
   }
 
-  return token;
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+      raw: false,
+    });
+
+    if (typeof token === "string") {
+      return token;
+    }
+
+    if (token && typeof token === "object") {
+      return token as JWTPayload;
+    }
+  } catch (error) {
+    // ignore token extraction failures and fallback to no token
+  }
+
+  return null;
 }
 
 /**
@@ -67,7 +86,13 @@ export function decodeJWT(token: string): JWTPayload | null {
     const decoded = jwtDecode<JWTPayload>(token);
     return decoded;
   } catch (error) {
-    console.error("Erro ao decodificar JWT:", error);
+    console.error(
+      "Erro ao decodificar JWT:",
+      error,
+      typeof token === "string"
+        ? `token size=${token.length} startsWith=${token.slice(0, 15)}...`
+        : token
+    );
     return null;
   }
 }
@@ -114,23 +139,20 @@ function getPermissionValue(row: PermissionRow | ModulePermissions | null | unde
 
 async function getUserPermissionValue(userId: string, moduleName: PermissionModule, action: PermissionAction) {
   try {
-    const { data, error } = await supabaseServer
-      .from("user_permissions")
-      .select("can_view,can_edit,can_create,can_delete")
-      .eq("user_id", userId)
-      .eq("module", moduleName)
-      .maybeSingle();
+    const result = await pool.query(
+      `SELECT can_view, can_edit, can_create, can_delete
+       FROM user_permissions
+       WHERE user_id = $1 AND module = $2
+       LIMIT 1`,
+      [userId, moduleName]
+    );
 
-    if (error) {
-      console.error("Erro ao buscar permissões de usuário:", error);
+    const row = result.rows[0] ?? null;
+    if (!row) {
       return null;
     }
 
-    if (!data) {
-      return null;
-    }
-
-    return getPermissionValue(data, action);
+    return getPermissionValue(row, action);
   } catch (error) {
     console.error("Erro ao validar permissão de usuário:", error);
     return null;
@@ -143,19 +165,16 @@ async function getRolePermissionValue(role: Role, moduleName: PermissionModule, 
   }
 
   try {
-    const { data, error } = await supabaseServer
-      .from("role_permissions")
-      .select("can_view,can_edit,can_delete,module:module_id(name)")
-      .eq("role", role);
+    const result = await pool.query(
+      `SELECT rp.can_view, rp.can_edit, rp.can_delete, m.name AS module_name
+       FROM role_permissions rp
+       JOIN modules m ON m.id = rp.module_id
+       WHERE rp.role = $1`,
+      [role]
+    );
 
-    if (error) {
-      console.error("Erro ao buscar permissões de role:", error);
-      return null;
-    }
-
-    const permissions = Array.isArray(data) ? data as PermissionRow[] : [];
-    const permissionRow = permissions.find((row: PermissionRow) => {
-      const rowModule = typeof row.module === "string" ? row.module : row.module?.name;
+    const permissionRow = result.rows.find((row: Record<string, unknown>) => {
+      const rowModule = typeof row.module_name === "string" ? row.module_name : undefined;
       return normalizePermissionModule(rowModule) === moduleName;
     });
 
@@ -200,7 +219,7 @@ export async function validateAuth(
   request: NextRequest,
   requirement?: AuthRequirement
 ): Promise<ValidateAuthResult> {
-  const token = extractToken(request);
+  const token = await extractToken(request);
 
   if (!token) {
     return {
@@ -210,7 +229,7 @@ export async function validateAuth(
     };
   }
 
-  const payload = decodeJWT(token);
+  const payload = typeof token === "string" ? decodeJWT(token) : token;
 
   if (!payload) {
     return {
@@ -295,12 +314,12 @@ export async function withOptionalAuth(
   request: NextRequest,
   handler: (user: AuthUser) => Promise<NextResponse>
 ) {
-  const token = extractToken(request);
+  const token = await extractToken(request);
 
   let user: AuthUser | null = null;
 
   if (token) {
-    const payload = decodeJWT(token);
+    const payload = typeof token === "string" ? decodeJWT(token) : token;
 
     if (payload) {
       const userId = payload.sub;
