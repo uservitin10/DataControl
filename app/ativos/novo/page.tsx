@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
-import { createClient } from "@/lib/supabase/server";
+
 import { listarAreas, listarProfiles } from "@/lib/queries/levantamento-ativos";
 import { AtivoForm } from "../AtivoForm";
 import { criarAtivoAction } from "../actions";

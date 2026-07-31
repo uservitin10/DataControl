@@ -152,7 +152,7 @@ export default function AuditLogsPage() {
             </div>
           ) : missingTable ? (
             <div className="gov-status-warning rounded-3xl p-6 text-sm text-slate-700">
-              A tabela <strong>audit_logs</strong> não foi encontrada no banco de dados. Crie a tabela no Supabase para começar a gravar e visualizar logs.
+              A tabela <strong>audit_logs</strong> não foi encontrada no banco de dados. Crie a tabela no Sql para começar a gravar e visualizar logs.
             </div>
           ) : (
             <div className="space-y-4">

@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
 import { buildPasswordResetRedirectUrl } from "@/lib/auth-flow";
 
@@ -65,17 +64,20 @@ export default function ForgotPasswordPage() {
         process.env.NEXT_PUBLIC_APP_URL,
         typeof window !== "undefined" ? window.location.origin : undefined
       );
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
+      const response = await fetch("/api/auth/forgot-password", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, redirectTo }),
+});
+const result = await response.json().catch(() => null);
 
-      setLoading(false);
-      if (error) {
-        const message = getStatusMessage(error);
-        setStatus(message);
-        console.warn("Password reset error:", error);
-        return;
-      }
+setLoading(false);
+if (!response.ok) {
+  const message = getStatusMessage(result?.error ?? result?.message);
+  setStatus(message);
+  console.warn("Password reset error:", result);
+  return;
+}
 
       setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
       try {

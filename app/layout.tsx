@@ -5,7 +5,7 @@ import Providers from "./providers";
 export const metadata: Metadata = {
   title: "Horús - Portal de Gestão de Documentos",
   description: "Portal interno de gestão de documentos e usuários",
-  keywords: ["Horús", "dashboard", "Supabase", "documentos", "admin"],
+  keywords: ["Horús", "dashboard", "Sql", "documentos", "admin"],
 };
 
 export default function RootLayout({
