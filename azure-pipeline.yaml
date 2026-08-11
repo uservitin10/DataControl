@@ -1,0 +1,384 @@
+parameters:
+- name: APPLICATION_VERSION
+  type: string
+  default: $(GitVersion.SemVer)
+- name: COVERAGE_REPORT_PATH
+  type: string
+  default: $(COVERAGE_REPORT_PATH)
+- name: CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME
+  type: string
+  default: 'Harbor Registry'
+- name: DOCKER_BUILD_CONTEXT_FOLDER
+  type: string
+  default: '$(DOCKER_BUILD_CONTEXT_FOLDER)'
+- name: DOCKER_BUILD_ARGS
+  type: string
+  default: '' #Exemplo: --build-arg FIRST_ARG=FIRST_ARG_VALUE --build-arg SECOND_ARG=SECOND_ARG_VALUE
+- name: DOCKER_IMAGE_NAME
+  type: string
+  default: '$(DOCKER_IMAGE_NAME)'
+- name: DOCKER_REGISTRY_PROJECT
+  type: string
+  default: '$(DOCKER_REGISTRY_PROJECT)'
+- name: DOCKERFILE_PATH
+  type: string
+  default: '$(DOCKERFILE_PATH)'
+- name: DOCKER_REGISTRY_URL
+  type: string
+  default: '$(DOCKER_REGISTRY_URL)'
+- name: DOCKER_EMAIL
+  type: string
+  default: 'ci-cd-email@gestao.gov.br'
+- name: ENVIRONMENT_TO_DEPLOY_DEV
+  type: string
+  default: Development
+- name: ENVIRONMENT_TO_DEPLOY_HOM
+  type: string
+  default: Homologation
+- name: ENVIRONMENT_TO_DEPLOY_PROD
+  type: string
+  default: Production
+- name: EXTERNAL_FEED_SERVICE_CONNECTION
+  type: string
+  default: 'ColaboraGov_Service_Connection'
+- name: HELM_FILES
+  type: string
+  default: '$(Build.SourcesDirectory)/helm/*.yaml'
+- name: HELM_VALUES_FILE_PATH
+  type: string
+  default: '$(Build.SourcesDirectory)/helm/values.yaml'
+- name: HELM_PULL_USERNAME
+  type: string
+  default: '$(RANCHER_IMAGE_PULL_USERNAME)'
+- name: HELM_PULL_TOKEN
+  type: string
+  default: '$(RANCHER_IMAGE_PULL_TOKEN)'
+- name: IMAGE_PULL_SECRETS_NAME
+  type: string
+  default: '$(IMAGE_PULL_SECRETS_NAME)'
+- name: IS_DEPLOYING_IN_DEVELOP_BRANCH
+  type: boolean
+  default: true
+- name: IS_USING_YARN
+  type: boolean
+  default: true
+- name: IS_USING_MATRIX_STRATEGY
+  type: boolean
+  default: false
+- name: IS_OUTSIDE_BASE_ORGANIZATION
+  type: boolean
+  default: true
+- name: KUBE_NAMESPACE
+  type: string
+  default: '$(KUBE_NAMESPACE)'
+- name: MATRIX_MAX_PARALLEL
+  type: number
+  default: 2
+- name: MATRIX_VARIABLES
+  type: object
+  default:
+  - VAR_NAME: ''
+    JOB_SUB_NAME: ''
+    VALUE: ''
+- name: NODE_USED_VERSION
+  type: string
+  default: $(NODEJS_VERSION)
+- name: PACKAGE_JSON_FILE_LOCATION
+  type: string
+  default: $(PACKAGE_JSON_FILE_LOCATION)
+- name: PROJECT_NAME
+  type: string
+  default: '$(PROJECT_NAME)'
+- name: PROJECT_ROOT_PATH
+  type: string
+  default: $(PROJECT_ROOT_PATH)
+- name: RANCHER_KUBERNETES_DEFAULT_HELM_CHART
+  type: string
+  default: 'oci://registry.api.gov.br/helm-charts/rancher-kubernetes-helm-chart'
+- name: RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION
+  type: string
+  default: '1.0.1+69'
+- name: RANCHER_IMAGE_PULL_USERNAME 
+  type: string
+  default: '$(RANCHER_IMAGE_PULL_USERNAME)'
+- name: RANCHER_IMAGE_PULL_TOKEN  
+  type: string
+  default: '$(RANCHER_IMAGE_PULL_TOKEN)'
+- name: REPLACE_TOKENS_TARGET_FILES
+  type: string
+  default: '$(Build.SourcesDirectory)/helm/values.yaml'
+- name: SELF_HOSTED_AGENT_POOL_NAME
+  type: string
+  default: ''
+- name: SONAR_PROJECT_KEY
+  type: string
+  default: '$(SONAR_PROJECT_KEY)'
+- name: SONAR_SOURCES
+  type: string
+  default: '$(SONAR_SOURCES)'
+- name: SONAR_EXCLUSIONS
+  type: string
+  default: '$(SONAR_EXCLUSIONS)'
+- name: SONAR_INCLUSIONS
+  type: string
+  default: '$(SONAR_INCLUSIONS)'
+- name: SONAR_HOST_URL
+  type: string
+  default: 'https://sonar.sistema.gov.br'
+- name: SONAR_TOKEN
+  type: string
+  default: 'sqa_c83efa13206583b2ddafafbd901ec744edb25668'
+- name: SONAR_LANGUAGE
+  type: string
+  default: '$(SONAR_LANGUAGE)'
+- name: TRIVY_VERSION
+  type: string
+  default: '$(TRIVY_VERSION)'
+- name: VM_IMAGE
+  type: string
+  default: 'ubuntu-24.04'
+
+stages:
+  - stage: gitversion_stage
+    displayName: "Calculate Next Version"
+    condition: contains(variables['Build.SourceBranch'], 'refs/heads/')
+    variables:
+      APPLICATION_VERSION: ${{ parameters.APPLICATION_VERSION }}
+    jobs: 
+    - template: ../shared/jobs/gitversion.yaml
+      parameters:
+        VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: test
+    displayName: "Test"
+    dependsOn: [ "gitversion_stage" ]
+    variables:
+      APPLICATION_VERSION: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+    condition: | 
+      or(
+        eq(variables['Build.Reason'], 'PullRequest'),
+        and(
+          ne(variables['Build.Reason'], 'PullRequest'),
+          or(
+            eq(variables['Build.SourceBranchName'], 'master'),
+            eq(variables['Build.SourceBranchName'], 'develop'),
+            contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+          )
+        )
+      )
+    jobs: 
+    - template: ./jobs/01-test.yaml
+      parameters:
+        APPLICATION_VERSION: $(APPLICATION_VERSION)
+        COVERAGE_REPORT_PATH: ${{ parameters.COVERAGE_REPORT_PATH }}
+        IS_USING_YARN: ${{ parameters.IS_USING_YARN }}
+        NODE_USED_VERSION: ${{parameters.NODE_USED_VERSION}}
+        PACKAGE_JSON_FILE_LOCATION: ${{ parameters.PACKAGE_JSON_FILE_LOCATION }}
+        PROJECT_ROOT_PATH: ${{ parameters.PROJECT_ROOT_PATH }}
+        SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
+        VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: sonar
+    displayName: "Sonar"
+    dependsOn: [ "gitversion_stage", "test" ]
+    variables:
+      APPLICATION_VERSION: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+    condition: eq(variables['Build.SourceBranchName'], 'master')
+    jobs: 
+    - template: ./jobs/02-sonar.yaml
+      parameters:
+        APPLICATION_VERSION: $(APPLICATION_VERSION)
+        NODE_USED_VERSION: ${{ parameters.NODE_USED_VERSION }}
+        PACKAGE_JSON_FILE_LOCATION: ${{ parameters.PACKAGE_JSON_FILE_LOCATION }}
+        SONAR_PROJECT_KEY: ${{ parameters.SONAR_PROJECT_KEY }}
+        SONAR_SOURCES: ${{ parameters.SONAR_SOURCES }}
+        SONAR_EXCLUSIONS: ${{ parameters.SONAR_EXCLUSIONS }}
+        SONAR_INCLUSIONS: ${{ parameters.SONAR_INCLUSIONS }}
+        SONAR_HOST_URL: ${{ parameters.SONAR_HOST_URL }}
+        SONAR_TOKEN: ${{ parameters.SONAR_TOKEN }}
+        SONAR_LANGUAGE: ${{ parameters.SONAR_LANGUAGE }}
+        VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: build
+    displayName: "Build"
+    dependsOn: [ "gitversion_stage", "test", "sonar" ]
+    variables:
+      APPLICATION_VERSION: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+    condition: or(
+      eq(variables['Build.SourceBranchName'], 'master'),
+      eq(variables['Build.SourceBranchName'], 'develop'),
+      contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+      )
+    jobs: 
+    - template: ./jobs/03-build.yaml
+      parameters:
+        APPLICATION_VERSION: $(APPLICATION_VERSION)
+        CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME: ${{ parameters.CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME }}
+        DOCKER_IMAGE_NAME: ${{ parameters.DOCKER_IMAGE_NAME }}
+        DOCKER_BUILD_CONTEXT_FOLDER: ${{ parameters.DOCKER_BUILD_CONTEXT_FOLDER }}
+        DOCKER_BUILD_ARGS: ${{ parameters.DOCKER_BUILD_ARGS }}
+        DOCKERFILE_PATH: ${{ parameters.DOCKERFILE_PATH }}
+        DOCKER_REGISTRY_PROJECT: ${{ parameters.DOCKER_REGISTRY_PROJECT }}
+        NODE_USED_VERSION: ${{ parameters.NODE_USED_VERSION }}
+        PACKAGE_JSON_FILE_LOCATION: ${{ parameters.PACKAGE_JSON_FILE_LOCATION }}
+        VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  # - stage: container_vulnerability_scanning
+  #   displayName: "Container Vulnerability Scanning"
+  #   dependsOn: [ "gitversion_stage", "test", "build" ]
+  #   variables:
+  #     - name: APPLICATION_VERSION
+  #       value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+  #   condition: or(
+  #     eq(variables['Build.SourceBranchName'], 'master'),
+  #     eq(variables['Build.SourceBranchName'], 'develop'),
+  #     contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  #     )
+  #   jobs: 
+  #     - template: ./jobs/03-container-vulnerabilty-scanner.yaml
+  #       parameters:
+  #         CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME: ${{ parameters.CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME }}
+  #         CONTINUE_ON_RESULT_PARSER_ERROR: true
+  #         DOCKER_IMAGE_NAME: ${{ parameters.DOCKER_IMAGE_NAME }}
+  #         DOCKER_IMAGE_TAG: $(APPLICATION_VERSION)
+  #         DOCKER_REGISTRY_URL: ${{ parameters.DOCKER_REGISTRY_URL }}
+  #         DOCKER_REGISTRY_PROJECT: ${{ parameters.DOCKER_REGISTRY_PROJECT }}
+  #         EXTERNAL_FEED_SERVICE_CONNECTION: ${{ parameters.EXTERNAL_FEED_SERVICE_CONNECTION }}
+  #         IS_OUTSIDE_BASE_ORGANIZATION: ${{ parameters.IS_OUTSIDE_BASE_ORGANIZATION }}
+  #         MAX_UNKNOWN_VULNERABILITIES: 0
+  #         MAX_LOW_VULNERABILITIES: 0
+  #         MAX_MEDIUM_VULNERABILITIES: 0
+  #         MAX_HIGH_VULNERABILITIES: 0
+  #         MAX_CRITICAL_VULNERABILITIES: 0
+  #         TRIVY_VERSION: ${{ parameters.TRIVY_VERSION }}
+  #         VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: pre_deploy_credential_validate_stage
+    displayName: 'Pre Deploy Credential Validate'
+    dependsOn: [ "build" ]
+    condition: and(succeeded('build'), or(
+        eq(variables['Build.SourceBranchName'], 'master'),
+        eq(variables['Build.SourceBranchName'], 'develop'),
+        contains(variables['Build.SourceBranch'], 'refs/heads/release/'))
+      )
+    jobs: 
+      - template: ./jobs/04-pre-deploy-credential-validate.yaml
+        parameters:
+          SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
+          VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - ${{ if eq(parameters['IS_DEPLOYING_IN_DEVELOP_BRANCH'], 'True') }}:
+    - stage: deploy_rancher_develop_stage
+      displayName: 'Deploy Rancher Develop'
+      dependsOn: [ "gitversion_stage", "build", "pre_deploy_credential_validate_stage" ]
+      condition: and(succeeded('build'), eq(variables['Build.SourceBranchName'], 'develop'))
+      variables:
+        - name: APPLICATION_VERSION
+          value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+      jobs: 
+        - template: ./jobs/05-deploy.yaml
+          parameters:
+            # Env Variables Parameters
+            APPLICATION_VERSION: $(APPLICATION_VERSION)
+            # Pipeline Parameters
+            ENVIRONMENT_TO_DEPLOY: ${{ parameters.ENVIRONMENT_TO_DEPLOY_DEV }}
+            HELM_FILES: ${{ parameters.HELM_FILES }}
+            HELM_VALUES_FILE_PATH: ${{ parameters.HELM_VALUES_FILE_PATH }}
+            ## Inicio Usuário usado para login no Helm para pull de Helm Chart
+            HELM_PULL_USERNAME: ${{ parameters.HELM_PULL_USERNAME }}
+            HELM_PULL_TOKEN: ${{ parameters.HELM_PULL_TOKEN }}
+            ## Fim Usuário usado para login no Helm para pull de Helm Chart
+            IMAGE_PULL_SECRETS_NAME: ${{ parameters.IMAGE_PULL_SECRETS_NAME }}
+            IS_USING_MATRIX_STRATEGY: ${{ parameters.IS_USING_MATRIX_STRATEGY }}
+            KUBE_NAMESPACE: ${{ parameters.KUBE_NAMESPACE }}
+            MATRIX_MAX_PARALLEL: ${{ parameters.MATRIX_MAX_PARALLEL }}
+            MATRIX_VARIABLES: ${{ parameters.MATRIX_VARIABLES }}
+            PROJECT_NAME: ${{ parameters.PROJECT_NAME }}
+            RANCHER_KUBERNETES_DEFAULT_HELM_CHART: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART }}
+            RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION }}
+            ## Inicio usuário usado para criar o secret de pull do rancher
+            RANCHER_IMAGE_PULL_USERNAME: ${{ parameters.RANCHER_IMAGE_PULL_USERNAME }}
+            RANCHER_IMAGE_PULL_TOKEN: ${{ parameters.RANCHER_IMAGE_PULL_TOKEN }}
+            ## Fim usuário usado para criar o secret de pull do rancher
+            REPLACE_TOKENS_TARGET_FILES: ${{ parameters.REPLACE_TOKENS_TARGET_FILES }}
+            SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
+            VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: deploy_rancher_homolog_stage
+    displayName: 'Deploy Rancher Homolog'
+    dependsOn: [ "gitversion_stage", "build", "pre_deploy_credential_validate_stage" ]
+    condition: and(succeeded('build'), contains(variables['Build.SourceBranch'], 'refs/heads/release/'))
+    variables:
+      - name: APPLICATION_VERSION
+        value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+    jobs: 
+      - template: ./jobs/05-deploy.yaml
+        parameters:
+          # Env Variables Parameters
+          APPLICATION_VERSION: $(APPLICATION_VERSION)
+          # Pipeline Parameters
+          ENVIRONMENT_TO_DEPLOY: ${{ parameters.ENVIRONMENT_TO_DEPLOY_HOM }}
+          HELM_FILES: ${{ parameters.HELM_FILES }}
+          HELM_VALUES_FILE_PATH: ${{ parameters.HELM_VALUES_FILE_PATH }}
+          ## Inicio Usuário usado para login no Helm para pull de Helm Chart
+          HELM_PULL_USERNAME: ${{ parameters.HELM_PULL_USERNAME }}
+          HELM_PULL_TOKEN: ${{ parameters.HELM_PULL_TOKEN }}
+          ## Fim Usuário usado para login no Helm para pull de Helm Chart
+          IMAGE_PULL_SECRETS_NAME: ${{ parameters.IMAGE_PULL_SECRETS_NAME }}
+          IS_USING_MATRIX_STRATEGY: ${{ parameters.IS_USING_MATRIX_STRATEGY }}
+          KUBE_NAMESPACE: ${{ parameters.KUBE_NAMESPACE }}
+          MATRIX_MAX_PARALLEL: ${{ parameters.MATRIX_MAX_PARALLEL }}
+          MATRIX_VARIABLES: ${{ parameters.MATRIX_VARIABLES }}
+          PROJECT_NAME: ${{ parameters.PROJECT_NAME }}
+          RANCHER_KUBERNETES_DEFAULT_HELM_CHART: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART }}
+          RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION }}
+          ## Inicio usuário usado para criar o secret de pull do rancher
+          RANCHER_IMAGE_PULL_USERNAME: ${{ parameters.RANCHER_IMAGE_PULL_USERNAME }}
+          RANCHER_IMAGE_PULL_TOKEN: ${{ parameters.RANCHER_IMAGE_PULL_TOKEN }}
+          ## Fim usuário usado para criar o secret de pull do rancher
+          REPLACE_TOKENS_TARGET_FILES: ${{ parameters.REPLACE_TOKENS_TARGET_FILES }}
+          SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
+          VM_IMAGE: ${{ parameters.VM_IMAGE }}
+
+  - stage: deploy_rancher_production_stage
+    displayName: 'Deploy Rancher Production'
+    dependsOn: [ "gitversion_stage", "build", "pre_deploy_credential_validate_stage" ]
+    condition: |
+      or(
+        and(
+          succeeded('build'),
+          eq(variables['Build.SourceBranchName'], 'master')
+        ),
+        contains(variables['Build.SourceBranch'], 'refs/tags/')
+      )
+    variables:
+      - name: APPLICATION_VERSION
+        value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
+    jobs: 
+      - template: ./jobs/05-deploy.yaml
+        parameters:
+          # Env Variables Parameters
+          APPLICATION_VERSION: $(APPLICATION_VERSION)
+          # Pipeline Parameters
+          ENVIRONMENT_TO_DEPLOY: ${{ parameters.ENVIRONMENT_TO_DEPLOY_PROD }}
+          HELM_FILES: ${{ parameters.HELM_FILES }}
+          HELM_VALUES_FILE_PATH: ${{ parameters.HELM_VALUES_FILE_PATH }}
+          ## Inicio Usuário usado para login no Helm para pull de Helm Chart
+          HELM_PULL_USERNAME: ${{ parameters.HELM_PULL_USERNAME }}
+          HELM_PULL_TOKEN: ${{ parameters.HELM_PULL_TOKEN }}
+          ## Fim Usuário usado para login no Helm para pull de Helm Chart
+          IMAGE_PULL_SECRETS_NAME: ${{ parameters.IMAGE_PULL_SECRETS_NAME }}
+          IS_USING_MATRIX_STRATEGY: ${{ parameters.IS_USING_MATRIX_STRATEGY }}
+          KUBE_NAMESPACE: ${{ parameters.KUBE_NAMESPACE }}
+          MATRIX_MAX_PARALLEL: ${{ parameters.MATRIX_MAX_PARALLEL }}
+          MATRIX_VARIABLES: ${{ parameters.MATRIX_VARIABLES }}
+          PROJECT_NAME: ${{ parameters.PROJECT_NAME }}
+          RANCHER_KUBERNETES_DEFAULT_HELM_CHART: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART }}
+          RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION: ${{ parameters.RANCHER_KUBERNETES_DEFAULT_HELM_CHART_VERSION }}
+          ## Inicio usuário usado para criar o secret de pull do rancher
+          RANCHER_IMAGE_PULL_USERNAME: ${{ parameters.RANCHER_IMAGE_PULL_USERNAME }}
+          RANCHER_IMAGE_PULL_TOKEN: ${{ parameters.RANCHER_IMAGE_PULL_TOKEN }}
+          ## Fim usuário usado para criar o secret de pull do rancher
+          REPLACE_TOKENS_TARGET_FILES: ${{ parameters.REPLACE_TOKENS_TARGET_FILES }}
+          SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
+          VM_IMAGE: ${{ parameters.VM_IMAGE }}
