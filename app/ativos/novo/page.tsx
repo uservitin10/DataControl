@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
-
 import { listarAreas, listarProfiles } from "@/lib/queries/levantamento-ativos";
 import { AtivoForm } from "../AtivoForm";
 import { criarAtivoAction } from "../actions";
 
+export const dynamic = 'force-dynamic';
+
 export default async function NovoAtivoPage() {
+  // ... resto do código continua igual
   const [profiles, areas] = await Promise.all([
     listarProfiles(),
     listarAreas(),
