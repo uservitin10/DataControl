@@ -5,13 +5,13 @@ trigger:
       - release/*
 
 variables:
-  - group: nome-repo-common
+  - group: horus-common
   - ${{ if or(eq(variables['Build.SourceBranchName'], 'master'), contains(variables['Build.SourceBranch'], 'refs/tags/')) }}:
-    - group: nome-repo-prod
+      - group: horus-prod
   - ${{ elseif contains(variables['Build.SourceBranch'], 'release/') }}:
-    - group: nome-repo-hom
+      - group: horus-hom
   - ${{ else }}:
-    - group: nome-repo-dev
+      - group: horus-dev
 
 resources:
   repositories:
