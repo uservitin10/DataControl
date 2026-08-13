@@ -1,0 +1,55 @@
+project:
+  buildId: ${Build.BuildId}
+  name: ${PROJECT_NAME}
+  namespace: ${KUBE_NAMESPACE}
+
+# Nenhum PVC necessário identificado até o momento para o HORUS.
+# Caso a aplicação precise de armazenamento persistente (ex: logs em disco),
+# descomente e configure o bloco abaixo:
+# pvcs:
+#   primeiro:
+#     name: pvc-storage-horus
+#     storageSize: 2G
+#     mountPath: /var/www/app/storage/logs
+#     storageClass: gp2
+#     accessMode: ReadWriteOnce
+
+env:
+  GMAIL_USER: ${GMAIL_USER}
+  EMAIL_FROM: ${EMAIL_FROM}
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+  MINIO_REGION: ${MINIO_REGION}
+  MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+
+secrets:
+  AUTH_SECRET: ${AUTH_SECRET}
+  DATABASE_URL: ${DATABASE_URL}
+  GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+deployment:
+  applicationPort: ${APPLICATION_PORT}
+  dockerImageName: ${DOCKER_IMAGE_NAME}
+  dockerImageVersion: ${DOCKER_IMAGE_VERSION}
+  dockerRegistryProject: ${DOCKER_REGISTRY_PROJECT}
+  dockerRegistryUrl: ${DOCKER_REGISTRY_URL}
+  imagePullSecretsName: ${IMAGE_PULL_SECRETS_NAME}
+  limitsCpu: ${LIMITS_CPU}
+  limitsMem: ${LIMITS_MEM}
+  maxUnavailable: ${MAX_UNAVAILABLE}
+  maxSurge: ${MAX_SURGE}
+  minReplicas: ${MIN_REPLICAS}
+  requestsCpu: ${REQUESTS_CPU}
+  requestsMem: ${REQUESTS_MEM}
+
+service:
+  port: ${APPLICATION_PORT}
+
+ingress:
+  certManagerClusterIssuer: ${CERT_MANAGER_CLUSTER_ISSUER}
+  url: ${INGRESS_URL}
+
+autoScalling:
+  maxReplicas: ${MAX_REPLICAS}
+  scallingByCpuPerc: ${SCALING_BY_CPU_PERC}
