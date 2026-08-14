@@ -1,40 +1,38 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { GET, POST, PATCH, DELETE } from "../../app/api/notificacoes/route";
-import { supabaseServer } from "@/lib/supabase-server";
-import { addAuditLog } from "@/lib/audit";
 import type { NextRequest } from "next/server";
+import pool from "@/lib/db";
+import { addAuditLog } from "@/lib/audit";
+import { GET, POST, PATCH, DELETE } from "../../app/api/notificacoes/route";
 
 type MockUser = {
   id: string;
   nome: string;
 };
 
-vi.mock("@/lib/api-guard", () => ({
-  withAuth: vi.fn((request: unknown, callback: (user: MockUser) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
+vi.mock("@/lib/db", () => ({
+  default: {
+    query: vi.fn(),
+  },
 }));
 
-vi.mock("@/lib/supabase-server", () => ({
-  supabaseServer: {
-    from: vi.fn(),
-  },
+vi.mock("@/lib/api-guard", () => ({
+  withAuth: vi.fn((request: unknown, callback: (user: MockUser) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
 }));
 
 vi.mock("@/lib/audit", () => ({
   addAuditLog: vi.fn(() => Promise.resolve({ success: true })),
 }));
 
+const poolQueryMock = vi.mocked(pool.query);
+const addAuditLogMock = vi.mocked(addAuditLog);
+
 describe("app/api/notificacoes/route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const supabaseFromMock = vi.mocked(supabaseServer.from);
-
-  it("GET returns notifications when supabase query succeeds", async () => {
-    const limit = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
-    const order = vi.fn(() => ({ limit }));
-    const select = vi.fn(() => ({ order }));
-    supabaseFromMock.mockImplementation(() => ({ select }) as unknown as ReturnType<typeof supabaseServer.from>);
+  it("GET returns notifications when the query succeeds", async () => {
+    poolQueryMock.mockResolvedValue({ rows: [{ id: "notif-1" }] } as never);
 
     const response = await GET({} as unknown as NextRequest);
     expect(response.status).toBe(200);
@@ -53,8 +51,7 @@ describe("app/api/notificacoes/route", () => {
   });
 
   it("POST creates a notification and writes an audit log", async () => {
-    const insert = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
-    supabaseFromMock.mockImplementation(() => ({ insert }) as unknown as ReturnType<typeof supabaseServer.from>);
+    poolQueryMock.mockResolvedValue({ rows: [{ id: "notif-1" }] } as never);
 
     const request = {
       json: async () => ({ tipo: "alerta", mensagem: "Teste", lida: false }),
@@ -64,24 +61,20 @@ describe("app/api/notificacoes/route", () => {
     const response = await POST(request);
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ success: true, data: [{ id: "notif-1" }] });
-    expect(addAuditLog).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "create_notification" }));
+    expect(addAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "create_notification" }));
   });
 
   it("PATCH marks all notifications as read and writes an audit log", async () => {
-    const eq = vi.fn().mockResolvedValue({ data: [{ id: "notif-1" }], error: null });
-    const update = vi.fn(() => ({ eq }));
-    supabaseFromMock.mockImplementation(() => ({ update }) as unknown as ReturnType<typeof supabaseServer.from>);
+    poolQueryMock.mockResolvedValue({ rows: [] } as never);
 
     const response = await PATCH({} as unknown as NextRequest);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ success: true, data: { success: true } });
-    expect(addAuditLog).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "mark_notifications_read" }));
+    expect(addAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "mark_notifications_read" }));
   });
 
   it("DELETE removes a notification and writes an audit log", async () => {
-    const eq = vi.fn().mockResolvedValue({ error: null });
-    const deleteFn = vi.fn(() => ({ eq }));
-    supabaseFromMock.mockImplementation(() => ({ delete: deleteFn }) as unknown as ReturnType<typeof supabaseServer.from>);
+    poolQueryMock.mockResolvedValue({ rowCount: 1 } as never);
 
     const request = {
       nextUrl: { searchParams: new URLSearchParams("id=notif-1") },
@@ -91,7 +84,6 @@ describe("app/api/notificacoes/route", () => {
     const response = await DELETE(request);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ success: true, data: { success: true } });
-    expect(deleteFn).toHaveBeenCalledTimes(1);
-    expect(addAuditLog).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "delete_notification" }));
+    expect(addAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1", action: "delete_notification" }));
   });
 });
