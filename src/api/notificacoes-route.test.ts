@@ -1,4 +1,3 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { addAuditLog } from "@/lib/audit";
@@ -9,26 +8,29 @@ type MockUser = {
   nome: string;
 };
 
-vi.mock("@/lib/db", () => ({
+jest.mock("@/lib/db", () => ({
+  __esModule: true,
   default: {
-    query: vi.fn(),
+    query: jest.fn(),
   },
 }));
 
-vi.mock("@/lib/api-guard", () => ({
-  withAuth: vi.fn((request: unknown, callback: (user: MockUser) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
+jest.mock("@/lib/api-guard", () => ({
+  __esModule: true,
+  withAuth: jest.fn((request: unknown, callback: (user: MockUser) => Promise<unknown>) => callback({ id: "user-1", nome: "Teste" })),
 }));
 
-vi.mock("@/lib/audit", () => ({
-  addAuditLog: vi.fn(() => Promise.resolve({ success: true })),
+jest.mock("@/lib/audit", () => ({
+  __esModule: true,
+  addAuditLog: jest.fn(() => Promise.resolve({ success: true })),
 }));
 
-const poolQueryMock = vi.mocked(pool.query);
-const addAuditLogMock = vi.mocked(addAuditLog);
+const poolQueryMock = pool.query as jest.Mock;
+const addAuditLogMock = addAuditLog as jest.Mock;
 
 describe("app/api/notificacoes/route", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it("GET returns notifications when the query succeeds", async () => {

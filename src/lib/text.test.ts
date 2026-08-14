@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { fixLegacyEncoding, sanitizeText } from "./text";
 
 describe("text sanitization", () => {

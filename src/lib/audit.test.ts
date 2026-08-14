@@ -1,18 +1,18 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import pool from "@/lib/db";
 import { addAuditLog } from "./audit";
 
-vi.mock("@/lib/db", () => ({
+jest.mock("@/lib/db", () => ({
+  __esModule: true,
   default: {
-    query: vi.fn(),
+    query: jest.fn(),
   },
 }));
 
-const poolQueryMock = vi.mocked(pool.query);
+const poolQueryMock = pool.query as jest.Mock;
 
 describe("addAuditLog", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it("returns success when the insert succeeds", async () => {

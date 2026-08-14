@@ -1,25 +1,26 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { auth } from "@/auth";
 import { GET, POST } from "../../app/api/audit/route";
 
-vi.mock("@/lib/db", () => ({
+jest.mock("@/lib/db", () => ({
+  __esModule: true,
   default: {
-    query: vi.fn(),
+    query: jest.fn(),
   },
 }));
 
-vi.mock("@/auth", () => ({
-  auth: vi.fn(),
+jest.mock("@/auth", () => ({
+  __esModule: true,
+  auth: jest.fn(),
 }));
 
-const poolQueryMock = vi.mocked(pool.query);
-const authMock = vi.mocked(auth);
+const poolQueryMock = pool.query as jest.Mock;
+const authMock = auth as jest.Mock;
 
 describe("app/api/audit/route", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it("GET returns audit logs successfully", async () => {
