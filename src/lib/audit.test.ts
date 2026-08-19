@@ -1,33 +1,22 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import pool from "@/lib/db";
 import { addAuditLog } from "./audit";
-import { supabaseServer } from "@/lib/supabase-server";
 
-interface AuditLogInsertResponse {
-  data: Array<{ id: string }>;
-  error: null;
-}
-
-interface AuditLogErrorResponse {
-  data: null;
-  error: { code: string; message: string };
-}
-
-vi.mock("@/lib/supabase-server", () => ({
-  supabaseServer: {
-    from: vi.fn(),
+jest.mock("@/lib/db", () => ({
+  __esModule: true,
+  default: {
+    query: jest.fn(),
   },
 }));
 
-const supabaseFromMock = vi.mocked(supabaseServer.from);
+const poolQueryMock = pool.query as jest.Mock;
 
 describe("addAuditLog", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it("returns success when the insert succeeds", async () => {
-    const insert = vi.fn().mockResolvedValue({ data: [{ id: "log-1" }], error: null } as AuditLogInsertResponse);
-    supabaseFromMock.mockImplementation(() => ({ insert }) as unknown as ReturnType<typeof supabaseServer.from>);
+    poolQueryMock.mockResolvedValue({ rows: [{ id: "log-1" }] } as never);
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -37,16 +26,15 @@ describe("addAuditLog", () => {
       details: "Testing audit log",
     });
 
-    expect(result).toEqual({ success: true, data: [{ id: "log-1" }] });
-    expect(supabaseFromMock).toHaveBeenCalledWith("audit_logs");
+    expect(result).toEqual({ success: true, data: { id: "log-1" } });
+    expect(poolQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO audit_logs"),
+      ["user-1", "test_action", "test", "1", "Testing audit log", null]
+    );
   });
 
   it("skips audit logging when the audit table is missing", async () => {
-    const insert = vi.fn().mockResolvedValue({
-      data: null,
-      error: { code: "PGRST205", message: "Could not find the table 'public.audit_logs'" },
-    } as AuditLogErrorResponse);
-    supabaseFromMock.mockImplementation(() => ({ insert }) as unknown as ReturnType<typeof supabaseServer.from>);
+    poolQueryMock.mockRejectedValue(new Error('relation "audit_logs" does not exist'));
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -57,9 +45,8 @@ describe("addAuditLog", () => {
   });
 
   it("returns an error object when the insert fails for another reason", async () => {
-    const error: { code: string; message: string } = { code: "PGRST000", message: "Unexpected error" };
-    const insert = vi.fn().mockResolvedValue({ data: null, error } as AuditLogErrorResponse);
-    supabaseFromMock.mockImplementation(() => ({ insert }) as unknown as ReturnType<typeof supabaseServer.from>);
+    const error = new Error("Unexpected error");
+    poolQueryMock.mockRejectedValue(error);
 
     const result = await addAuditLog({
       user_id: "user-1",
@@ -67,6 +54,6 @@ describe("addAuditLog", () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toEqual(error);
+    expect(result.error).toBe(error);
   });
 });
