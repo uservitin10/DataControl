@@ -15,7 +15,8 @@ project:
 #     accessMode: ReadWriteOnce
 
 env:
-  AUTH_TRUST_HOST: "true"
+  AUTH_URL: ${AUTH_URL}
+  AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
   GMAIL_USER: ${GMAIL_USER}
   EMAIL_FROM: ${EMAIL_FROM}
   MINIO_ENDPOINT: ${MINIO_ENDPOINT}
