@@ -49,6 +49,6 @@ export async function GET(req: NextRequest) {
         return apiInternalError((err as Error).message);
       }
     },
-    ["admin", "editor"]
+    ["admin"]
   );
 }

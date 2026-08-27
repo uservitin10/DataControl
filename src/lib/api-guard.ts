@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { auth } from "@/auth";
 import { jwtDecode } from "jwt-decode";
 import pool from "@/lib/db";
 import { getProfileById } from "@/lib/profile";
@@ -73,6 +74,20 @@ export async function extractToken(request: NextRequest): Promise<ExtractedToken
     }
   } catch (error) {
     // ignore token extraction failures and fallback to no token
+  }
+
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (user?.id) {
+      return {
+        sub: user.id,
+        email: user.email ?? undefined,
+        role: user.role as Role | undefined,
+      };
+    }
+  } catch (error) {
+    // ignore session extraction failures and fallback to no token
   }
 
   return null;

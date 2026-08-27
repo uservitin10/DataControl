@@ -75,7 +75,7 @@ export default function DashboardPage() {
     if (alert === "no_permission_inventario") {
       const path = url?.pathname ?? "/dashboard";
       setTimeout(() => {
-        setAlertMessage("Você não tem permissão para acessar a página de inventário.");
+        setAlertMessage("Você não tem permissão para acessar o inventário geral.");
         router.replace(path);
       }, 0);
     }

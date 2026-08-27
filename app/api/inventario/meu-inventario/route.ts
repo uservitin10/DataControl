@@ -39,45 +39,48 @@ async function fetchInventoryItemsByColumn(column: string, value: string) {
   }
 }
 
-async function loadViewerEquipments(
-  userId: string
-): Promise<{ equipments: InventoryItemRecord[]; searchMethod: "allocated_user_id" | "user_id" }> {
+function normalizePersonName(value?: string | null): string {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+async function loadPersonalInventory(
+  userId: string,
+  displayName: string
+): Promise<{ equipments: InventoryItemRecord[]; searchMethod: "allocated_user_id" | "user_id" | "allocated_user" }> {
   const allocatedResult = await fetchInventoryItemsByColumn("allocated_user_id", userId);
-  if (!allocatedResult.error) {
-    const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);
-    if (!userIdResult.error) {
-      const combinedItems = [
-        ...(allocatedResult.data ?? []),
-        ...(userIdResult.data ?? []),
-      ];
-      const uniqueItems = Array.from(
-        new Map(combinedItems.map((item) => [String(item.id), item])).values()
-      );
-      return {
-        equipments: uniqueItems,
-        searchMethod: "allocated_user_id",
-      };
-    }
-
-    return {
-      equipments: allocatedResult.data ?? [],
-      searchMethod: "allocated_user_id",
-    };
-  }
-
-  if (!isMissingColumnError(allocatedResult.error, "allocated_user_id")) {
+  if (allocatedResult.error && !isMissingColumnError(allocatedResult.error, "allocated_user_id")) {
     throw allocatedResult.error;
   }
 
   const userIdResult = await fetchInventoryItemsByColumn("user_id", userId);
-
-  if (userIdResult.error) {
+  if (userIdResult.error && !isMissingColumnError(userIdResult.error, "user_id")) {
     throw userIdResult.error;
   }
 
+  const legacyResult = await pool.query(
+    `SELECT * FROM inventory_items
+     WHERE allocated_user IS NOT NULL
+     ORDER BY sector ASC, type ASC`
+  );
+  const normalizedDisplayName = normalizePersonName(displayName);
+  const legacyItems = legacyResult.rows.filter(
+    (item: InventoryItemRecord) => normalizePersonName(item.allocated_user) === normalizedDisplayName
+  );
+  const idItems = [
+    ...(allocatedResult.data ?? []),
+    ...(userIdResult.data ?? []),
+  ];
+  const uniqueItems = Array.from(
+    new Map([...idItems, ...legacyItems].map((item) => [String(item.id), item])).values()
+  );
+
   return {
-    equipments: userIdResult.data ?? [],
-    searchMethod: "user_id",
+    equipments: uniqueItems,
+    searchMethod: idItems.length > 0 ? "allocated_user_id" : "allocated_user",
   };
 }
 
@@ -128,29 +131,14 @@ export async function GET(req: NextRequest) {
 
       const displayName = fixedDisplayName;
 
-      let equipments = null;
-      let searchMethod: "allocated_user_id" | "user_id" = "allocated_user_id";
-
-      if (user.role === "viewer") {
-        const userId = user.id;
-        if (!userId) {
-          return apiInternalError("ID do usuário não encontrado.");
-        }
-
-        const viewerResult = await loadViewerEquipments(userId);
-        equipments = viewerResult.equipments;
-        searchMethod = viewerResult.searchMethod;
-      } else {
-        // admin/editor vê tudo
-        try {
-          const r = await pool.query(
-            `SELECT * FROM inventory_items ORDER BY sector ASC, type ASC`
-          );
-          equipments = r.rows;
-        } catch (e: any) {
-          return apiInternalError(e?.message || String(e));
-        }
+      const userId = user.id;
+      if (!userId) {
+        return apiInternalError("ID do usuário não encontrado.");
       }
+
+      const personalResult = await loadPersonalInventory(userId, displayName);
+      const equipments = personalResult.equipments;
+      const searchMethod = personalResult.searchMethod;
 
       // FIX: normalização sem side-effects (sem update no banco a cada GET)
       const cleanedEquipments = normalizeInventoryItems(equipments || []);
@@ -176,7 +164,7 @@ export async function GET(req: NextRequest) {
         totalLicenses: activeLicenses.length,
         _metadata: {
           searchMethod,
-          usingFallback: false,
+          usingFallback: searchMethod === "allocated_user",
         },
       });
     } catch (err) {
@@ -205,7 +193,7 @@ export async function POST(req: NextRequest) {
           mac_ip: mac_ip || null,
           responsible: sanitizeText(responsible),
           allocated_user: sanitizeText(user.nome),
-          user_id: user.id,
+          allocated_user_id: user.id,
           sector: sector || null,
           warranty: warranty || null,
           equipment_state: equipment_state || null,
@@ -215,7 +203,7 @@ export async function POST(req: NextRequest) {
         let createdItem: Record<string, unknown> | null = null;
         try {
           const cols = [
-            'type','model','serial_number','asset_id','equipment_id','asset_type','mac_ip','responsible','allocated_user','user_id','sector','warranty','equipment_state','notes','created_by'
+            'type','model','serial_number','asset_id','equipment_id','asset_type','mac_ip','responsible','allocated_user','allocated_user_id','sector','warranty','equipment_state','notes','created_by'
           ];
           const values = [
             insertPayload.type,
@@ -227,7 +215,7 @@ export async function POST(req: NextRequest) {
             insertPayload.mac_ip,
             insertPayload.responsible,
             insertPayload.allocated_user,
-            insertPayload.user_id,
+            insertPayload.allocated_user_id,
             insertPayload.sector,
             insertPayload.warranty,
             insertPayload.equipment_state,
@@ -316,7 +304,8 @@ export async function PATCH(req: NextRequest) {
             equipment_state || null,
             notes || null,
             new Date().toISOString(),
-id,
+            id,
+            user.id,
           ];
 
           const res = await pool.query(
@@ -333,7 +322,8 @@ id,
               warranty = $10,
               equipment_state = $11,
               notes = $12,
-              updated_at = $13
+              updated_at = $13,
+              allocated_user_id = COALESCE(allocated_user_id, $15)
              WHERE id = $14 RETURNING *`,
             values
           );

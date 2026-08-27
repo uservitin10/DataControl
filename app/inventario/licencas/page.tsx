@@ -61,11 +61,11 @@ export default function LicencasPage() {
       }
 
       try {
-        const profile = await fetchJson<{ role: string }>(
+        const profile = await fetchJson<{ success: boolean; data: { role: string } }>(
           `/api/profile/me`
         );
 
-        if (profile.role !== "admin") {
+        if (profile.data.role !== "admin") {
           router.replace("/dashboard?alert=no_permission_inventario");
           return;
         }
