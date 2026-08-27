@@ -13,7 +13,7 @@ parameters:
   default: '$(DOCKER_BUILD_CONTEXT_FOLDER)'
 - name: DOCKER_BUILD_ARGS
   type: string
-  default: '' #Exemplo: --build-arg FIRST_ARG=FIRST_ARG_VALUE --build-arg SECOND_ARG=SECOND_ARG_VALUE
+  default: '--build-arg BUILD_SOURCE=azure-pipeline'
 - name: DOCKER_IMAGE_NAME
   type: string
   default: '$(DOCKER_IMAGE_NAME)'
@@ -138,6 +138,12 @@ parameters:
   type: string
   default: 'ubuntu-24.04'
 
+resources:
+  repositories:
+    - repository: templatePipelines
+      type: git
+      name: DevOps/template-pipelines
+
 stages:
   - stage: gitversion_stage
     displayName: "Calculate Next Version"
@@ -145,7 +151,7 @@ stages:
     variables:
       APPLICATION_VERSION: ${{ parameters.APPLICATION_VERSION }}
     jobs: 
-    - template: '/shared/jobs/gitversion.yaml@template-pipelines'
+    - template: '/shared/jobs/gitversion.yaml@templatePipelines'
       parameters:
         VM_IMAGE: ${{ parameters.VM_IMAGE }}
 
