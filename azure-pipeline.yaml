@@ -145,7 +145,7 @@ stages:
     variables:
       APPLICATION_VERSION: ${{ parameters.APPLICATION_VERSION }}
     jobs: 
-    - template: ../shared/jobs/gitversion.yaml
+    - template: '/shared/jobs/gitversion.yaml@template-pipelines'
       parameters:
         VM_IMAGE: ${{ parameters.VM_IMAGE }}
 
