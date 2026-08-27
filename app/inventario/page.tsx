@@ -14,6 +14,7 @@ import {
   isActiveLicense,
   normalizeType,
   getEquipmentTypeCount,
+  isSemSetorValue,
 } from "@/lib/inventario";
 
 export default function InventarioPage() {
@@ -125,7 +126,11 @@ export default function InventarioPage() {
     return equipmentSectorNames.map((sector) => {
       const items =
         sector === "Sem setor"
-          ? inventoryEquipments.filter((item) => !(item.sector ?? "").toString().trim())
+          ? inventoryEquipments.filter(
+              (item) =>
+                !(item.sector ?? "").toString().trim() ||
+                isSemSetorValue((item.sector ?? "").toString())
+            )
           : inventoryEquipments.filter(
               (item) => (item.sector ?? "").toString().trim() === sector
             );

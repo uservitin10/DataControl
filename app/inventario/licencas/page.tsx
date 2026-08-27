@@ -11,7 +11,10 @@ import { getWarrantyExpiryStatus } from "@/lib/inventario";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
 
 type MyInventoryResponse = {
-  licenses: any[];
+  success: boolean;
+  data: {
+    licenses: any[];
+  };
 };
 
 export default function LicencasPage() {
@@ -70,11 +73,9 @@ export default function LicencasPage() {
           return;
         }
 
-        const inventoryResponse = await fetchJson<MyInventoryResponse>(
-          "/api/inventario/meu-inventario"
-        );
+        const inventoryResponse = await fetchJson<MyInventoryResponse>("/api/inventario");
 
-        setLicensesData((inventoryResponse.licenses ?? []).map(normalizeLicenseItem));
+        setLicensesData((inventoryResponse.data?.licenses ?? []).map(normalizeLicenseItem));
         setLoadingUser(false);
       } catch {
         router.replace("/dashboard?alert=no_permission_inventario");

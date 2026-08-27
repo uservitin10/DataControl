@@ -226,6 +226,10 @@ export function getAllSectors(items?: EquipmentItem[]): string[] {
     const normalized = normalizeSectorName(item.sector);
     const original = (item.sector ?? "").toString().trim();
 
+    if (isSemSetorValue(original)) {
+      return;
+    }
+
     if (normalized && !sectorMap.has(normalized)) {
       sectorMap.set(normalized, original);
     }
@@ -233,7 +237,7 @@ export function getAllSectors(items?: EquipmentItem[]): string[] {
 
   const sectorNames = Array.from(sectorMap.values());
 
-  if (itemsToProcess.some((item) => !normalizeSectorName(item.sector))) {
+  if (itemsToProcess.some((item) => !normalizeSectorName(item.sector) || isSemSetorValue(item.sector))) {
     sectorNames.push("Sem setor");
   }
 
