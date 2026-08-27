@@ -15,6 +15,14 @@ export async function POST(request: NextRequest) {
       return apiValidationError("Email é obrigatório.");
     }
 
+    if (!displayName) {
+      return apiValidationError("Nome completo é obrigatório.");
+    }
+
+    if (displayName.split(/\s+/).filter(Boolean).length < 2) {
+      return apiValidationError("Informe o nome completo, com nome e sobrenome.");
+    }
+
     if (!password || password.length < 6) {
       return apiValidationError("A senha precisa ter pelo menos 6 caracteres.");
     }
@@ -35,12 +43,10 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = crypto.randomUUID();
-    const finalDisplayName = displayName || email.split("@")[0];
-
     await pool.query(
       `INSERT INTO profiles (id, email, display_name, role, password_hash, must_reset_password)
        VALUES ($1, $2, $3, 'viewer', $4, false)`,
-      [id, email, finalDisplayName, hashedPassword]
+      [id, email, displayName, hashedPassword]
     );
 
     return apiSuccess({ success: true });

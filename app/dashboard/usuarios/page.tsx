@@ -40,6 +40,7 @@ export default function UsuariosPage() {
   const [editingRole, setEditingRole] = useState<Role>("viewer");
   const [editingPermissions, setEditingPermissions] = useState<Permissions | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
 
   const fetchUsuarios = async () => {
@@ -163,6 +164,26 @@ export default function UsuariosPage() {
     }
   };
 
+  const handleDeleteUser = async (usuario: Profile) => {
+    if (!window.confirm(`Deseja excluir o perfil de ${usuario.display_name || usuario.email}?`)) {
+      return;
+    }
+
+    setDeletingId(usuario.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await fetchJson(`/api/usuarios/${encodeURIComponent(usuario.id)}`, { method: "DELETE" });
+      setSuccess("Perfil excluído com sucesso.");
+      await fetchUsuarios();
+    } catch (deleteError) {
+      setError((deleteError as Error).message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter((u) =>
     !busca ||
     u.email?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -276,10 +297,21 @@ export default function UsuariosPage() {
                   </td>
                   <td className="px-6 py-4">
                     <button
+                      type="button"
                       onClick={() => handleEditRole(usuario)}
+                      disabled={deletingId === usuario.id}
                       className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
                     >
                       Editar permissões
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteUser(usuario)}
+                      disabled={deletingId === usuario.id || usuario.id === session?.user?.id}
+                      title={usuario.id === session?.user?.id ? "Você não pode excluir seu próprio perfil" : "Excluir perfil"}
+                      className="ml-2 rounded-3xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === usuario.id ? "Excluindo..." : "Excluir"}
                     </button>
                   </td>
                 </tr>
