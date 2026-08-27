@@ -173,7 +173,7 @@ stages:
         )
       )
     jobs: 
-    - template: ./jobs/01-test.yaml
+    - template: /node/jobs/01-test.yaml@templatePipelines
       parameters:
         APPLICATION_VERSION: $(APPLICATION_VERSION)
         COVERAGE_REPORT_PATH: ${{ parameters.COVERAGE_REPORT_PATH }}
@@ -191,7 +191,7 @@ stages:
       APPLICATION_VERSION: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
     condition: eq(variables['Build.SourceBranchName'], 'master')
     jobs: 
-    - template: ./jobs/02-sonar.yaml
+    - template: /node/jobs/02-sonar.yaml@templatePipelines
       parameters:
         APPLICATION_VERSION: $(APPLICATION_VERSION)
         NODE_USED_VERSION: ${{ parameters.NODE_USED_VERSION }}
@@ -216,7 +216,7 @@ stages:
       contains(variables['Build.SourceBranch'], 'refs/heads/release/')
       )
     jobs: 
-    - template: ./jobs/03-build.yaml
+    - template: /node/jobs/03-build.yaml@templatePipelines
       parameters:
         APPLICATION_VERSION: $(APPLICATION_VERSION)
         CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME: ${{ parameters.CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME }}
@@ -241,7 +241,7 @@ stages:
   #     contains(variables['Build.SourceBranch'], 'refs/heads/release/')
   #     )
   #   jobs: 
-  #     - template: ./jobs/03-container-vulnerabilty-scanner.yaml
+  #     - template: /node/jobs/03-container-vulnerabilty-scanner.yaml@templatePipelines
   #       parameters:
   #         CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME: ${{ parameters.CONTAINER_REGISTRY_SERVICE_CONNECTION_NAME }}
   #         CONTINUE_ON_RESULT_PARSER_ERROR: true
@@ -268,7 +268,7 @@ stages:
         contains(variables['Build.SourceBranch'], 'refs/heads/release/'))
       )
     jobs: 
-      - template: ./jobs/04-pre-deploy-credential-validate.yaml
+      - template: /node/jobs/04-pre-deploy-credential-validate.yaml@templatePipelines
         parameters:
           SELF_HOSTED_AGENT_POOL_NAME: ${{ parameters.SELF_HOSTED_AGENT_POOL_NAME }}
           VM_IMAGE: ${{ parameters.VM_IMAGE }}
@@ -282,7 +282,7 @@ stages:
         - name: APPLICATION_VERSION
           value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
       jobs: 
-        - template: ./jobs/05-deploy.yaml
+        - template: /node/jobs/05-deploy.yaml@templatePipelines
           parameters:
             # Env Variables Parameters
             APPLICATION_VERSION: $(APPLICATION_VERSION)
@@ -318,7 +318,7 @@ stages:
       - name: APPLICATION_VERSION
         value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
     jobs: 
-      - template: ./jobs/05-deploy.yaml
+      - template: /node/jobs/05-deploy.yaml@templatePipelines
         parameters:
           # Env Variables Parameters
           APPLICATION_VERSION: $(APPLICATION_VERSION)
@@ -361,7 +361,7 @@ stages:
       - name: APPLICATION_VERSION
         value: $[ stageDependencies.gitversion_stage.gitversion_job.outputs['gitversion_step.VERSION'] ]
     jobs: 
-      - template: ./jobs/05-deploy.yaml
+      - template: /node/jobs/05-deploy.yaml@templatePipelines
         parameters:
           # Env Variables Parameters
           APPLICATION_VERSION: $(APPLICATION_VERSION)
