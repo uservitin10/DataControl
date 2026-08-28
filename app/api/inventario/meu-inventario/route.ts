@@ -229,8 +229,9 @@ export async function POST(req: NextRequest) {
             values
           );
           createdItem = res.rows[0];
-        } catch (insertError: any) {
-          return apiInternalError(insertError?.message || String(insertError));
+        } catch (insertError: unknown) {
+          const message = insertError instanceof Error ? insertError.message : String(insertError);
+          return apiInternalError(message);
         }
 
         try {
@@ -328,8 +329,9 @@ export async function PATCH(req: NextRequest) {
             values
           );
           updatedItem = res.rows[0];
-        } catch (updateError: any) {
-          return apiInternalError(updateError?.message || String(updateError));
+        } catch (updateError: unknown) {
+          const message = updateError instanceof Error ? updateError.message : String(updateError);
+          return apiInternalError(message);
         }
 
         try {
@@ -367,8 +369,9 @@ export async function DELETE(req: NextRequest) {
 
         try {
           await pool.query(`DELETE FROM inventory_items WHERE id = $1`, [id]);
-        } catch (deleteError: any) {
-          return apiInternalError(deleteError?.message || String(deleteError));
+        } catch (deleteError: unknown) {
+          const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
+          return apiInternalError(message);
         }
 
         try {

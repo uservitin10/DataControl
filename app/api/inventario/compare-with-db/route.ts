@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
-type InventoryItem = Record<string, any>;
+type InventoryItem = Record<string, string | null | undefined>;
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);
 
     // Criar chave única para comparação (asset_id + equipment_id + type)
-    const createKey = (eq: any) => {
+    const createKey = (eq: Record<string, unknown>) => {
       const assetId = eq.asset_id || eq.assetId || "";
       const equipmentId = eq.equipment_id || eq.equipmentId || "";
       const type = eq.type || "";
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       dbMap.get(key).push(eq);
     });
 
-    inventarioData.forEach((eq: InventoryItem) => {
+    inventarioData.forEach((eq) => {
       const key = createKey(eq);
       if (!jsonMap.has(key)) {
         jsonMap.set(key, []);

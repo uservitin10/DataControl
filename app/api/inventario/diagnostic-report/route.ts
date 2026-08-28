@@ -14,9 +14,18 @@ export async function GET(req: NextRequest) {
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);
 
     // Análise por setor - dados do banco
+    type SectorSummary = {
+      total: number;
+      desktop: number;
+      monitor: number;
+      notebook: number;
+      licenca: number;
+      comUsuario: number;
+      semUsuario: number;
+    };
     const sectorAnalysis = {
-      banco: {} as Record<string, any>,
-      json: {} as Record<string, any>,
+      banco: {} as Record<string, SectorSummary>,
+      json: {} as Record<string, SectorSummary>,
     };
 
     // Agrupar por setor no banco

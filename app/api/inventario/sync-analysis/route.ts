@@ -14,14 +14,31 @@ export async function GET(req: NextRequest) {
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);
 
     // Criar chave única para comparação
-    const createKey = (eq: any) => {
+    const createKey = (eq: Record<string, unknown>) => {
       const assetId = eq.asset_id || eq.assetId || "";
       const equipmentId = eq.equipment_id || eq.equipmentId || "";
       const type = eq.type || "";
       return `${assetId}|${equipmentId}|${type}`.toLowerCase().trim();
     };
 
-    type InventoryItem = Record<string, any>;
+    type InventoryItem = {
+      id?: number | string;
+      type?: string | null;
+      model?: string | null;
+      asset_id?: string | null;
+      equipment_id?: string | null;
+      assetId?: string | null;
+      equipmentId?: string | null;
+      sector?: string | null;
+      responsible?: string | null;
+      allocated_user?: string | null;
+      allocatedUser?: string | null;
+      equipment_state?: string | null;
+      equipmentState?: string | null;
+      warranty?: string | null;
+      notes?: string | null;
+      updated_at?: string | null;
+    };
 
     // Mapear por chave
     const dbMap = new Map<string, InventoryItem[]>();
@@ -35,7 +52,7 @@ export async function GET(req: NextRequest) {
       dbMap.get(key)!.push(eq);
     });
 
-    inventarioData.forEach((eq: InventoryItem) => {
+    inventarioData.forEach((eq) => {
       const key = createKey(eq);
       if (!jsonMap.has(key)) {
         jsonMap.set(key, []);

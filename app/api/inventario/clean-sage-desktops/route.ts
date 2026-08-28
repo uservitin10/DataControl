@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
         // Campos que aparecem como vazios na UI
         const hasNoAssetId = !desktop.asset_id || desktop.asset_id.trim() === "";
         const hasNoAllocatedUser = !desktop.allocated_user && !desktop.allocated_user_id;
-        const hasNoLegalResponsible = !desktop.legal_responsible || desktop.legal_responsible.trim() === "";
         const hasNoWarranty = !desktop.warranty || desktop.warranty.trim() === "";
         const hasNoState = !desktop.equipment_state || desktop.equipment_state.trim() === "";
 
@@ -66,7 +65,6 @@ export async function DELETE(req: NextRequest) {
         // Campos que aparecem como vazios na UI
         const hasNoAssetId = !desktop.asset_id || desktop.asset_id.trim() === "";
         const hasNoAllocatedUser = !desktop.allocated_user && !desktop.allocated_user_id;
-        const hasNoLegalResponsible = !desktop.legal_responsible || desktop.legal_responsible.trim() === "";
         const hasNoWarranty = !desktop.warranty || desktop.warranty.trim() === "";
         const hasNoState = !desktop.equipment_state || desktop.equipment_state.trim() === "";
 
@@ -93,8 +91,9 @@ export async function DELETE(req: NextRequest) {
           `DELETE FROM inventory_items WHERE id = ANY($1::uuid[])`,
           [desktopIds]
         );
-      } catch (deleteError: any) {
-        return apiInternalError(`Erro ao remover: ${deleteError?.message || String(deleteError)}`);
+      } catch (deleteError: unknown) {
+        const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
+        return apiInternalError(`Erro ao remover: ${message}`);
       }
 
       // Registrar auditoria

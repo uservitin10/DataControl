@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
     const resourceType = searchParams.get("resource_type");
     const resourceId = searchParams.get("resource_id");
 
-    let whereConditions: string[] = [];
-    let params: unknown[] = [];
+    const whereConditions: string[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (userId) {
