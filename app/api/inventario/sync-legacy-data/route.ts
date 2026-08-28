@@ -35,8 +35,9 @@ export async function GET(req: NextRequest) {
            ORDER BY allocated_user ASC`,
         );
         legacyItems = res.rows;
-      } catch (e: any) {
-        return apiInternalError(e?.message || String(e));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return apiInternalError(message);
       }
 
       // Agrupar por usuário

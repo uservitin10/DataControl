@@ -8,11 +8,10 @@ import { ROLE_LABELS } from "@/lib/ui-constants";
 import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
+import type { EquipmentItem } from "@/types/inventario";
 import {
   getAllSectors,
   getWarrantyExpiryStatus,
-  isActiveLicense,
-  normalizeType,
   getEquipmentTypeCount,
   isSemSetorValue,
 } from "@/lib/inventario";
@@ -23,8 +22,8 @@ export default function InventarioPage() {
   const [userPresent, setUserPresent] = useState(false);
   const [displayNameState, setDisplayNameState] = useState<string | null>(null);
   const [roleState, setRoleState] = useState<string | null>(null);
-  const [inventoryEquipments, setInventoryEquipments] = useState<any[]>([]);
-  const [inventoryLicenses, setInventoryLicenses] = useState<any[]>([]);
+  const [inventoryEquipments, setInventoryEquipments] = useState<EquipmentItem[]>([]);
+  const [inventoryLicenses, setInventoryLicenses] = useState<EquipmentItem[]>([]);
 
   const expiringInventorySummary = useMemo(() => {
     const allItems = [...inventoryEquipments, ...inventoryLicenses];
@@ -84,8 +83,8 @@ export default function InventarioPage() {
         const inventoryResponse = await fetchJson<{
           success: boolean;
           data: {
-            equipments: any[];
-            licenses: any[];
+            equipments: EquipmentItem[];
+            licenses: EquipmentItem[];
           };
         }>("/api/inventario");
 
@@ -154,8 +153,6 @@ export default function InventarioPage() {
       notebooks: 0,
     };
   }, [inventoryLicenses]);
-
-  const allSectorSummaries = [...sectorSummaries, licensesSummary];
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
   const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];

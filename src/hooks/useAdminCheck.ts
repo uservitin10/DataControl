@@ -24,8 +24,10 @@ export function useAdminCheck() {
       return;
     }
 
-    setIsAdmin(true);
-    setLoading(false);
+    queueMicrotask(() => {
+      setIsAdmin(true);
+      setLoading(false);
+    });
   }, [router, session, status]);
 
   return { isAdmin, loading };
