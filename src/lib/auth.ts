@@ -47,10 +47,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return token;
     },
-    session: ({ session, token }) => {
+    session: async ({ session, token }) => {
       session.user.id = token.sub as string;
       session.user.role = token.role as string;
       session.user.mustResetPassword = token.mustResetPassword as boolean;
+
+      if (token.sub) {
+        const profileResult = await pool.query(
+          "SELECT role FROM profiles WHERE id = $1",
+          [token.sub]
+        );
+        const currentRole = profileResult.rows[0]?.role;
+        if (currentRole) {
+          session.user.role = currentRole as string;
+        }
+      }
+
       return session;
     },
   },

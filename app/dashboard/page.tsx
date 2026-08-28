@@ -389,15 +389,6 @@ export default function DashboardPage() {
                     <p className="text-sm text-gov-muted">
                       {temFiltroAtivo ? "Nenhum painel encontrado com os filtros aplicados." : "Nenhum painel cadastrado nesta área."}
                     </p>
-                    {canEdit && !temFiltroAtivo && (
-                      <button
-                        type="button"
-                        onClick={openCreate}
-                        className="gov-button mt-4"
-                      >
-                        + Adicionar painel
-                      </button>
-                    )}
                     {temFiltroAtivo && (
                       <button
                         type="button"
