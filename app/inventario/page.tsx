@@ -71,7 +71,16 @@ export default function InventarioPage() {
           data: { role: string; display_name?: string };
         }>(`/api/profile/me`);
 
-        if (profile.data.role !== "admin") {
+        const allowedInventoryRoles = [
+          "admin",
+          "editor",
+          "viewer",
+          "painel_editor",
+          "sistema_editor",
+          "inventario_editor",
+        ];
+
+        if (!allowedInventoryRoles.includes(profile.data.role ?? "")) {
           router.replace("/dashboard?alert=no_permission_inventario");
           return;
         }
