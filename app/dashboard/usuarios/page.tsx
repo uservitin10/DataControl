@@ -7,7 +7,7 @@ import { Logo } from "@/components/Logo";
 // BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
-import { fetchJson, patchJson } from "@/lib/api";
+import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
 
@@ -37,6 +37,13 @@ export default function UsuariosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    display_name: "",
+    email: "",
+    password: "",
+    role: "viewer" as Role,
+  });
   const [editingRole, setEditingRole] = useState<Role>("viewer");
   const [editingPermissions, setEditingPermissions] = useState<Permissions | null>(null);
   const [saving, setSaving] = useState(false);
@@ -184,6 +191,40 @@ export default function UsuariosPage() {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newUser.display_name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
+      setError("Preencha nome, email e senha para criar o usuário.");
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      setError("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await postJson("/api/usuarios", {
+        display_name: newUser.display_name,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+      });
+
+      setSuccess("Usuário criado com sucesso.");
+      setCreatingUser(false);
+      setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+      await fetchUsuarios();
+    } catch (createError) {
+      setError((createError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter((u) =>
     !busca ||
     u.email?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -250,21 +291,29 @@ export default function UsuariosPage() {
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-[60%]">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+            <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </span>
             <input
-              type="text"
+              type="search"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por nome ou email..."
-              className="gov-input w-full rounded-2xl border border-slate-200 bg-white/95 pl-12 pr-4 py-3 text-sm shadow-sm transition-shadow duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              aria-label="Buscar usuários por nome ou email"
+              style={{ paddingLeft: "3rem" }}
+              className="gov-input gov-search-input w-full rounded-2xl border border-slate-200 bg-white/95 text-sm shadow-sm transition-shadow duration-200 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
-          {/* 'Meu Perfil' button removed: profile is accessible by clicking the user name in header */}
+          <button
+            type="button"
+            onClick={() => setCreatingUser(true)}
+            className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          >
+            + Novo usuário
+          </button>
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl transition-shadow hover:shadow-2xl">
@@ -326,6 +375,90 @@ export default function UsuariosPage() {
             </table>
           </div>
         </div>
+
+        {creatingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
+            <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-[0_36px_90px_-36px_rgba(15,23,42,0.3)]">
+              <div className="border-b border-slate-200 px-6 py-5">
+                <h2 className="text-xl font-semibold text-slate-900">Criar novo usuário</h2>
+                <p className="mt-1 text-sm text-slate-600">Cadastre o usuário com o cargo e a senha iniciais.</p>
+              </div>
+
+              <div className="space-y-5 px-6 py-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Nome completo</label>
+                  <input
+                    type="text"
+                    value={newUser.display_name}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, display_name: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="Maria da Silva"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="usuario@empresa.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Senha inicial</label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Cargo</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value as Role }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  >
+                    <option value="viewer">Apenas Leitura</option>
+                    <option value="painel_editor">Editor em Painel</option>
+                    <option value="sistema_editor">Editor de Sistemas</option>
+                    <option value="inventario_editor">Editor de Inventário</option>
+                    <option value="editor">Desenvolvedor</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200/80 px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingUser(false);
+                    setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+                    setError("");
+                  }}
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateUser()}
+                  disabled={saving}
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                >
+                  {saving ? "Criando..." : "Salvar usuário"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
