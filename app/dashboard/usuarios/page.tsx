@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
-import { ROLE_LABELS } from "@/lib/ui-constants";
+import { UserBadge } from "@/components/UserBadge";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
@@ -29,7 +29,6 @@ export default function UsuariosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
-  const [displayNameState, setDisplayNameState] = useState<string | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
   const [newUser, setNewUser] = useState({
     display_name: "",
@@ -70,8 +69,6 @@ export default function UsuariosPage() {
 
       try {
         const profile = await fetchJson<{ success: boolean; data: { role: Role; display_name?: string } }>(`/api/profile/me`);
-
-        setDisplayNameState(profile.data.display_name ?? session.user?.email ?? null);
 
         if (profile.data.role !== "admin") {
           router.replace("/dashboard");
@@ -250,16 +247,7 @@ export default function UsuariosPage() {
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/profile")}
-              className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
-              aria-label={displayNameState ?? "Usuário"}
-              title={displayNameState ?? "Usuário"}
-            >
-              <span className="text-sm text-white/95 truncate max-w-[160px]">{displayNameState ?? "Usuário"}</span>
-              <span className="gov-badge role-admin">{ROLE_LABELS.admin}</span>
-            </button>
+            <UserBadge />
           </div>
         </div>
       </nav>
@@ -324,10 +312,10 @@ export default function UsuariosPage() {
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl transition-shadow hover:shadow-2xl">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm divide-y divide-slate-200/80">
-              <thead className="sticky top-0 z-10 bg-slate-950/98 text-white shadow-sm border-b border-slate-800/50 backdrop-blur-sm">
+              <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm border-b border-slate-200 backdrop-blur-sm">
               <tr>
                 {['NOME', 'EMAIL', 'NÍVEL DE ACESSO', 'CADASTRADO EM', 'AÇÕES'].map((h) => (
-                  <th key={h} className="px-6 py-4 text-xs font-semibold tracking-wide uppercase text-slate-300">
+                  <th key={h} className="px-6 py-4 text-left text-xs font-semibold tracking-wide uppercase text-slate-600">
                     {h}
                   </th>
                 ))}
@@ -344,29 +332,33 @@ export default function UsuariosPage() {
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-600">{usuario.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`gov-badge role-${usuario.role}`}>{ROLE_LABELS[usuario.role] ?? usuario.role}</span>
+                    <div className="flex justify-center">
+                      <span className={`gov-badge role-${usuario.role}`}>{usuario.role === "admin" ? "Administrador" : usuario.role === "viewer" ? "Apenas Leitura" : usuario.role === "editor" ? "Desenvolvedor" : usuario.role === "painel_editor" ? "Editor de Painel" : usuario.role === "sistema_editor" ? "Editor de Sistemas" : "Editor de Inventário"}</span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {usuario.created_at ? new Date(usuario.created_at).toLocaleDateString("pt-BR") : "—"}
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => handleEditRole(usuario)}
-                      disabled={deletingId === usuario.id}
-                      className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
-                    >
-                      Editar permissões
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteUser(usuario)}
-                      disabled={deletingId === usuario.id || usuario.id === session?.user?.id}
-                      title={usuario.id === session?.user?.id ? "Você não pode excluir seu próprio perfil" : "Excluir perfil"}
-                      className="ml-2 rounded-3xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {deletingId === usuario.id ? "Excluindo..." : "Excluir"}
-                    </button>
+                    <div className="flex flex-wrap items-center justify-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEditRole(usuario)}
+                        disabled={deletingId === usuario.id}
+                        className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
+                      >
+                        Editar permissões
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteUser(usuario)}
+                        disabled={deletingId === usuario.id || usuario.id === session?.user?.id}
+                        title={usuario.id === session?.user?.id ? "Você não pode excluir seu próprio perfil" : "Excluir perfil"}
+                        className="rounded-3xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId === usuario.id ? "Excluindo..." : "Excluir"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )) : (
