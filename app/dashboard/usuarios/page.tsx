@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
-import { UserBadge } from "@/components/UserBadge";
+import UserBadge from "@/components/UserBadge";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
