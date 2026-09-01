@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
+import { ROLE_LABELS } from "@/lib/ui-constants";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
@@ -21,15 +22,6 @@ type Profile = {
   created_at?: string;
 };
 
-const roleLabels: Record<Role, { label: string; bg: string; text: string }> = {
-  admin:  { label: "Administrador",  bg: "#fef2f2", text: "#991b1b" },
-  editor: { label: "Desenvolvedor",  bg: "#eff6ff", text: "#1d4ed8" },
-  viewer: { label: "Apenas Leitura", bg: "#f1f5f9", text: "#475569" },
-  painel_editor: { label: "Editor em Painel", bg: "#eef2ff", text: "#1d4ed8" },
-  sistema_editor: { label: "Editor de Sistemas", bg: "#f3e8ff", text: "#6b21a8" },
-  inventario_editor: { label: "Editor de Inventário", bg: "#dcfce7", text: "#166534" },
-};
-
 export default function UsuariosPage() {
   const router = useRouter();
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
@@ -37,6 +29,7 @@ export default function UsuariosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [displayNameState, setDisplayNameState] = useState<string | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
   const [newUser, setNewUser] = useState({
     display_name: "",
@@ -76,7 +69,9 @@ export default function UsuariosPage() {
       }
 
       try {
-        const profile = await fetchJson<{ success: boolean; data: { role: Role } }>(`/api/profile/me`);
+        const profile = await fetchJson<{ success: boolean; data: { role: Role; display_name?: string } }>(`/api/profile/me`);
+
+        setDisplayNameState(profile.data.display_name ?? session.user?.email ?? null);
 
         if (profile.data.role !== "admin") {
           router.replace("/dashboard");
@@ -246,16 +241,26 @@ export default function UsuariosPage() {
     <main className="gov-page-bg min-h-screen">
       <nav className="gov-header px-6 py-4 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.65)] bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border-b border-slate-800/20">
         <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 rounded-3xl bg-slate-900/80 px-4 py-3 text-left transition hover:bg-white/10"
-          >
-            <Logo className="h-10 w-auto" width={40} height={40} alt="Horús" />
+          <Link href="/dashboard" className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10" aria-label="Ir para o Dashboard">
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <p className="text-sm font-semibold text-white">Gerenciamento de Usuários</p>
-              <p className="text-xs text-slate-300">Horús</p>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
+              <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
           </Link>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/profile")}
+              className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
+              aria-label={displayNameState ?? "Usuário"}
+              title={displayNameState ?? "Usuário"}
+            >
+              <span className="text-sm text-white/95 truncate max-w-[160px]">{displayNameState ?? "Usuário"}</span>
+              <span className="gov-badge role-admin">{ROLE_LABELS.admin}</span>
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -339,7 +344,7 @@ export default function UsuariosPage() {
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-600">{usuario.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`gov-badge role-${usuario.role}`}>{roleLabels[usuario.role]?.label}</span>
+                    <span className={`gov-badge role-${usuario.role}`}>{ROLE_LABELS[usuario.role] ?? usuario.role}</span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {usuario.created_at ? new Date(usuario.created_at).toLocaleDateString("pt-BR") : "—"}
