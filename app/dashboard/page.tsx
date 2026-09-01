@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import { Logo } from "@/components/Logo";
 import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { DocumentFilters } from "@/components/dashboard/DocumentFilters";
@@ -12,10 +13,32 @@ import { AREAS, AREA_CORES, getFileTipo } from "@/lib/dashboard";
 // BackButton usage moved to PageHeader where appropriate
 import PageHeader from "@/components/PageHeader";
 import { VIEWER_PUBLIC_GOV_LINK, VIEWER_PUBLIC_PREVIEW_IMAGE } from "@/lib/storage";
+import { logAuditEvent } from "@/lib/api";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [showLanding, setShowLanding] = useState(true);
+
+  const handleLogout = async () => {
+    const userId = session?.user?.id ?? null;
+
+    if (userId) {
+      try {
+        await logAuditEvent({
+          user_id: userId,
+          action: "logout",
+          resource_type: "auth",
+          details: "Logout via botão principal do dashboard",
+        });
+      } catch (auditError) {
+        console.warn("Falha ao gravar log de auditoria de logout:", auditError);
+      }
+    }
+
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
 
   const {
     user,
@@ -160,16 +183,25 @@ export default function DashboardPage() {
             )}
 
             {user ? (
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/profile")}
-                className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
-                aria-label={displayName || user?.email || "Usuário"}
-                title={displayName || user?.email || "Usuário"}
-              >
-                <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || user?.email || "Usuário"}</span>
-                <span className="gov-badge">{roleLabel[role]}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => router.push("/dashboard/profile")}
+                  className="gov-button-secondary-dark inline-flex items-center gap-3 rounded-full px-4 py-1.5 text-sm font-medium"
+                  aria-label={displayName || user?.email || "Usuário"}
+                  title={displayName || user?.email || "Usuário"}
+                >
+                  <span className="text-sm text-white/95 truncate max-w-[160px]">{displayName || user?.email || "Usuário"}</span>
+                  <span className="gov-badge">{roleLabel[role]}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                >
+                  Sair
+                </button>
+              </>
             ) : null}
 
             {showLanding && !user && (

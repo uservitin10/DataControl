@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-// BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
