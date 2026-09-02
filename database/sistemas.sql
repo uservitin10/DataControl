@@ -40,7 +40,8 @@ CREATE TABLE public.sistemas (
     acesso_bd text NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    tipo_acesso text DEFAULT 'publico'::text NOT NULL
+    tipo_acesso text DEFAULT 'publico'::text NOT NULL,
+    secretaria text
 );
 
 

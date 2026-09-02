@@ -146,12 +146,12 @@ export default function LoginPage() {
 
         <div className="gov-card p-8 border border-slate-200 bg-white shadow-soft">
           <div className="mb-6 rounded-2xl bg-slate-100 p-4 text-center text-sm text-slate-700">
-            Use suas credenciais para entrar no portal ou crie uma conta.
+            Entre com sua conta institucional ou use suas credenciais locais.
           </div>
 
           <>
-              <p className="mb-1 text-xl font-semibold text-gov-heading">Bem-vindo</p>
-              <p className="mb-6 text-sm text-gov-muted">Acesse sua conta para continuar</p>
+              <p className="mb-1 text-xl font-semibold text-gov-heading">Acesso ao Horús</p>
+              <p className="mb-6 text-sm text-gov-muted">Escolha uma forma de entrar no portal</p>
 
               <form
                 onSubmit={(event) => {
@@ -159,6 +159,21 @@ export default function LoginPage() {
                 }}
                 className="space-y-4"
               >
+                <button
+                  type="button"
+                  onClick={() => void handleMicrosoftLogin()}
+                  disabled={loading}
+                  className="gov-button inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Entrar com conta institucional
+                </button>
+
+                <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-[0.12em] text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  <span>ou</span>
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                     Email
@@ -203,35 +218,29 @@ export default function LoginPage() {
                   {loading ? "Entrando..." : "Entrar"}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => void handleMicrosoftLogin()}
-                  disabled={loading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Entrar com Microsoft
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => router.push("/dashboard")}
-                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full"
-                >
-                  Acesso ao portal
-                </button>
-                <div className="text-center text-sm text-slate-600 mb-4">
-                  Ainda não tem conta?{' '}
-                  <Link href="/register" className="text-gov-primary hover:underline">
-                    Cadastre-se
-                  </Link>
-                </div>
-                <div className="mt-2 text-right">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-sm">
                   <button
                     type="button"
                     onClick={() => router.push("/login/forgot")}
                     className="text-sm text-gov-primary hover:underline"
                   >
                     Esqueceu a senha?
+                  </button>
+                  <span className="text-slate-600">
+                    Não tem conta?{' '}
+                    <Link href="/register" className="text-gov-primary hover:underline">
+                      Cadastre-se
+                    </Link>
+                  </span>
+                </div>
+
+                <div className="border-t border-slate-200 pt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/dashboard")}
+                    className="text-sm font-medium text-slate-500 transition hover:text-gov-primary"
+                  >
+                    Acessar portal público
                   </button>
                 </div>
               </form>
