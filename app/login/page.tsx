@@ -82,6 +82,12 @@ export default function LoginPage() {
     router.replace("/dashboard");
   };
 
+  const handleMicrosoftLogin = async () => {
+    setError("");
+    setLoading(true);
+    await signIn("microsoft-entra-id", { callbackUrl: "/dashboard" });
+  };
+
   const handleLogin = async (event?: FormEvent<HTMLFormElement> | MouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
@@ -195,6 +201,15 @@ export default function LoginPage() {
                   className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium w-full disabled:opacity-60"
                 >
                   {loading ? "Entrando..." : "Entrar"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleMicrosoftLogin()}
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Entrar com Microsoft
                 </button>
 
                 <button
