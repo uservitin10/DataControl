@@ -29,11 +29,3 @@ extends:
   template: /node/azure-pipeline.yaml@templates
   parameters:
     IS_USING_YARN: false
-
-
-<<<<<<< Updated upstream
-
-# teste de validacao pos-fix horus-prod - 14/09/2026
-# teste sonar PR - tentativa 2
-=======
->>>>>>> Stashed changes
