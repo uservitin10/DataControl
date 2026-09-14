@@ -25,3 +25,5 @@ export const deleteRegistroApi = async (id: string) =>
   fetchJson<{ success: true }>(`/api/registros/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+
+  // teste de integração SonarQube
