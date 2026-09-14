@@ -1,12 +1,12 @@
 trigger:
   branches:
     include:
-      - master
+      - main
       - release/*
 
 variables:
   - group: horus-common
-  - ${{ if or(eq(variables['Build.SourceBranchName'], 'master'), contains(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+  - ${{ if or(eq(variables['Build.SourceBranchName'], 'main'), contains(variables['Build.SourceBranch'], 'refs/tags/')) }}:
       - group: horus-prod
   - ${{ elseif contains(variables['Build.SourceBranch'], 'release/') }}:
       - group: horus-hom

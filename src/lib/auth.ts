@@ -65,7 +65,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (existing.rows.length === 0) {
-          // Ainda não existe profile para esse e-mail — cria com role padrão
           await pool.query(
             `INSERT INTO profiles (email, display_name, role)
              VALUES ($1, $2, $3)`,
@@ -77,13 +76,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     jwt: async ({ token, user, account }) => {
-      // Login local já traz role/mustResetPassword prontos
       if (user) {
         token.role = user.role;
         token.mustResetPassword = user.mustResetPassword;
       }
 
-      // Login via Microsoft: busca o profile recém-criado/existente pra pegar role real
       if (account?.provider === "microsoft-entra-id" && token.email) {
         const result = await pool.query(
           "SELECT id, role, must_reset_password FROM profiles WHERE email = $1",
