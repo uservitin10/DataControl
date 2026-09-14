@@ -7,12 +7,23 @@ interface AnalysisData {
   jsonTotal: number;
   uniqueKeysInDB: number;
   uniqueKeysInJSON: number;
-  onlyInDB: any[];
-  onlyInJSON: any[];
-  duplicatesInDB: any[];
-  duplicatesInJSON: any[];
-  inBothWithDifferences: any[];
+  onlyInDB: ComparisonEntry[];
+  onlyInJSON: ComparisonEntry[];
+  duplicatesInDB: ComparisonEntry[];
+  duplicatesInJSON: ComparisonEntry[];
+  inBothWithDifferences: DifferenceEntry[];
 }
+
+type ComparisonEntry = {
+  key: string;
+  count?: number;
+  items: Array<{ model?: string | null; sector?: string | null }>;
+};
+
+type DifferenceEntry = {
+  key: string;
+  differences: string[];
+};
 
 export default function InventoryComparison() {
   const [data, setData] = useState<AnalysisData | null>(null);

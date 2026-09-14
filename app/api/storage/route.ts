@@ -43,12 +43,16 @@ async function getObjectBodyBytes(response: GetObjectCommandOutput) {
     return Buffer.from(body);
   }
 
-  if (typeof (body as any).transformToByteArray === "function") {
-    return Buffer.from(await (body as any).transformToByteArray());
+  const bodyWithConverters = body as unknown as {
+    transformToByteArray?: () => Promise<Uint8Array>;
+    arrayBuffer?: () => Promise<ArrayBuffer>;
+  };
+  if (typeof bodyWithConverters.transformToByteArray === "function") {
+    return Buffer.from(await bodyWithConverters.transformToByteArray());
   }
 
-  if (typeof (body as any).arrayBuffer === "function") {
-    const arrayBuffer = await (body as any).arrayBuffer();
+  if (typeof bodyWithConverters.arrayBuffer === "function") {
+    const arrayBuffer = await bodyWithConverters.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
 

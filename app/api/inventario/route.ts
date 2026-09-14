@@ -30,7 +30,7 @@ function splitInventoryItems(items: InventoryItemRecord[]) {
 export async function GET(req: NextRequest) {
   return withAuth(
     req,
-    async (user) => {
+    async () => {
       try {
         const result = await pool.query(
           `SELECT * FROM inventory_items ORDER BY sector ASC, type ASC`
@@ -49,6 +49,6 @@ export async function GET(req: NextRequest) {
         return apiInternalError((err as Error).message);
       }
     },
-    ["admin", "editor"]
+    { module: "inventario", action: "view" }
   );
 }

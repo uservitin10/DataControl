@@ -33,8 +33,15 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
-    if (!email.trim() || !password || !confirmPassword) {
+    const normalizedDisplayName = displayName.trim().replace(/\s+/g, " ");
+
+    if (!normalizedDisplayName || !email.trim() || !password || !confirmPassword) {
       setError("Preencha todos os campos para continuar.");
+      return;
+    }
+
+    if (normalizedDisplayName.split(" ").length < 2) {
+      setError("Informe seu nome completo, com nome e sobrenome.");
       return;
     }
 
@@ -47,7 +54,7 @@ export default function RegisterPage() {
     try {
       await postJson<{ success: true }>("/api/auth/register", {
         email: email.trim().toLowerCase(),
-        displayName: displayName.trim(),
+        displayName: normalizedDisplayName,
         password,
       });
 
@@ -77,15 +84,17 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
-                Nome exibido
+                Nome completo *
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                required
                 className="gov-input bg-white border-slate-300 text-slate-900"
-                placeholder="Seu nome"
+                placeholder="Nome e sobrenome"
               />
+              <p className="mt-1 text-xs text-slate-500">Informe seu nome completo para facilitar a identificação no sistema.</p>
             </div>
 
             <div>

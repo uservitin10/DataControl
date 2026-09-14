@@ -1,0 +1,26 @@
+trigger:
+  branches:
+    include:
+      - master
+      - release/*
+
+variables:
+  - group: horus-common
+  - ${{ if or(eq(variables['Build.SourceBranchName'], 'master'), contains(variables['Build.SourceBranch'], 'refs/tags/')) }}:
+      - group: horus-prod
+  - ${{ elseif contains(variables['Build.SourceBranch'], 'release/') }}:
+      - group: horus-hom
+  - ${{ else }}:
+      - group: horus-dev
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: DevOps/template-pipelines
+    ref: 'refs/heads/master'
+
+extends:
+  template: /node/azure-pipeline.yaml@templates
+  parameters:
+    IS_USING_YARN: false

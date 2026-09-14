@@ -2,54 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { logAuditEvent } from "@/lib/api";
-import { buildPasswordResetRedirectUrl } from "@/lib/auth-flow";
+
+export const dynamic = 'force-dynamic';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const getStatusMessage = (error: unknown) => {
-    if (!error) return "Erro ao enviar instruções de recuperação.";
-    if (typeof error === "string") {
-      return error === "{}" ? "Erro ao enviar instruções de recuperação." : error;
-    }
-
-    if (error instanceof Error && typeof error.message === "string") {
-      return error.message === "{}" || !error.message.trim()
-        ? "Erro ao enviar instruções de recuperação."
-        : error.message;
-    }
-
-    if (typeof error === "object" && error !== null) {
-      const objectError = error as { message?: unknown };
-      if (objectError.message !== undefined) {
-        if (typeof objectError.message === "string") {
-          return objectError.message === "{}" || !objectError.message.trim()
-            ? "Erro ao enviar instruções de recuperação."
-            : objectError.message;
-        }
-
-        try {
-          const nestedMessage = JSON.stringify(objectError.message);
-          if (nestedMessage && nestedMessage !== "{}") return nestedMessage;
-        } catch {
-          // ignore
-        }
-      }
-
-      try {
-        const serialized = JSON.stringify(error);
-        if (serialized && serialized !== "{}") return serialized;
-      } catch {
-        // ignore
-      }
-    }
-
-    return "Erro ao enviar instruções de recuperação.";
-  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,33 +21,23 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const redirectTo = buildPasswordResetRedirectUrl(
-        process.env.NEXT_PUBLIC_APP_URL,
-        typeof window !== "undefined" ? window.location.origin : undefined
-      );
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
+      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, redirectTo }),
       });
 
+      const data = await response.json();
+
       setLoading(false);
-      if (error) {
-        const message = getStatusMessage(error);
-        setStatus(message);
-        console.warn("Password reset error:", error);
+      if (!response.ok) {
+        setStatus(data?.message || "Erro ao enviar instruções de recuperação.");
         return;
       }
 
       setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
-      try {
-        await logAuditEvent({
-          user_id: null,
-          action: "password_reset_requested",
-          resource_type: "auth",
-          details: `email:${email}`,
-        });
-      } catch (auditErr) {
-        console.warn("Falha ao gravar log de auditoria:", auditErr);
-      }
       setEmail("");
     } catch {
       setLoading(false);

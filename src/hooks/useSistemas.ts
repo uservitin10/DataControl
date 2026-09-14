@@ -108,10 +108,10 @@ export function useSistemas() {
           if (raw) {
             const saved = JSON.parse(raw) as Partial<Record<string, unknown>>;
             if (typeof saved.busca === "string") setBusca(String(saved.busca));
-            if (typeof saved.filtroAmbiente === "string") setFiltroAmbiente(saved.filtroAmbiente as any);
+            if (saved.filtroAmbiente === "producao" || saved.filtroAmbiente === "homologacao" || saved.filtroAmbiente === "ambos") setFiltroAmbiente(saved.filtroAmbiente);
             if (typeof saved.filtroHomologados === "boolean") setFiltroHomologados(Boolean(saved.filtroHomologados));
             if (typeof saved.filtroAcessiveis === "boolean") setFiltroAcessiveis(Boolean(saved.filtroAcessiveis));
-            if (typeof saved.filtroTipoAcesso === "string") setFiltroTipoAcesso(saved.filtroTipoAcesso as any);
+            if (saved.filtroTipoAcesso === "" || saved.filtroTipoAcesso === "publico" || saved.filtroTipoAcesso === "restrito") setFiltroTipoAcesso(saved.filtroTipoAcesso);
             if (typeof saved.filtroSecretaria === "string") setFiltroSecretaria(String(saved.filtroSecretaria));
           } else {
             // Se não houver salvo, aplicar comportamento padrão por role

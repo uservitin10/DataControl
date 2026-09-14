@@ -9,9 +9,21 @@ import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
 import { getWarrantyExpiryStatus } from "@/lib/inventario";
 import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
+import type { EquipmentItem } from "@/types/inventario";
 
 type MyInventoryResponse = {
-  licenses: any[];
+  success: boolean;
+  data: {
+    licenses: EquipmentItem[];
+  };
+};
+
+type LicenseItem = EquipmentItem & {
+  asset_id?: string | null;
+  equipment_id?: string | null;
+  allocated_user?: string | null;
+  equipment_state?: string | null;
+  asset_type?: string | null;
 };
 
 export default function LicencasPage() {
@@ -19,10 +31,10 @@ export default function LicencasPage() {
   const { data: session, status } = useSession();
   const [loadingUser, setLoadingUser] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [licensesData, setLicensesData] = useState<any[]>([]);
+  const [licensesData, setLicensesData] = useState<LicenseItem[]>([]);
 
   const expiringLicenseSummary = useMemo(() => {
-    const items: any[] = [];
+    const items: LicenseItem[] = [];
     let expired = 0;
 
     for (const item of licensesData) {
@@ -44,7 +56,7 @@ export default function LicencasPage() {
     };
   }, [licensesData]);
 
-  const normalizeLicenseItem = (item: any) => ({
+  const normalizeLicenseItem = (item: LicenseItem): LicenseItem => ({
     ...item,
     assetId: item.asset_id ?? item.assetId ?? undefined,
     equipmentId: item.equipment_id ?? item.equipmentId ?? undefined,
@@ -61,20 +73,18 @@ export default function LicencasPage() {
       }
 
       try {
-        const profile = await fetchJson<{ role: string }>(
+        const profile = await fetchJson<{ success: boolean; data: { role: string } }>(
           `/api/profile/me`
         );
 
-        if (profile.role !== "admin") {
+        if (profile.data.role !== "admin") {
           router.replace("/dashboard?alert=no_permission_inventario");
           return;
         }
 
-        const inventoryResponse = await fetchJson<MyInventoryResponse>(
-          "/api/inventario/meu-inventario"
-        );
+        const inventoryResponse = await fetchJson<MyInventoryResponse>("/api/inventario");
 
-        setLicensesData((inventoryResponse.licenses ?? []).map(normalizeLicenseItem));
+        setLicensesData((inventoryResponse.data?.licenses ?? []).map(normalizeLicenseItem));
         setLoadingUser(false);
       } catch {
         router.replace("/dashboard?alert=no_permission_inventario");

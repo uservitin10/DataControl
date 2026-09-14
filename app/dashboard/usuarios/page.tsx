@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-// BackButton provided via PageHeader
 import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
-import { fetchJson, patchJson } from "@/lib/api";
+import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import type { PermissionModule, Permissions } from "@/lib/permissions";
+import UserBadge from "@/components/UserBadge";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
@@ -21,15 +21,6 @@ type Profile = {
   created_at?: string;
 };
 
-const roleLabels: Record<Role, { label: string; bg: string; text: string }> = {
-  admin:  { label: "Administrador",  bg: "#fef2f2", text: "#991b1b" },
-  editor: { label: "Desenvolvedor",  bg: "#eff6ff", text: "#1d4ed8" },
-  viewer: { label: "Apenas Leitura", bg: "#f1f5f9", text: "#475569" },
-  painel_editor: { label: "Editor em Painel", bg: "#eef2ff", text: "#1d4ed8" },
-  sistema_editor: { label: "Editor de Sistemas", bg: "#f3e8ff", text: "#6b21a8" },
-  inventario_editor: { label: "Editor de Inventário", bg: "#dcfce7", text: "#166534" },
-};
-
 export default function UsuariosPage() {
   const router = useRouter();
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
@@ -37,9 +28,17 @@ export default function UsuariosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    display_name: "",
+    email: "",
+    password: "",
+    role: "viewer" as Role,
+  });
   const [editingRole, setEditingRole] = useState<Role>("viewer");
   const [editingPermissions, setEditingPermissions] = useState<Permissions | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
 
   const fetchUsuarios = async () => {
@@ -68,7 +67,7 @@ export default function UsuariosPage() {
       }
 
       try {
-        const profile = await fetchJson<{ success: boolean; data: { role: Role } }>(`/api/profile/me`);
+        const profile = await fetchJson<{ success: boolean; data: { role: Role; display_name?: string } }>(`/api/profile/me`);
 
         if (profile.data.role !== "admin") {
           router.replace("/dashboard");
@@ -163,6 +162,60 @@ export default function UsuariosPage() {
     }
   };
 
+  const handleDeleteUser = async (usuario: Profile) => {
+    if (!window.confirm(`Deseja excluir o perfil de ${usuario.display_name || usuario.email}?`)) {
+      return;
+    }
+
+    setDeletingId(usuario.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await fetchJson(`/api/usuarios/${encodeURIComponent(usuario.id)}`, { method: "DELETE" });
+      setSuccess("Perfil excluído com sucesso.");
+      await fetchUsuarios();
+    } catch (deleteError) {
+      setError((deleteError as Error).message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUser.display_name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
+      setError("Preencha nome, email e senha para criar o usuário.");
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      setError("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await postJson("/api/usuarios", {
+        display_name: newUser.display_name,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+      });
+
+      setSuccess("Usuário criado com sucesso.");
+      setCreatingUser(false);
+      setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+      await fetchUsuarios();
+    } catch (createError) {
+      setError((createError as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter((u) =>
     !busca ||
     u.email?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -184,16 +237,17 @@ export default function UsuariosPage() {
     <main className="gov-page-bg min-h-screen">
       <nav className="gov-header px-6 py-4 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.65)] bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border-b border-slate-800/20">
         <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 rounded-3xl bg-slate-900/80 px-4 py-3 text-left transition hover:bg-white/10"
-          >
-            <Logo className="h-10 w-auto" width={40} height={40} alt="Horús" />
+          <Link href="/dashboard" className="flex items-center gap-4 rounded-lg px-3 py-2 text-left transition hover:bg-white/10" aria-label="Ir para o Dashboard">
+            <Logo className="h-10 w-auto hover-scale" width={40} height={40} alt="Horús" />
             <div>
-              <p className="text-sm font-semibold text-white">Gerenciamento de Usuários</p>
-              <p className="text-xs text-slate-300">Horús</p>
+              <h1 className="text-lg font-semibold text-white">Horús</h1>
+              <p className="text-xs text-white/80">Portal de Gestão de Documentos</p>
             </div>
           </Link>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <UserBadge />
+          </div>
         </div>
       </nav>
 
@@ -229,30 +283,38 @@ export default function UsuariosPage() {
 
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-[60%]">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+            <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </span>
             <input
-              type="text"
+              type="search"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por nome ou email..."
-              className="gov-input w-full rounded-2xl border border-slate-200 bg-white/95 pl-12 pr-4 py-3 text-sm shadow-sm transition-shadow duration-200 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              aria-label="Buscar usuários por nome ou email"
+              style={{ paddingLeft: "3rem" }}
+              className="gov-input gov-search-input w-full rounded-2xl border border-slate-200 bg-white/95 text-sm shadow-sm transition-shadow duration-200 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
-          {/* 'Meu Perfil' button removed: profile is accessible by clicking the user name in header */}
+          <button
+            type="button"
+            onClick={() => setCreatingUser(true)}
+            className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          >
+            + Novo usuário
+          </button>
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl transition-shadow hover:shadow-2xl">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm divide-y divide-slate-200/80">
-              <thead className="sticky top-0 z-10 bg-slate-950/98 text-white shadow-sm border-b border-slate-800/50 backdrop-blur-sm">
+              <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm border-b border-slate-200 backdrop-blur-sm">
               <tr>
                 {['NOME', 'EMAIL', 'NÍVEL DE ACESSO', 'CADASTRADO EM', 'AÇÕES'].map((h) => (
-                  <th key={h} className="px-6 py-4 text-xs font-semibold tracking-wide uppercase text-slate-300">
+                  <th key={h} className="px-6 py-4 text-left text-xs font-semibold tracking-wide uppercase text-slate-600">
                     {h}
                   </th>
                 ))}
@@ -269,18 +331,33 @@ export default function UsuariosPage() {
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-600">{usuario.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`gov-badge role-${usuario.role}`}>{roleLabels[usuario.role]?.label}</span>
+                    <div className="flex justify-center">
+                      <span className={`gov-badge role-${usuario.role}`}>{usuario.role === "admin" ? "Administrador" : usuario.role === "viewer" ? "Apenas Leitura" : usuario.role === "editor" ? "Desenvolvedor" : usuario.role === "painel_editor" ? "Editor de Painel" : usuario.role === "sistema_editor" ? "Editor de Sistemas" : "Editor de Inventário"}</span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {usuario.created_at ? new Date(usuario.created_at).toLocaleDateString("pt-BR") : "—"}
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleEditRole(usuario)}
-                      className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
-                    >
-                      Editar permissões
-                    </button>
+                    <div className="flex flex-wrap items-center justify-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEditRole(usuario)}
+                        disabled={deletingId === usuario.id}
+                        className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
+                      >
+                        Editar permissões
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteUser(usuario)}
+                        disabled={deletingId === usuario.id || usuario.id === session?.user?.id}
+                        title={usuario.id === session?.user?.id ? "Você não pode excluir seu próprio perfil" : "Excluir perfil"}
+                        className="rounded-3xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId === usuario.id ? "Excluindo..." : "Excluir"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )) : (
@@ -294,6 +371,90 @@ export default function UsuariosPage() {
             </table>
           </div>
         </div>
+
+        {creatingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
+            <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-[0_36px_90px_-36px_rgba(15,23,42,0.3)]">
+              <div className="border-b border-slate-200 px-6 py-5">
+                <h2 className="text-xl font-semibold text-slate-900">Criar novo usuário</h2>
+                <p className="mt-1 text-sm text-slate-600">Cadastre o usuário com o cargo e a senha iniciais.</p>
+              </div>
+
+              <div className="space-y-5 px-6 py-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Nome completo</label>
+                  <input
+                    type="text"
+                    value={newUser.display_name}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, display_name: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="Maria da Silva"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="usuario@empresa.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Senha inicial</label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Cargo</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value as Role }))}
+                    className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  >
+                    <option value="viewer">Apenas Leitura</option>
+                    <option value="painel_editor">Editor em Painel</option>
+                    <option value="sistema_editor">Editor de Sistemas</option>
+                    <option value="inventario_editor">Editor de Inventário</option>
+                    <option value="editor">Desenvolvedor</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200/80 px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingUser(false);
+                    setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+                    setError("");
+                  }}
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateUser()}
+                  disabled={saving}
+                  className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
+                >
+                  {saving ? "Criando..." : "Salvar usuário"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-sm">

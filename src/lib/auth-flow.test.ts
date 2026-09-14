@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import { buildPasswordResetRedirectUrl } from "./auth-flow";
+import { buildPasswordResetRedirectUrl, isPasswordRecoveryRedirect } from "./auth-flow";
 
 describe("auth flow helpers", () => {
   it("builds an absolute reset password redirect URL from a base URL", () => {
@@ -12,5 +11,9 @@ describe("auth flow helpers", () => {
     expect(buildPasswordResetRedirectUrl(undefined, "https://fallback.example.com")).toBe(
       "https://fallback.example.com/login/reset"
     );
+  });
+
+  it("detects reset links that use a plain token query parameter", () => {
+    expect(isPasswordRecoveryRedirect("?token=abc123", "")).toBe(true);
   });
 });

@@ -28,11 +28,17 @@ export async function POST(request: NextRequest) {
         [profile.id, resetToken]
       );
 
-      const resetUrl = `${redirectTo || process.env.NEXT_PUBLIC_APP_URL || ""}/login/reset?token=${resetToken}`;
+      const fallbackBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
+      const normalizedRedirectTo = (redirectTo || fallbackBaseUrl).trim().replace(/\/$/, "");
+      const resetPath = normalizedRedirectTo.includes("/login/reset")
+        ? normalizedRedirectTo
+        : `${normalizedRedirectTo}/login/reset`;
+      const resetUrl = `${resetPath}?token=${encodeURIComponent(resetToken)}`;
       try {
         await sendPasswordResetEmail(email, resetUrl);
       } catch (emailError) {
         console.error("Falha ao enviar email de recuperação de senha:", emailError);
+        throw emailError;
       }
 
       await addAuditLog({

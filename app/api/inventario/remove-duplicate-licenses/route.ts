@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
         ["%lic%"]
       );
       licenses = selectResult.rows as LicenseRecord[];
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
+      const message = fetchError instanceof Error ? fetchError.message : String(fetchError);
       return NextResponse.json(
-        { error: `Erro ao buscar licenças: ${fetchError?.message || String(fetchError)}` },
+        { error: `Erro ao buscar licenças: ${message}` },
         { status: 500 }
       );
     }
@@ -103,10 +104,11 @@ export async function GET(req: NextRequest) {
           deletedIds: idsToDelete,
           duplicatesRemoved: duplicates,
         });
-      } catch (deleteError: any) {
+      } catch (deleteError: unknown) {
+        const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
         return NextResponse.json(
           {
-            error: `Erro ao deletar duplicatas: ${deleteError?.message || String(deleteError)}`,
+            error: `Erro ao deletar duplicatas: ${message}`,
             duplicates,
             idsToDelete,
           },

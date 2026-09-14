@@ -2,10 +2,12 @@ export function isPasswordRecoveryRedirect(search: string, hash: string) {
   const params = new URLSearchParams(search);
   const recoveryType = params.get("type");
   const tokenHash = params.get("token_hash");
+  const token = params.get("token");
 
   return (
     recoveryType === "recovery" ||
     Boolean(tokenHash) ||
+    Boolean(token) ||
     hash.includes("access_token=") ||
     hash.includes("type=recovery")
   );
