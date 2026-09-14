@@ -24,3 +24,5 @@ extends:
   template: /node/azure-pipeline.yaml@templates
   parameters:
     IS_USING_YARN: false
+
+    # teste de validacao pos-fix horus-prod - 14/09/2026
