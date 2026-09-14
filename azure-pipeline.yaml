@@ -25,4 +25,7 @@ extends:
   parameters:
     IS_USING_YARN: false
 
-    # teste de validacao pos-fix horus-prod - 14/09/2026
+
+
+# teste de validacao pos-fix horus-prod - 14/09/2026
+# teste sonar PR - tentativa 2
