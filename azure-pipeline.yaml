@@ -4,6 +4,11 @@ trigger:
       - main
       - release/*
 
+pr:
+  branches:
+    include:
+      - main
+
 variables:
   - group: horus-common
   - ${{ if contains(variables['Build.SourceBranch'], 'refs/tags/') }}:
@@ -26,6 +31,9 @@ extends:
     IS_USING_YARN: false
 
 
+<<<<<<< Updated upstream
 
 # teste de validacao pos-fix horus-prod - 14/09/2026
 # teste sonar PR - tentativa 2
+=======
+>>>>>>> Stashed changes
