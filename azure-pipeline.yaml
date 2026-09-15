@@ -2,13 +2,13 @@ trigger:
   branches:
     include:
       - develop
-      - main
+      - master
       - release/*
 
 pr:
   branches:
     include:
-      - main
+      - master
 
 variables:
   - group: horus-common
