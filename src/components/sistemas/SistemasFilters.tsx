@@ -40,15 +40,33 @@ export function SistemasFilters({
 }: SistemasFiltersProps) {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const [draftAmbiente, setDraftAmbiente] = useState(filtroAmbiente);
+  const [draftHomologados, setDraftHomologados] = useState(filtroHomologados);
+  const [draftAcessiveis, setDraftAcessiveis] = useState(filtroAcessiveis);
+  const [draftTipoAcesso, setDraftTipoAcesso] = useState(filtroTipoAcesso);
+  const [draftSecretaria, setDraftSecretaria] = useState(filtroSecretaria);
 
   useOnClickOutside(filterRef, () => setShowFilterPanel(false));
 
+  const openFilterPanel = () => {
+    if (showFilterPanel) {
+      setShowFilterPanel(false);
+      return;
+    }
+    setDraftAmbiente(filtroAmbiente);
+    setDraftHomologados(filtroHomologados);
+    setDraftAcessiveis(filtroAcessiveis);
+    setDraftTipoAcesso(filtroTipoAcesso);
+    setDraftSecretaria(filtroSecretaria);
+    setShowFilterPanel(true);
+  };
+
   const contarFiltrosAtivos = () => {
     let count = 0;
-    if (filtroHomologados) count++;
-    if (filtroAcessiveis) count++;
-    if (filtroTipoAcesso) count++;
-    if (filtroSecretaria) count++;
+    if (draftHomologados) count++;
+    if (draftAcessiveis) count++;
+    if (draftTipoAcesso) count++;
+    if (draftSecretaria) count++;
     return count;
   };
 
@@ -72,7 +90,7 @@ export function SistemasFilters({
       <div className="relative" ref={filterRef}>
         <button
           type="button"
-          onClick={() => setShowFilterPanel(!showFilterPanel)}
+          onClick={openFilterPanel}
           className="rounded-lg border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors"
           style={{ borderColor: "#cbd5e1", color: "#475569" }}
         >
@@ -100,8 +118,8 @@ export function SistemasFilters({
                   Ambiente
                 </label>
                 <select
-                  value={filtroAmbiente}
-                  onChange={(e) => setFiltroAmbiente(e.target.value as "producao" | "homologacao" | "ambos")}
+                  value={draftAmbiente}
+                  onChange={(e) => setDraftAmbiente(e.target.value as "producao" | "homologacao" | "ambos")}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                   style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
                 >
@@ -120,8 +138,8 @@ export function SistemasFilters({
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={filtroHomologados}
-                      onChange={(e) => setFiltroHomologados(e.target.checked)}
+                      checked={draftHomologados}
+                      onChange={(e) => setDraftHomologados(e.target.checked)}
                       className="w-4 h-4 rounded"
                       style={{ borderColor: "#cbd5e1" }}
                     />
@@ -135,8 +153,8 @@ export function SistemasFilters({
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={filtroAcessiveis}
-                    onChange={(e) => setFiltroAcessiveis(e.target.checked)}
+                    checked={draftAcessiveis}
+                    onChange={(e) => setDraftAcessiveis(e.target.checked)}
                     className="w-4 h-4 rounded"
                     style={{ borderColor: "#cbd5e1" }}
                   />
@@ -153,8 +171,8 @@ export function SistemasFilters({
                   Tipo de Acesso
                 </label>
                 <select
-                  value={filtroTipoAcesso}
-                  onChange={(e) => setFiltroTipoAcesso(e.target.value as "" | "publico" | "restrito")}
+                  value={draftTipoAcesso}
+                  onChange={(e) => setDraftTipoAcesso(e.target.value as "" | "publico" | "restrito")}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                   style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
                 >
@@ -170,8 +188,8 @@ export function SistemasFilters({
                   Secretaria
                 </label>
                 <select
-                  value={filtroSecretaria}
-                  onChange={(e) => setFiltroSecretaria(e.target.value)}
+                  value={draftSecretaria}
+                  onChange={(e) => setDraftSecretaria(e.target.value)}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                   style={{ borderColor: "#cbd5e1", color: "#1e293b" }}
                 >
@@ -190,7 +208,27 @@ export function SistemasFilters({
                 <button
                   type="button"
                   onClick={() => {
+                    setFiltroAmbiente(draftAmbiente);
+                    setFiltroHomologados(draftHomologados);
+                    setFiltroAcessiveis(draftAcessiveis);
+                    setFiltroTipoAcesso(draftTipoAcesso);
+                    setFiltroSecretaria(draftSecretaria);
+                    setShowFilterPanel(false);
+                  }}
+                  className="flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+                  style={{ backgroundColor: "#2563eb" }}
+                >
+                  Aplicar filtros
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     onClear();
+                    setDraftAmbiente("ambos");
+                    setDraftHomologados(false);
+                    setDraftAcessiveis(false);
+                    setDraftTipoAcesso("");
+                    setDraftSecretaria("");
                     setShowFilterPanel(false);
                   }}
                   disabled={!temFiltroAtivo}

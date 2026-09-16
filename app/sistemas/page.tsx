@@ -153,7 +153,7 @@ export default function SistemasPage() {
           setFiltroSecretaria={setFiltroSecretaria}
           temFiltroAtivo={temFiltroAtivo}
           onClear={clearFilters}
-          mostrarHomologadosProducao={role === "viewer" || !user || !canEdit}
+          mostrarHomologadosProducao
         />
 
         {sistemas.length === 0 ? (
