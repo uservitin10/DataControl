@@ -215,8 +215,8 @@ export function SistemasFilters({
                     setFiltroSecretaria(draftSecretaria);
                     setShowFilterPanel(false);
                   }}
-                  className="flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
-                  style={{ backgroundColor: "#2563eb" }}
+                  className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+                  style={{ backgroundColor: "var(--gov-primary)" }}
                 >
                   Aplicar filtros
                 </button>
@@ -232,16 +232,16 @@ export function SistemasFilters({
                     setShowFilterPanel(false);
                   }}
                   disabled={!temFiltroAtivo}
-                  className="flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: "#ef4444" }}
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ borderColor: "var(--gov-border)", color: "var(--gov-primary-dark)" }}
                 >
                   Limpar tudo
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowFilterPanel(false)}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-50"
-                  style={{ borderColor: "#cbd5e1", color: "#475569" }}
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-50"
+                  style={{ borderColor: "var(--gov-border)", color: "var(--gov-muted)" }}
                 >
                   Fechar
                 </button>
