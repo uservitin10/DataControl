@@ -6,7 +6,7 @@ const mpoParkInventorySpec = [
 ];
 
 const existingEquipmentItems = inventarioData as EquipmentItem[];
-const highestInventoryId = Math.max(0, ...existingEquipmentItems.map((item) => item.id ?? 0));
+const highestInventoryId = Math.max(0, ...existingEquipmentItems.map((item) => Number(item.id) || 0));
 
 const mpoParkEquipment: EquipmentItem[] = [];
 let nextInventoryId = highestInventoryId + 1;
