@@ -316,7 +316,7 @@ export function AtivoForm({ ativo, profiles, areas, action }: Props) {
 
       <div className="flex items-center gap-3">
         <BotaoSalvar />
-        <a href="/ativos" className="text-sm font-medium text-slate-600 hover:underline">
+        <a href="/levantamento" className="text-sm font-medium text-slate-600 hover:underline">
           Cancelar
         </a>
       </div>

@@ -56,18 +56,18 @@ function formParaInput(formData: FormData): Partial<LevantamentoAtivoInput> {
 export async function criarAtivoAction(formData: FormData) {
   const input = formParaInput(formData);
   await criarAtivo(input);
-  revalidatePath("/ativos");
-  redirect("/ativos");
+  revalidatePath("/levantamento");
+  redirect("/levantamento");
 }
 
 export async function atualizarAtivoAction(id: string, formData: FormData) {
   const input = formParaInput(formData);
   await atualizarAtivo(id, input);
-  revalidatePath("/ativos");
-  redirect("/ativos");
+  revalidatePath("/levantamento");
+  redirect("/levantamento");
 }
 
 export async function excluirAtivoAction(id: string) {
   await excluirAtivo(id);
-  revalidatePath("/ativos");
+  revalidatePath("/levantamento");
 }
