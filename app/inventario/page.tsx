@@ -166,10 +166,7 @@ export default function InventarioPage() {
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
   const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];
-  const allInventoryItems = [...inventoryEquipments, ...inventoryLicenses];
   const canCreateInventory = ["admin", "editor", "inventario_editor"].includes(roleState ?? "");
-  const canEditInventory = canCreateInventory;
-  const canDeleteInventory = roleState === "admin";
 
   if (loadingUser) {
     return (
@@ -268,10 +265,7 @@ export default function InventarioPage() {
           )}
 
           <InventoryCrud
-            items={allInventoryItems}
             canCreate={canCreateInventory}
-            canEdit={canEditInventory}
-            canDelete={canDeleteInventory}
             onItemsChanged={({ equipments, licenses }) => {
               setInventoryEquipments(equipments ?? []);
               setInventoryLicenses(licenses ?? []);
