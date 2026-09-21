@@ -9,7 +9,6 @@ import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
 import type { EquipmentItem } from "@/types/inventario";
-import { InventoryCrud } from "@/components/inventario/InventoryCrud";
 import {
   getAllSectors,
   getWarrantyExpiryStatus,
@@ -166,10 +165,6 @@ export default function InventarioPage() {
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
   const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];
-  const allInventoryItems = [...inventoryEquipments, ...inventoryLicenses];
-  const canCreateInventory = ["admin", "editor", "inventario_editor"].includes(roleState ?? "");
-  const canEditInventory = canCreateInventory;
-  const canDeleteInventory = roleState === "admin";
 
   if (loadingUser) {
     return (
@@ -266,17 +261,6 @@ export default function InventarioPage() {
               </p>
             </div>
           )}
-
-          <InventoryCrud
-            items={allInventoryItems}
-            canCreate={canCreateInventory}
-            canEdit={canEditInventory}
-            canDelete={canDeleteInventory}
-            onItemsChanged={({ equipments, licenses }) => {
-              setInventoryEquipments(equipments ?? []);
-              setInventoryLicenses(licenses ?? []);
-            }}
-          />
 
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
