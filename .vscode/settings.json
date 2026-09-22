@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "https-sonar-sistema-gov-br",
+        "projectKey": "MPO-HORUS"
+    }
+}

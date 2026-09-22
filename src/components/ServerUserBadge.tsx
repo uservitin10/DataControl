@@ -27,7 +27,7 @@ async function getServerUserData() {
   }
 
   const payload = decodeJWT(token) as TokenPayload | null;
-  if (!payload || !payload.sub || isTokenExpired(payload)) {
+  if (!payload?.sub || isTokenExpired(payload)) {
     return null;
   }
 

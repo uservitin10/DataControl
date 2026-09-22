@@ -90,6 +90,37 @@ export function useSistemas() {
       .filter((s) => !filtroSecretaria || (s.secretaria === filtroSecretaria));
   }, [sistemas, busca, filtroAmbiente, filtroHomologados, filtroAcessiveis, filtroTipoAcesso, filtroSecretaria]);
 
+  const applyDefaultFilters = useCallback((userRole: Role) => {
+    if (userRole === "viewer") {
+      setFiltroHomologados(true);
+      setFiltroAcessiveis(true);
+      setFiltroTipoAcesso("publico");
+      return;
+    }
+
+    setFiltroHomologados(false);
+    setFiltroAcessiveis(false);
+    setFiltroTipoAcesso("");
+  }, []);
+
+  const applySavedFilters = useCallback((saved: Partial<Record<string, unknown>> | null, userRole: Role) => {
+    if (!saved) {
+      applyDefaultFilters(userRole);
+      return;
+    }
+
+    if (typeof saved.busca === "string") setBusca(String(saved.busca));
+    if (saved.filtroAmbiente === "producao" || saved.filtroAmbiente === "homologacao" || saved.filtroAmbiente === "ambos") {
+      setFiltroAmbiente(saved.filtroAmbiente);
+    }
+    if (typeof saved.filtroHomologados === "boolean") setFiltroHomologados(Boolean(saved.filtroHomologados));
+    if (typeof saved.filtroAcessiveis === "boolean") setFiltroAcessiveis(Boolean(saved.filtroAcessiveis));
+    if (saved.filtroTipoAcesso === "" || saved.filtroTipoAcesso === "publico" || saved.filtroTipoAcesso === "restrito") {
+      setFiltroTipoAcesso(saved.filtroTipoAcesso);
+    }
+    if (typeof saved.filtroSecretaria === "string") setFiltroSecretaria(String(saved.filtroSecretaria));
+  }, [applyDefaultFilters]);
+
   // Inicializar usuário e role
   useEffect(() => {
     const initUser = async () => {
@@ -102,51 +133,22 @@ export function useSistemas() {
         setDisplayName(clientUserState.displayName);
         setPermissions(clientUserState.permissions);
 
-        // Carregar filtros salvos do localStorage (se houver)
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const saved = JSON.parse(raw) as Partial<Record<string, unknown>>;
-            if (typeof saved.busca === "string") setBusca(String(saved.busca));
-            if (saved.filtroAmbiente === "producao" || saved.filtroAmbiente === "homologacao" || saved.filtroAmbiente === "ambos") setFiltroAmbiente(saved.filtroAmbiente);
-            if (typeof saved.filtroHomologados === "boolean") setFiltroHomologados(Boolean(saved.filtroHomologados));
-            if (typeof saved.filtroAcessiveis === "boolean") setFiltroAcessiveis(Boolean(saved.filtroAcessiveis));
-            if (saved.filtroTipoAcesso === "" || saved.filtroTipoAcesso === "publico" || saved.filtroTipoAcesso === "restrito") setFiltroTipoAcesso(saved.filtroTipoAcesso);
-            if (typeof saved.filtroSecretaria === "string") setFiltroSecretaria(String(saved.filtroSecretaria));
-          } else {
-            // Se não houver salvo, aplicar comportamento padrão por role
-            if (clientUser.role === "viewer") {
-              setFiltroHomologados(true);
-              setFiltroAcessiveis(true);
-              setFiltroTipoAcesso("publico");
-            } else {
-              setFiltroHomologados(false);
-              setFiltroAcessiveis(false);
-              setFiltroTipoAcesso("");
-            }
-          }
-        } catch (err) {
-          // fallback para comportamento padrão se localStorage falhar
-          if (clientUser.role === "viewer") {
-            setFiltroHomologados(true);
-            setFiltroAcessiveis(true);
-            setFiltroTipoAcesso("publico");
-          } else {
-            setFiltroHomologados(false);
-            setFiltroAcessiveis(false);
-            setFiltroTipoAcesso("");
-          }
+          const saved = raw ? (JSON.parse(raw) as Partial<Record<string, unknown>>) : null;
+          applySavedFilters(saved, clientUser.role);
+        } catch {
+          applyDefaultFilters(clientUser.role);
         }
-
-      } catch (err) {
-        console.error("Erro ao inicializar usuário:", err);
+      } catch (error) {
+        console.error("Erro ao inicializar usuário:", error);
       } finally {
         setLoading(false);
       }
     };
 
     initUser();
-  }, []);
+  }, [applyDefaultFilters, applySavedFilters]);
 
   // Persistir filtros no localStorage sempre que mudarem
   useEffect(() => {
@@ -160,7 +162,7 @@ export function useSistemas() {
         filtroSecretaria,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (err) {
+    } catch {
       // ignore storage errors
     }
   }, [busca, filtroAmbiente, filtroHomologados, filtroAcessiveis, filtroTipoAcesso, filtroSecretaria]);

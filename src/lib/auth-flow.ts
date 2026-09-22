@@ -1,4 +1,4 @@
-export function isPasswordRecoveryRedirect(search: string, hash: string) {
+export function isPasswordRecoveryRedirect(search = "", hash = "") {
   const params = new URLSearchParams(search);
   const recoveryType = params.get("type");
   const tokenHash = params.get("token_hash");
@@ -13,11 +13,8 @@ export function isPasswordRecoveryRedirect(search: string, hash: string) {
   );
 }
 
-export function buildPasswordRecoveryRedirectPath(search: string, hash: string) {
-  const normalizedSearch = search || "";
-  const normalizedHash = hash || "";
-
-  return `/login/reset${normalizedSearch}${normalizedHash}`;
+export function buildPasswordRecoveryRedirectPath(search = "", hash = "") {
+  return `/login/reset${search}${hash}`;
 }
 
 export function buildPasswordResetRedirectUrl(appUrl?: string, fallbackOrigin?: string) {

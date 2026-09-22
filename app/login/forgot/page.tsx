@@ -1,8 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { logAuditEvent } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,38 +10,40 @@ export default function ForgotPasswordPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatus(null);
-    if (!email.trim()) {
-      setStatus("Por favor, informe seu email.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, redirectTo }),
-      });
-
-      const data = await response.json();
-
-      setLoading(false);
-      if (!response.ok) {
-        setStatus(data?.message || "Erro ao enviar instruções de recuperação.");
+  const handleSubmit = (event: { preventDefault: () => void }) => {
+    event.preventDefault();
+    void (async () => {
+      setStatus(null);
+      if (!email.trim()) {
+        setStatus("Por favor, informe seu email.");
         return;
       }
 
-      setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
-      setEmail("");
-    } catch {
-      setLoading(false);
-      setStatus("Erro ao solicitar recuperação de senha.");
-    }
+      setLoading(true);
+      try {
+        const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+
+        const response = await fetch("/api/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, redirectTo }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setStatus(data?.message || "Erro ao enviar instruções de recuperação.");
+          return;
+        }
+
+        setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
+        setEmail("");
+      } catch {
+        setStatus("Erro ao solicitar recuperação de senha.");
+      } finally {
+        setLoading(false);
+      }
+    })();
   };
 
   return (
@@ -56,10 +57,11 @@ export default function ForgotPasswordPage() {
         <div className="gov-card p-8 border border-slate-200 bg-white shadow-soft">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
+              <label htmlFor="forgot-email" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                 Email
               </label>
               <input
+                id="forgot-email"
                 type="email"
                 required
                 value={email}

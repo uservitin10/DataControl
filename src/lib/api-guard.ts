@@ -72,7 +72,7 @@ export async function extractToken(request: NextRequest): Promise<ExtractedToken
     if (token && typeof token === "object") {
       return token as JWTPayload;
     }
-  } catch (error) {
+  } catch {
     // ignore token extraction failures and fallback to no token
   }
 
@@ -86,7 +86,7 @@ export async function extractToken(request: NextRequest): Promise<ExtractedToken
         role: user.role as Role | undefined,
       };
     }
-  } catch (error) {
+  } catch {
     // ignore session extraction failures and fallback to no token
   }
 
@@ -230,6 +230,35 @@ async function hasPermission(userId: string, role: Role, requirement: Permission
 /**
  * Valida autenticação e autorização
  */
+async function validateRequirementAccess(
+  userId: string,
+  userRole: Role,
+  requirement?: AuthRequirement
+): Promise<{ allowed: boolean; status: number; error: string | null }> {
+  if (!requirement) {
+    return { allowed: true, status: 200, error: null };
+  }
+
+  if (Array.isArray(requirement)) {
+    return {
+      allowed: requirement.includes(userRole),
+      status: requirement.includes(userRole) ? 200 : 403,
+      error: requirement.includes(userRole) ? null : "Acesso negado",
+    };
+  }
+
+  const allowed = await hasPermission(userId, userRole, requirement);
+  if (allowed === null) {
+    return { allowed: false, status: 500, error: "Erro ao validar permissão" };
+  }
+
+  return {
+    allowed,
+    status: allowed ? 200 : 403,
+    error: allowed ? null : "Acesso negado",
+  };
+}
+
 export async function validateAuth(
   request: NextRequest,
   requirement?: AuthRequirement
@@ -263,9 +292,7 @@ export async function validateAuth(
     };
   }
 
-  // Buscar perfil do banco de dados para obter role atualizada
   const profile = await getProfileById(userId);
-
   if (!profile) {
     return {
       user: null,
@@ -275,33 +302,14 @@ export async function validateAuth(
   }
 
   const userRole = (profile.role as Role) || "viewer";
+  const accessValidation = await validateRequirementAccess(userId, userRole, requirement);
 
-  if (requirement) {
-    if (Array.isArray(requirement)) {
-      if (!requirement.includes(userRole)) {
-        return {
-          user: null,
-          error: "Acesso negado",
-          status: 403,
-        };
-      }
-    } else {
-      const allowed = await hasPermission(userId, userRole, requirement);
-      if (allowed === null) {
-        return {
-          user: null,
-          error: "Erro ao validar permissão",
-          status: 500,
-        };
-      }
-      if (!allowed) {
-        return {
-          user: null,
-          error: "Acesso negado",
-          status: 403,
-        };
-      }
-    }
+  if (!accessValidation.allowed) {
+    return {
+      user: null,
+      error: accessValidation.error ?? "Acesso negado",
+      status: accessValidation.status,
+    };
   }
 
   return {
@@ -353,14 +361,12 @@ export async function withOptionalAuth(
   }
 
   // Se não há usuário autenticado, define como visitante
-  if (!user) {
-    user = {
-      id: null,
-      email: null,
-      nome: "Visitante",
-      role: "viewer",
-    };
-  }
+  user ??= {
+    id: null,
+    email: null,
+    nome: "Visitante",
+    role: "viewer",
+  };
 
   try {
     return await handler(user);

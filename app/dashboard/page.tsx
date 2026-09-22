@@ -145,6 +145,8 @@ export default function DashboardPage() {
         ]
       : []),
   ];
+  const documentCountSuffix = documentosFiltrados.length !== 1 ? "s" : "";
+  const documentAreaSuffix = temFiltroAtivo ? ` encontrado${documentCountSuffix}` : " nesta área";
 
   if (loading) {
     return (
@@ -378,7 +380,7 @@ export default function DashboardPage() {
             ) : (
               <>
                 <div className="mb-4">
-                  <PageHeader title={<h1 className="gov-section-title text-xl font-medium">{areaAtiva}</h1>} subtitle={<p className="text-sm text-gov-muted">{documentosFiltrados.length} painel{documentosFiltrados.length !== 1 ? "s" : ""}{temFiltroAtivo ? " encontrado" + (documentosFiltrados.length !== 1 ? "s" : "") : " nesta área"}</p>} backOnClick={voltarCategorias} backLabel="Voltar às áreas" />
+                  <PageHeader title={<h1 className="gov-section-title text-xl font-medium">{areaAtiva}</h1>} subtitle={<p className="text-sm text-gov-muted">{documentosFiltrados.length} painel{documentCountSuffix}{documentAreaSuffix}</p>} backOnClick={voltarCategorias} backLabel="Voltar às áreas" />
                 </div>
 
                 <DocumentFilters

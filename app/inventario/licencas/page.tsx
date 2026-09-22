@@ -28,7 +28,7 @@ type LicenseItem = EquipmentItem & {
 
 export default function LicencasPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [loadingUser, setLoadingUser] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [licensesData, setLicensesData] = useState<LicenseItem[]>([]);

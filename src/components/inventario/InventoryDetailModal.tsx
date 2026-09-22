@@ -5,9 +5,9 @@ import InventoryDetail from "./InventoryDetail";
 import type { EquipmentItem } from "@/types/inventario";
 
 type Props = {
-  item: EquipmentItem | null;
-  open: boolean;
-  onClose: () => void;
+  readonly item: EquipmentItem | null;
+  readonly open: boolean;
+  readonly onClose: () => void;
 };
 
 export default function InventoryDetailModal({ item, open, onClose }: Props) {
@@ -23,7 +23,12 @@ export default function InventoryDetailModal({ item, open, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-6">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Fechar detalhes do inventário"
+        className="absolute inset-0 border-0 bg-black/40 p-0"
+        onClick={onClose}
+      />
       <div className="relative z-10 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-lg">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Ativo #{item.id}</h2>

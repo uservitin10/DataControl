@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         }
         originalAllocatedUser = itemRow.allocated_user;
         itemAllocatedUser = sanitizeText(itemRow.allocated_user || "");
-      } catch (e) {
+      } catch {
         return apiInternalError("Item não encontrado");
       }
 
@@ -188,7 +188,7 @@ export async function PUT(req: NextRequest) {
           `SELECT id, allocated_user FROM inventory_items WHERE allocated_user_id IS NULL`
         );
         items = r.rows;
-      } catch (e) {
+      } catch {
         return apiInternalError("Erro ao buscar items");
       }
 

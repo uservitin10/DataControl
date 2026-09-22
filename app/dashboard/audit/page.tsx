@@ -45,9 +45,12 @@ export default function AuditLogsPage() {
       }
 
       const data = await res.json();
+      const logsData = data?.data;
+      const logs = Array.isArray(logsData) ? logsData : logsData ?? [];
+      const logCount = Array.isArray(logsData) ? logsData.length : 0;
       setMissingTable(Boolean(data?.missingTable));
-      setLogs(Array.isArray(data?.data) ? data.data : data?.data ?? []);
-      setTotalLogs(typeof data?.count === "number" ? data.count : Array.isArray(data?.data) ? data.data.length : 0);
+      setLogs(logs);
+      setTotalLogs(typeof data?.count === "number" ? data.count : logCount);
       setPage(pageNumber);
     } catch (fetchError) {
       setError((fetchError as Error).message || "Não foi possível carregar os logs.");

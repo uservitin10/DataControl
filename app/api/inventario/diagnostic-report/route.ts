@@ -1,8 +1,7 @@
-import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Buscar todos os equipamentos do banco
     const result = await pool.query(

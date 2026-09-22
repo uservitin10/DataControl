@@ -9,15 +9,14 @@ import {
   getAllSectors,
   isSemSetorValue,
   normalizeSectorName,
-  isActiveLicense,
   isLicenseType,
 } from "@/lib/inventario";
 
-type Props = {
-  params: Promise<{
+type Props = Readonly<{
+  params: Promise<Readonly<{
     sector?: string;
-  }>;
-};
+  }>>;
+}>;
 
 export function generateStaticParams() {
   return getAllSectors().map((sector) => ({

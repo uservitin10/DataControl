@@ -4,6 +4,7 @@ import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { apiSuccess, apiInternalError, apiValidationError, apiForbidden } from "@/lib/api-response";
 import { sanitizeText } from "@/lib/text";
+import { isValidEmail } from "@/lib/email-validation";
 
 type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
 
@@ -13,8 +14,8 @@ export async function GET(req: NextRequest) {
     async () => {
       try {
         const url = new URL(req.url);
-        const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
-        const offset = parseInt(url.searchParams.get("offset") ?? "0");
+        const limit = Math.min(Number.parseInt(url.searchParams.get("limit") ?? "50"), 100);
+        const offset = Number.parseInt(url.searchParams.get("offset") ?? "0");
 
         const countResult = await pool.query("SELECT COUNT(*)::int AS total FROM profiles");
         const dataResult = await pool.query(
@@ -68,8 +69,7 @@ export async function POST(req: NextRequest) {
         return apiValidationError("Role inválida.");
       }
 
-      const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-      if (!emailRegex.test(email)) {
+      if (!isValidEmail(email)) {
         return apiValidationError("Email inválido.");
       }
 

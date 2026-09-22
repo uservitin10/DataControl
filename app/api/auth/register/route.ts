@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { apiSuccess, apiValidationError, apiInternalError } from "@/lib/api-response";
 import { sanitizeText } from "@/lib/text";
+import { isValidEmail } from "@/lib/email-validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,8 +28,7 @@ export async function POST(request: NextRequest) {
       return apiValidationError("A senha precisa ter pelo menos 6 caracteres.");
     }
 
-    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return apiValidationError("Email inválido.");
     }
 

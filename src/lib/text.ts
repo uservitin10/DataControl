@@ -170,12 +170,11 @@ export function fixLegacyEncoding(value: string): string {
   return decoded;
 }
 
-export function sanitizeText(value: string): string {
-  const rawValue = value || "";
-  const exactFixed = applyLegacyExactReplacements(rawValue);
-  if (exactFixed !== rawValue) {
+export function sanitizeText(value = ""): string {
+  const exactFixed = applyLegacyExactReplacements(value);
+  if (exactFixed !== value) {
     return exactFixed.trim();
   }
 
-  return fixLegacyEncoding(rawValue).trim();
+  return fixLegacyEncoding(value).trim();
 }

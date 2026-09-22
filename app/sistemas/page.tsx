@@ -52,6 +52,12 @@ export default function SistemasPage() {
   } = useSistemas();
 
   const handleSubmit = editingId ? handleSave : handleCreate;
+  let emptyStateMessage = "Aguarde o cadastro de sistemas";
+  if (temFiltroAtivo) {
+    emptyStateMessage = "Tente ajustar os filtros";
+  } else if (canEdit) {
+    emptyStateMessage = "Comece adicionando um novo sistema clicando no botão acima";
+  }
 
   if (loading) {
     return (
@@ -130,7 +136,7 @@ export default function SistemasPage() {
         </div>
       </nav>
 
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {error && (
           <p className="mb-4 rounded-lg border p-3 text-sm border-red-200 bg-red-50 text-red-600">{error}</p>
         )}
@@ -159,18 +165,19 @@ export default function SistemasPage() {
         {sistemas.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 font-medium mb-2">Nenhum sistema encontrado</p>
-            <p className="text-sm text-slate-500">
-              {temFiltroAtivo
-                ? "Tente ajustar os filtros"
-                : canEdit
-                ? "Comece adicionando um novo sistema clicando no botão acima"
-                : "Aguarde o cadastro de sistemas"}
-            </p>
+            <p className="text-sm text-slate-500">{emptyStateMessage}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-soft">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="min-w-0">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[12%]" />
+                  <col className="w-[28%]" />
+                  {isAdmin && <col className="w-[24%]" />}
+                  <col className="w-[12%]" />
+                  <col className={isAdmin ? "w-[24%]" : "w-[48%]"} />
+                </colgroup>
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
@@ -195,24 +202,24 @@ export default function SistemasPage() {
                 <tbody className="divide-y divide-slate-200">
                   {sistemas.map((sistema) => (
                     <tr key={sistema.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <td className="px-3 py-4 align-top sm:px-6">
+                        <div className="inline-flex max-w-full items-center truncate rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                           {sistema.sigla}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">
+                      <td className="px-3 py-4 align-top sm:px-6">
+                        <div className="truncate text-sm font-medium text-slate-900" title={sistema.nome}>
                           {sistema.nome}
                         </div>
                       </td>
                       {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-slate-600">
+                        <td className="px-3 py-4 align-top sm:px-6">
+                          <div className="truncate text-sm text-slate-600" title={sistema.gestores || undefined}>
                             {sistema.gestores || "-"}
                           </div>
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-4 align-top sm:px-6">
                         {(() => {
                           const acesso = sistema.tipo_acesso?.toLowerCase();
                           const isRestrito = acesso === "restrito";
@@ -225,14 +232,14 @@ export default function SistemasPage() {
                           );
                         })()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <td className="min-w-0 px-3 py-4 align-top text-sm font-medium sm:px-6">
+                        <div className="flex min-w-0 flex-nowrap items-center gap-x-2 overflow-hidden whitespace-nowrap">
                           {canEdit && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handleEdit(sistema)}
-                                className="text-amber-600 hover:text-amber-900 transition-colors font-medium"
+                                className="shrink-0 text-left font-medium text-amber-600 transition-colors hover:text-amber-900"
                               >
                                 Editar
                               </button>
@@ -240,7 +247,7 @@ export default function SistemasPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(sistema.id!)}
-                                  className="text-red-600 hover:text-red-900 transition-colors font-medium"
+                                  className="shrink-0 text-left font-medium text-red-600 transition-colors hover:text-red-900"
                                 >
                                   Excluir
                                 </button>
@@ -252,7 +259,7 @@ export default function SistemasPage() {
                               href={sistema.url_producao}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-blue-600 hover:text-blue-900 transition-colors font-medium"
+                              className="shrink-0 text-blue-600 transition-colors hover:text-blue-900"
                             >
                               Produção
                             </a>
@@ -262,7 +269,7 @@ export default function SistemasPage() {
                               href={sistema.url_homologacao}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-blue-600 hover:text-blue-900 transition-colors font-medium"
+                              className="shrink-0 text-blue-600 transition-colors hover:text-blue-900"
                             >
                               Homologação
                             </a>

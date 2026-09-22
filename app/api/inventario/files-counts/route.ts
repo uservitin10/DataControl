@@ -21,13 +21,13 @@ export async function POST(req: NextRequest) {
               `SELECT COUNT(*) AS count FROM license_files WHERE license_id = $1`,
               [itemId]
             );
-            countsRecord[itemId] = parseInt(result.rows[0].count || '0', 10);
+            countsRecord[itemId] = Number.parseInt(result.rows[0].count || '0', 10);
           } else {
             const result = await pool.query(
               `SELECT COUNT(*) AS count FROM equipment_files WHERE equipment_id = $1`,
               [itemId]
             );
-            countsRecord[itemId] = parseInt(result.rows[0].count || '0', 10);
+            countsRecord[itemId] = Number.parseInt(result.rows[0].count || '0', 10);
           }
         } catch {
           countsRecord[itemId] = 0;

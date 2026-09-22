@@ -27,7 +27,9 @@ export function SistemasModal({
   return (
     <>
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
+        aria-label="Fechar modal"
         className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
         onClick={onCancel}
       />

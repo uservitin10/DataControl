@@ -20,4 +20,4 @@ declare module "next-auth/jwt" {
     role?: string;
     mustResetPassword?: boolean;
   }
-}s
+}

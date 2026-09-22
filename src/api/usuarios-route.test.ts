@@ -18,7 +18,8 @@ jest.mock("@/lib/db", () => ({
 }));
 
 jest.mock("@/lib/api-guard", () => ({
-  withAuth: async (_req: unknown, handler: (user: { id: string; role: string; email: string; nome: string }) => Promise<Response>, _requirements?: unknown) => {
+  withAuth: async (_req: unknown, handler: (user: { id: string; role: string; email: string; nome: string }) => Promise<Response>, requirements?: unknown) => {
+    void requirements;
     return handler({ id: "admin-1", role: "admin", email: "admin@teste.com", nome: "Admin" });
   },
 }));

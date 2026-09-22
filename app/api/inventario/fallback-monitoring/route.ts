@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       }
 
       const url = new URL(req.url);
-      const limit = parseInt(url.searchParams.get("limit") || "50");
+      const limit = Number.parseInt(url.searchParams.get("limit") || "50");
 
       // Obter estatísticas de dados legados
       const stats = await getFallbackUsageStats();
@@ -71,9 +71,9 @@ export async function GET(req: NextRequest) {
             usageByUser[userId].messages.push(
               `[${new Date(log.created_at).toLocaleDateString("pt-BR")}] ${details.displayName} acessou ${details.equipmentCount} equipamentos alocados a "${details.allocatedUserName}"`
             );
-            } catch {
-              // Ignore parse errors
-            }
+          } catch {
+            // Ignore parse errors
+          }
         }
       });
 
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             [userIds]
           );
           userDetails = result.rows;
-        } catch (e) {
+        } catch {
           // preserve original behavior: if profiles can't be fetched, continue without details
         }
       }

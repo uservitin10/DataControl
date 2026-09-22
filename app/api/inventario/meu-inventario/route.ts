@@ -21,7 +21,7 @@ function isMissingColumnError(error: unknown, column: string): boolean {
 
   const message = String((error as { message?: string }).message);
   return (
-    new RegExp(`column \\\"?inventory_items\\.${column}\\\"? does not exist`, "i").test(message) ||
+    new RegExp(`column "?inventory_items.${column}"? does not exist`, "i").test(message) ||
     new RegExp(`${column}.*does not exist`, "i").test(message) ||
     new RegExp(`coluna .*${column}.*não existe`, "i").test(message)
   );
@@ -33,9 +33,12 @@ async function fetchInventoryItemsByColumn(column: string, value: string) {
       `SELECT * FROM inventory_items WHERE ${column} = $1 ORDER BY sector ASC, type ASC`,
       [value]
     );
-    return { data: res.rows, error: null } as { data: Record<string, unknown>[] | null; error: unknown | null };
+    return { data: res.rows as Record<string, unknown>[], error: null };
   } catch (err) {
-    return { data: null, error: err } as { data: Record<string, unknown>[] | null; error: unknown | null };
+    return {
+      data: null,
+      error: err instanceof Error ? err : new Error(String(err)),
+    };
   }
 }
 
@@ -109,7 +112,7 @@ export async function GET(req: NextRequest) {
           [user.id]
         );
         profileData = r.rows[0] ?? null;
-      } catch (e) {
+      } catch {
         profileData = null;
       }
 
@@ -124,7 +127,7 @@ export async function GET(req: NextRequest) {
             `UPDATE profiles SET display_name = $1 WHERE id = $2`,
             [fixedDisplayName, user.id]
           );
-        } catch (e) {
+        } catch {
           // ignore update failure
         }
       }
@@ -235,11 +238,15 @@ export async function POST(req: NextRequest) {
         }
 
         try {
+          const resourceId = typeof createdItem?.id === "number" || typeof createdItem?.id === "string"
+            ? String(createdItem.id)
+            : null;
+
           await addAuditLog({
             user_id: user.id,
             action: 'create_inventory_item',
             resource_type: 'inventory_item',
-            resource_id: createdItem?.id ? String(createdItem.id) : null,
+            resource_id: resourceId,
             details: JSON.stringify({ type, model, asset_id, equipment_id, sector, responsible, warranty, equipment_state, notes }),
             ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
           });

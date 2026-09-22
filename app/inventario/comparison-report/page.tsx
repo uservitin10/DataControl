@@ -184,9 +184,9 @@ export default function InventoryComparison() {
                   foram sincronizados ao JSON
                 </p>
                 <div className="space-y-4">
-                  {data.onlyInDB.map((item, idx) => (
+                  {data.onlyInDB.map((item) => (
                     <div
-                      key={idx}
+                      key={item.key}
                       className="bg-slate-50 p-4 rounded-lg border border-slate-200"
                     >
                       <div className="font-mono text-xs bg-white p-2 rounded mb-2 text-slate-700 break-all">
@@ -208,9 +208,9 @@ export default function InventoryComparison() {
                   existem no Banco (desatualizados ou removidos)
                 </p>
                 <div className="space-y-4">
-                  {data.onlyInJSON.map((item, idx) => (
+                  {data.onlyInJSON.map((item) => (
                     <div
-                      key={idx}
+                      key={item.key}
                       className="bg-slate-50 p-4 rounded-lg border border-slate-200"
                     >
                       <div className="font-mono text-xs bg-white p-2 rounded mb-2 text-slate-700 break-all">
@@ -232,9 +232,9 @@ export default function InventoryComparison() {
                     Duplicatas no Banco ({data.duplicatesInDB.length})
                   </h4>
                   <div className="space-y-3">
-                    {data.duplicatesInDB.slice(0, 10).map((dup, idx) => (
+                    {data.duplicatesInDB.slice(0, 10).map((dup) => (
                       <div
-                        key={idx}
+                        key={dup.key}
                         className="bg-red-50 p-4 rounded-lg border border-red-200"
                       >
                         <div className="font-mono text-xs bg-white p-2 rounded mb-2 text-slate-700 break-all">
@@ -253,9 +253,9 @@ export default function InventoryComparison() {
                     Duplicatas no JSON ({data.duplicatesInJSON.length})
                   </h4>
                   <div className="space-y-3">
-                    {data.duplicatesInJSON.slice(0, 10).map((dup, idx) => (
+                    {data.duplicatesInJSON.slice(0, 10).map((dup) => (
                       <div
-                        key={idx}
+                        key={dup.key}
                         className="bg-orange-50 p-4 rounded-lg border border-orange-200"
                       >
                         <div className="font-mono text-xs bg-white p-2 rounded mb-2 text-slate-700 break-all">
@@ -278,9 +278,9 @@ export default function InventoryComparison() {
                   ambos mas com dados diferentes
                 </p>
                 <div className="space-y-4">
-                  {data.inBothWithDifferences.slice(0, 10).map((item, idx) => (
+                  {data.inBothWithDifferences.slice(0, 10).map((item) => (
                     <div
-                      key={idx}
+                      key={item.key}
                       className="bg-slate-50 p-4 rounded-lg border border-slate-200"
                     >
                       <div className="font-mono text-xs bg-white p-2 rounded mb-3 text-slate-700 break-all">

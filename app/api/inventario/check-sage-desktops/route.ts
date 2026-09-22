@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
       // Campos que aparecem como vazios na UI
       const hasNoAssetId = !desktop.asset_id || desktop.asset_id.trim() === "";
       const hasNoAllocatedUser = !desktop.allocated_user && !desktop.allocated_user_id;
-      const hasNoLegalResponsible = !desktop.legal_responsible || desktop.legal_responsible.trim() === "";
       const hasNoWarranty = !desktop.warranty || desktop.warranty.trim() === "";
       const hasNoState = !desktop.equipment_state || desktop.equipment_state.trim() === "";
 

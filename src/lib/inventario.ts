@@ -84,9 +84,9 @@ export function parseWarrantyExpiryDate(rawValue?: string | null): Date | null {
   const normalized = value.replace(/\s+/g, " ").trim();
 
   const patterns = [
-    { regex: /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/ },
-    { regex: /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/ },
-    { regex: /^(\d{1,2})[-\/](\d{4})$/ },
+    { regex: /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/ },
+    { regex: /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/ },
+    { regex: /^(\d{1,2})[-/](\d{4})$/ },
   ];
 
   for (const pattern of patterns) {
@@ -152,7 +152,12 @@ export function getWarrantyExpiryStatus(rawValue?: string | null, thresholdDays 
 
   const diffMs = expiry.getTime() - today.getTime();
   const daysUntilExpiry = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  const status = daysUntilExpiry < 0 ? "expired" : daysUntilExpiry <= thresholdDays ? "expiring" : "ok";
+  let status: "expired" | "expiring" | "ok" = "ok";
+  if (daysUntilExpiry < 0) {
+    status = "expired";
+  } else if (daysUntilExpiry <= thresholdDays) {
+    status = "expiring";
+  }
 
   return {
     expiryDate: expiry,

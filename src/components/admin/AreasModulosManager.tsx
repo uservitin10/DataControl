@@ -67,10 +67,11 @@ export default function AreasModulosManager() {
       setSubmitting(true);
       setError(null);
 
+      const resourcePath = editingId ? `/${editingId}` : "";
       const endpoint =
         activeTab === "areas"
-          ? `/api/areas${editingId ? `/${editingId}` : ""}`
-          : `/api/modulos${editingId ? `/${editingId}` : ""}`;
+          ? `/api/areas${resourcePath}`
+          : `/api/modulos${resourcePath}`;
 
       const method = editingId ? "PATCH" : "POST";
 

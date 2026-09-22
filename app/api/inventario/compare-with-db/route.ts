@@ -1,10 +1,9 @@
-import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
 type InventoryItem = Record<string, string | null | undefined>;
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Buscar todos os equipamentos do banco
     const dbResult = await pool.query(
@@ -16,10 +15,17 @@ export async function GET(req: NextRequest) {
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);
 
     // Criar chave única para comparação (asset_id + equipment_id + type)
+    const toStringValue = (value: unknown): string => {
+      if (value == null) return "";
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+      }
+      return "";
+    };
     const createKey = (eq: Record<string, unknown>) => {
-      const assetId = eq.asset_id || eq.assetId || "";
-      const equipmentId = eq.equipment_id || eq.equipmentId || "";
-      const type = eq.type || "";
+      const assetId = toStringValue(eq.asset_id ?? eq.assetId ?? "");
+      const equipmentId = toStringValue(eq.equipment_id ?? eq.equipmentId ?? "");
+      const type = toStringValue(eq.type ?? "");
       return `${assetId}|${equipmentId}|${type}`.toLowerCase().trim();
     };
 
@@ -89,7 +95,7 @@ export async function GET(req: NextRequest) {
 
       // Duplicatas no banco (mesma chave com múltiplos IDs)
       duplicatesInDB: Array.from(dbMap.entries())
-        .filter(([key, items]) => items.length > 1)
+        .filter(([, items]) => items.length > 1)
         .map(([key, items]) => ({
           key,
           count: items.length,
@@ -105,7 +111,7 @@ export async function GET(req: NextRequest) {
 
       // Duplicatas no JSON
       duplicatesInJSON: Array.from(jsonMap.entries())
-        .filter(([key, items]) => items.length > 1)
+        .filter(([, items]) => items.length > 1)
         .map(([key, items]) => ({
           key,
           count: items.length,

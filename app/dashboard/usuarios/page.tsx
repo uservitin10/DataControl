@@ -7,18 +7,17 @@ import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
 import { useSession } from "next-auth/react";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
-import { DEFAULT_PERMISSIONS } from "@/lib/permissions";
-import type { PermissionModule, Permissions } from "@/lib/permissions";
+import type { Permissions } from "@/lib/permissions";
 import UserBadge from "@/components/UserBadge";
+import { ALL_MODULES, EMPTY_NEW_USER, filterUsers, getDefaultPermissions, getErrorMessage, type Profile, type Role, updateModulePermission, validateNewUser } from "./user-management";
 
-type Role = "admin" | "editor" | "viewer" | "painel_editor" | "sistema_editor" | "inventario_editor";
-
-type Profile = {
-  id: string;
-  email: string;
-  display_name?: string;
-  role: Role;
-  created_at?: string;
+const ROLE_LABELS: Record<Role, string> = {
+  admin: "Administrador",
+  viewer: "Apenas Leitura",
+  editor: "Desenvolvedor",
+  painel_editor: "Editor de Painel",
+  sistema_editor: "Editor de Sistemas",
+  inventario_editor: "Editor de Inventário",
 };
 
 export default function UsuariosPage() {
@@ -29,12 +28,7 @@ export default function UsuariosPage() {
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
-  const [newUser, setNewUser] = useState({
-    display_name: "",
-    email: "",
-    password: "",
-    role: "viewer" as Role,
-  });
+  const [newUser, setNewUser] = useState(EMPTY_NEW_USER);
   const [editingRole, setEditingRole] = useState<Role>("viewer");
   const [editingPermissions, setEditingPermissions] = useState<Permissions | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,7 +46,7 @@ export default function UsuariosPage() {
       }
     } catch (fetchError) {
       setUsuarios([]);
-      setError((fetchError as Error).message);
+      setError(getErrorMessage(fetchError));
     }
   };
 
@@ -74,7 +68,7 @@ export default function UsuariosPage() {
           return;
         }
       } catch (fetchError) {
-        setError((fetchError as Error).message);
+        setError(getErrorMessage(fetchError));
         router.replace("/login");
         return;
       }
@@ -85,28 +79,7 @@ export default function UsuariosPage() {
     void load();
   }, [router, session, status]);
 
-  const ALL_MODULES: Array<{ key: PermissionModule; label: string }> = [
-    { key: "dashboard", label: "Painel" },
-    { key: "sistemas", label: "Sistemas" },
-    { key: "inventario", label: "Inventário" },
-    { key: "registros", label: "Registros" },
-    { key: "notificacoes", label: "Notificações" },
-    { key: "areas", label: "Áreas" },
-    { key: "fontes_dados", label: "Fontes de Dados" },
-  ];
-
   const checkboxClass = "h-4 w-4 rounded border-slate-300 text-gov-blue focus:ring-gov-blue";
-
-  const createEmptyPermissions = (): Permissions => {
-    return ALL_MODULES.reduce((acc, module) => {
-      acc[module.key] = { view: false, edit: false, create: false, delete: false };
-      return acc;
-    }, {} as Permissions);
-  };
-
-  const getDefaultPermissions = (role: Role): Permissions => {
-    return DEFAULT_PERMISSIONS[role] ?? createEmptyPermissions();
-  };
 
   const handleEditRole = async (usuario: Profile) => {
     setSaving(true);
@@ -128,7 +101,7 @@ export default function UsuariosPage() {
       setEditingRole(roleToUse);
       setEditingPermissions(profile.permissions ?? getDefaultPermissions(roleToUse));
     } catch (fetchError) {
-      setError((fetchError as Error).message);
+      setError(getErrorMessage(fetchError));
     } finally {
       setSaving(false);
     }
@@ -156,7 +129,7 @@ export default function UsuariosPage() {
       setEditingPermissions(null);
       await fetchUsuarios();
     } catch (err) {
-      setError((err as Error).message);
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -176,20 +149,16 @@ export default function UsuariosPage() {
       setSuccess("Perfil excluído com sucesso.");
       await fetchUsuarios();
     } catch (deleteError) {
-      setError((deleteError as Error).message);
+      setError(getErrorMessage(deleteError));
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.display_name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
-      setError("Preencha nome, email e senha para criar o usuário.");
-      return;
-    }
-
-    if (newUser.password.length < 6) {
-      setError("A senha precisa ter pelo menos 6 caracteres.");
+    const validationError = validateNewUser(newUser);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -207,20 +176,16 @@ export default function UsuariosPage() {
 
       setSuccess("Usuário criado com sucesso.");
       setCreatingUser(false);
-      setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+      setNewUser(EMPTY_NEW_USER);
       await fetchUsuarios();
     } catch (createError) {
-      setError((createError as Error).message);
+      setError(getErrorMessage(createError));
     } finally {
       setSaving(false);
     }
   };
 
-  const usuariosFiltrados = usuarios.filter((u) =>
-    !busca ||
-    u.email?.toLowerCase().includes(busca.toLowerCase()) ||
-    u.display_name?.toLowerCase().includes(busca.toLowerCase())
-  );
+  const usuariosFiltrados = filterUsers(usuarios, busca);
 
   const totalAdmins = usuarios.filter((u) => u.role === "admin").length;
   const totalViewers = usuarios.filter((u) => u.role === "viewer").length;
@@ -332,7 +297,7 @@ export default function UsuariosPage() {
                   <td className="px-6 py-4 text-sm font-medium text-slate-600">{usuario.email}</td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center">
-                      <span className={`gov-badge role-${usuario.role}`}>{usuario.role === "admin" ? "Administrador" : usuario.role === "viewer" ? "Apenas Leitura" : usuario.role === "editor" ? "Desenvolvedor" : usuario.role === "painel_editor" ? "Editor de Painel" : usuario.role === "sistema_editor" ? "Editor de Sistemas" : "Editor de Inventário"}</span>
+                      <span className={`gov-badge role-${usuario.role}`}>{ROLE_LABELS[usuario.role]}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
@@ -382,8 +347,9 @@ export default function UsuariosPage() {
 
               <div className="space-y-5 px-6 py-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Nome completo</label>
+                  <label htmlFor="new-user-display-name" className="block text-sm font-medium text-slate-700">Nome completo</label>
                   <input
+                    id="new-user-display-name"
                     type="text"
                     value={newUser.display_name}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, display_name: e.target.value }))}
@@ -393,8 +359,9 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <label htmlFor="new-user-email" className="block text-sm font-medium text-slate-700">Email</label>
                   <input
+                    id="new-user-email"
                     type="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
@@ -404,8 +371,9 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Senha inicial</label>
+                  <label htmlFor="new-user-password" className="block text-sm font-medium text-slate-700">Senha inicial</label>
                   <input
+                    id="new-user-password"
                     type="password"
                     value={newUser.password}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
@@ -415,8 +383,9 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Cargo</label>
+                  <label htmlFor="new-user-role" className="block text-sm font-medium text-slate-700">Cargo</label>
                   <select
+                    id="new-user-role"
                     value={newUser.role}
                     onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value as Role }))}
                     className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -436,7 +405,7 @@ export default function UsuariosPage() {
                   type="button"
                   onClick={() => {
                     setCreatingUser(false);
-                    setNewUser({ display_name: "", email: "", password: "", role: "viewer" });
+                    setNewUser(EMPTY_NEW_USER);
                     setError("");
                   }}
                   className="gov-button-secondary-dark inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium gov-button-ghost mb-2 text-xs font-medium"
@@ -472,8 +441,9 @@ export default function UsuariosPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-700">Role (fallback)</label>
+                  <label htmlFor="editing-user-role" className="block text-sm font-medium text-slate-700">Role (fallback)</label>
                   <select
+                    id="editing-user-role"
                     value={editingRole}
                     onChange={(e) => handleRoleChange(e.target.value as Role)}
                     className="gov-input mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -512,73 +482,37 @@ export default function UsuariosPage() {
                               <input
                                 type="checkbox"
                                 checked={modulePerms.view}
-                                onChange={(e) => setEditingPermissions((prev) => {
-                                  if (!prev) return prev;
-                                  return {
-                                    ...prev,
-                                    [module.key]: {
-                                      ...prev[module.key],
-                                      view: e.target.checked,
-                                    },
-                                  };
-                                })}
+                                onChange={(e) => setEditingPermissions((prev) => prev ? updateModulePermission(prev, module.key, "view", e.target.checked) : prev)}
                                 className={checkboxClass}
                               />
-                              Ver
+                              {" "}Ver
                             </label>
                             <label className="flex items-center gap-2 rounded-3xl border border-slate-200/80 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md">
                               <input
                                 type="checkbox"
                                 checked={modulePerms.edit}
-                                onChange={(e) => setEditingPermissions((prev) => {
-                                  if (!prev) return prev;
-                                  return {
-                                    ...prev,
-                                    [module.key]: {
-                                      ...prev[module.key],
-                                      edit: e.target.checked,
-                                    },
-                                  };
-                                })}
+                                onChange={(e) => setEditingPermissions((prev) => prev ? updateModulePermission(prev, module.key, "edit", e.target.checked) : prev)}
                                 className={checkboxClass}
                               />
-                              Editar
+                              {" "}Editar
                             </label>
                             <label className="flex items-center gap-2 rounded-3xl border border-slate-200/80 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md">
                               <input
                                 type="checkbox"
                                 checked={modulePerms.create}
-                                onChange={(e) => setEditingPermissions((prev) => {
-                                  if (!prev) return prev;
-                                  return {
-                                    ...prev,
-                                    [module.key]: {
-                                      ...prev[module.key],
-                                      create: e.target.checked,
-                                    },
-                                  };
-                                })}
+                                onChange={(e) => setEditingPermissions((prev) => prev ? updateModulePermission(prev, module.key, "create", e.target.checked) : prev)}
                                 className={checkboxClass}
                               />
-                              Criar
+                              {" "}Criar
                             </label>
                             <label className="flex items-center gap-2 rounded-3xl border border-slate-200/80 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md">
                               <input
                                 type="checkbox"
                                 checked={modulePerms.delete}
-                                onChange={(e) => setEditingPermissions((prev) => {
-                                  if (!prev) return prev;
-                                  return {
-                                    ...prev,
-                                    [module.key]: {
-                                      ...prev[module.key],
-                                      delete: e.target.checked,
-                                    },
-                                  };
-                                })}
+                                onChange={(e) => setEditingPermissions((prev) => prev ? updateModulePermission(prev, module.key, "delete", e.target.checked) : prev)}
                                 className={checkboxClass}
                               />
-                              Excluir
+                              {" "}Excluir
                             </label>
                           </div>
                         </div>

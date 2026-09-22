@@ -13,6 +13,7 @@ const TIPOS_ATIVO = ["Banco de dados", "Sistema corporativo", "Planilha", "Dashb
 const LOCAIS_ARMAZENAMENTO = ["Servidor local", "Nuvem", "Planilha/drive", "Sistema interno", "E-mail", "Outro"];
 const NIVEIS_CRITICIDADE = ["Baixa", "Média", "Alta", "Crítica"];
 const POLITICAS_RETENCAO = ["Sim", "Não", "Em elaboração"];
+const RETENTION_LABELS = { sim: "Sim", nao: "Não", em_elaboracao: "Em elaboração" };
 const STATUS_ATIVO = ["Em uso", "Legado", "Em Desenvolvimento"];
 const USO_ATIVO = ["Operacional", "Gerencial", "Estratégico"];
 const TECNOLOGIA_ARMAZENAMENTO = ["Planilhas", "Banco de dados SQL", "Banco de dados NoSQL", "Nuvem", "SharePoint"];
@@ -280,7 +281,7 @@ export function FormularioLevantamento({ respostaExistente, onSucesso }: Formula
 
         <div className="space-y-6">
           <ChipsGroup label="Nível de criticidade" optional options={NIVEIS_CRITICIDADE} selected={[formData.nivel_criticidade]} onChange={(v) => handleChipSelect("nivel_criticidade", v.toLowerCase())} />
-          <ChipsGroup label="Política de retenção" optional options={POLITICAS_RETENCAO} selected={formData.politica_retencao === "sim" ? ["Sim"] : formData.politica_retencao === "nao" ? ["Não"] : ["Em elaboração"]} onChange={(v) => {
+          <ChipsGroup label="Política de retenção" optional options={POLITICAS_RETENCAO} selected={[RETENTION_LABELS[formData.politica_retencao] ?? "Em elaboração"]} onChange={(v) => {
             const mapping = { "Sim": "sim", "Não": "nao", "Em elaboração": "em_elaboracao" };
             handleChipSelect("politica_retencao", mapping[v as keyof typeof mapping]);
           }} />

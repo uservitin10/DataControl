@@ -21,7 +21,7 @@ type ProfileResponse = {
 
 export default function NotificacoesPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<Notificacao | null>(null);
   const [loading, setLoading] = useState(true);

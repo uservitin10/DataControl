@@ -4,13 +4,13 @@ import { apiSuccess, apiValidationError, apiInternalError, apiForbidden } from "
 import { addAuditLog } from "@/lib/audit";
 import { withAuthenticatedClient } from "@/lib/db";
 import { s3Client } from "@/lib/minio";
-import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { PoolClient } from "pg";
 
 const STORAGE_BUCKET = "documentos";
 const MAX_UPLOAD_FILES = 5;
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+const ALLOWED_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/jpg"]);
 
 function sanitizeFileName(name: string) {
   return name
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
           }
 
           const fileType = file.type || "application/octet-stream";
-          if (!ALLOWED_TYPES.includes(fileType)) {
+          if (!ALLOWED_TYPES.has(fileType)) {
             throw new Error(`Tipo de arquivo não permitido: ${fileType}`);
           }
 
@@ -148,4 +148,3 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     }
   });
 }
-"a"

@@ -268,7 +268,7 @@ export function useDashboard() {
   const handleVisualizarArquivo = async (arquivoPath: string, nome: string) => {
     const ext = arquivoPath.split(".").pop()?.toLowerCase();
     const proxyUrl = buildStorageProxyUrl(DOCUMENTS_BUCKET, arquivoPath);
-    let fileUrl: string | null = proxyUrl;
+    let fileUrl: string | null;
 
     setDownloadUrl(proxyUrl);
     setViewingNome(nome);

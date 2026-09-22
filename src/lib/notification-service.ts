@@ -26,9 +26,13 @@ export async function notifyAdmins(message: string, type = "system") {
   }));
 
   try {
+    const valuePlaceholders = notifications
+      .map((_, index) => `($${index * 5 + 1}, $${index * 5 + 2}, $${index * 5 + 3}, $${index * 5 + 4}, $${index * 5 + 5})`)
+      .join(", ");
+
     await pool.query(
       `INSERT INTO notificacoes (user_id, tipo, mensagem, lida, created_at)
-       VALUES ${notifications.map((_, index) => `($${index * 5 + 1}, $${index * 5 + 2}, $${index * 5 + 3}, $${index * 5 + 4}, $${index * 5 + 5})`).join(", ")}`,
+       VALUES ${valuePlaceholders}`,
       notifications.flatMap((notification) => [notification.user_id, notification.tipo, notification.mensagem, notification.lida, notification.created_at])
     );
   } catch (error) {

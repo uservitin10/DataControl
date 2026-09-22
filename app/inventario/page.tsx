@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS } from "@/lib/ui-constants";
 import PageHeader from "@/components/PageHeader";
@@ -19,6 +19,7 @@ import {
 
 export default function InventarioPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loadingUser, setLoadingUser] = useState(true);
   const [userPresent, setUserPresent] = useState(false);
   const [displayNameState, setDisplayNameState] = useState<string | null>(null);
@@ -113,34 +114,51 @@ export default function InventarioPage() {
     };
 
     void loadData();
-  }, [status, session?.user?.id, router]);
+  }, [status, session?.user?.id, session?.user?.email, router]);
 
   const stats = useMemo(() => {
-    const totalEquipments = inventoryEquipments.length;
-    const totalLicenses = inventoryLicenses.length;
+    const selectedType = searchParams.get("tipo")?.toLocaleLowerCase("pt-BR");
+    const filteredEquipments = selectedType
+      ? inventoryEquipments.filter((item) => item.type?.toLocaleLowerCase("pt-BR") === selectedType)
+      : inventoryEquipments;
+    const filteredLicenses = selectedType ? [] : inventoryLicenses;
+    const totalEquipments = filteredEquipments.length;
+    const totalLicenses = filteredLicenses.length;
     return {
       total: totalEquipments + totalLicenses,
-      monitors: getEquipmentTypeCount(inventoryEquipments, "Monitor"),
-      desktops: getEquipmentTypeCount(inventoryEquipments, "Desktop"),
-      notebooks: getEquipmentTypeCount(inventoryEquipments, "Notebook"),
-      licenses: inventoryLicenses.length,
+      monitors: getEquipmentTypeCount(filteredEquipments, "Monitor"),
+      desktops: getEquipmentTypeCount(filteredEquipments, "Desktop"),
+      notebooks: getEquipmentTypeCount(filteredEquipments, "Notebook"),
+      licenses: filteredLicenses.length,
     };
-  }, [inventoryEquipments, inventoryLicenses]);
+  }, [inventoryEquipments, inventoryLicenses, searchParams]);
+
+  const filteredInventory = useMemo(() => {
+    const selectedType = searchParams.get("tipo")?.toLocaleLowerCase("pt-BR");
+    if (!selectedType) {
+      return { equipments: inventoryEquipments, licenses: inventoryLicenses };
+    }
+
+    return {
+      equipments: inventoryEquipments.filter((item) => item.type?.toLocaleLowerCase("pt-BR") === selectedType),
+      licenses: [],
+    };
+  }, [inventoryEquipments, inventoryLicenses, searchParams]);
 
   const equipmentSectorNames = useMemo(() => {
-    return getAllSectors(inventoryEquipments);
-  }, [inventoryEquipments]);
+    return getAllSectors(filteredInventory.equipments);
+  }, [filteredInventory.equipments]);
 
   const sectorSummaries = useMemo(() => {
     return equipmentSectorNames.map((sector) => {
       const items =
         sector === "Sem setor"
-          ? inventoryEquipments.filter(
+          ? filteredInventory.equipments.filter(
               (item) =>
                 !(item.sector ?? "").toString().trim() ||
                 isSemSetorValue((item.sector ?? "").toString())
             )
-          : inventoryEquipments.filter(
+          : filteredInventory.equipments.filter(
               (item) => (item.sector ?? "").toString().trim() === sector
             );
 
@@ -152,17 +170,17 @@ export default function InventarioPage() {
         notebooks: getEquipmentTypeCount(items, "Notebook"),
       };
     });
-  }, [equipmentSectorNames, inventoryEquipments]);
+  }, [equipmentSectorNames, filteredInventory.equipments]);
 
   const licensesSummary = useMemo(() => {
     return {
       sector: "Licenças",
-      total: inventoryLicenses.length,
+      total: filteredInventory.licenses.length,
       monitors: 0,
       desktops: 0,
       notebooks: 0,
     };
-  }, [inventoryLicenses]);
+  }, [filteredInventory.licenses.length]);
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
   const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];
@@ -220,35 +238,55 @@ export default function InventarioPage() {
           />
 
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+            <Link
+              href="/inventario"
+              className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gov-blue focus:ring-offset-2"
+              aria-label="Abrir todos os ativos do inventário"
+            >
               <p className="text-sm font-medium text-slate-600">Total de Ativos</p>
               <p className="mt-2 text-3xl font-bold text-gov-heading">{stats.total}</p>
               <p className="mt-1 text-xs text-slate-500">ativos no inventário</p>
-            </div>
+            </Link>
 
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6">
+            <Link
+              href="/inventario?tipo=Monitor"
+              className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Abrir os monitores do inventário"
+            >
               <p className="text-sm font-medium text-slate-600">Monitores</p>
               <p className="mt-2 text-3xl font-bold text-blue-700">{stats.monitors}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.monitors / stats.total) * 100) : 0}% do total</p>
-            </div>
+            </Link>
 
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-50 to-amber-100 p-6">
+            <Link
+              href="/inventario?tipo=Desktop"
+              className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-50 to-amber-100 p-6 transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+              aria-label="Abrir os desktops do inventário"
+            >
               <p className="text-sm font-medium text-slate-600">Desktops</p>
               <p className="mt-2 text-3xl font-bold text-amber-700">{stats.desktops}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.desktops / stats.total) * 100) : 0}% do total</p>
-            </div>
+            </Link>
 
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-teal-100 p-6">
+            <Link
+              href="/inventario?tipo=Notebook"
+              className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-teal-100 p-6 transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              aria-label="Abrir os notebooks do inventário"
+            >
               <p className="text-sm font-medium text-slate-600">Notebooks</p>
               <p className="mt-2 text-3xl font-bold text-teal-700">{stats.notebooks}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.notebooks / stats.total) * 100) : 0}% do total</p>
-            </div>
+            </Link>
 
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-6">
+            <Link
+              href="/inventario/licencas"
+              className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              aria-label="Abrir as licenças ativas do inventário"
+            >
               <p className="text-sm font-medium text-slate-600">Licenças Ativas</p>
               <p className="mt-2 text-3xl font-bold text-emerald-700">{stats.licenses}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.licenses / stats.total) * 100) : 0}% do total</p>
-            </div>
+            </Link>
           </div>
 
           {expiringInventorySummary.totalExpiring > 0 && (

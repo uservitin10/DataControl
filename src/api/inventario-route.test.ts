@@ -3,12 +3,15 @@ import { GET } from "../../app/api/inventario/route";
 import { withAuth } from "@/lib/api-guard";
 
 jest.mock("@/lib/api-guard", () => ({
-  withAuth: jest.fn((req, handler, requirement) => handler({
-    id: "user-1",
-    role: "inventario_editor",
-    email: "inventario@teste.com",
-    nome: "Editor Inventário",
-  })),
+  withAuth: jest.fn((req, handler, requirement) => {
+    void requirement;
+    return handler({
+      id: "user-1",
+      role: "inventario_editor",
+      email: "inventario@teste.com",
+      nome: "Editor Inventário",
+    });
+  }),
 }));
 
 jest.mock("@/lib/db", () => ({

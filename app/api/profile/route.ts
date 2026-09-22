@@ -72,14 +72,6 @@ export async function GET(req: NextRequest) {
       const permissions: Permissions = { ...defaultPermissions };
 
       if (role) {
-        type RolePermissionRow = {
-          module?: Array<{ name?: string }>;
-          can_view?: boolean;
-          can_edit?: boolean;
-          can_create?: boolean;
-          can_delete?: boolean;
-        };
-
         const permissionsResult = await pool.query(
 `SELECT rp.can_view, rp.can_edit, rp.can_delete, m.name AS module_name
            FROM role_permissions rp

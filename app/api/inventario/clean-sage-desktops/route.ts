@@ -5,7 +5,7 @@ import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { addAuditLog } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
-  return withAuth(req, async (user) => {
+  return withAuth(req, async () => {
     try {
       // Buscar todos os desktops do setor SAGE
       const result = await pool.query(
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  return withAuth(req, async (user) => {
+  return withAuth(req, async () => {
     try {
       // Buscar todos os desktops do setor SAGE
       const result = await pool.query(

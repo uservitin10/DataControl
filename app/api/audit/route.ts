@@ -36,8 +36,8 @@ const getRequestIp = (request: NextRequest) => {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const limit = Number.parseInt(searchParams.get("limit") || "50");
+    const offset = Number.parseInt(searchParams.get("offset") || "0");
     const userId = searchParams.get("user_id");
     const action = searchParams.get("action");
     const resourceType = searchParams.get("resource_type");
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     const countQuery = `SELECT COUNT(*) as count FROM audit_logs al ${whereClause}`;
     const countResult = await pool.query(countQuery, params);
-    const count = parseInt(countResult.rows[0].count as string);
+    const count = Number.parseInt(countResult.rows[0].count as string);
 
     const dataQuery = `
       SELECT 

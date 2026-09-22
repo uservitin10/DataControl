@@ -1,8 +1,7 @@
-import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Buscar todos os equipamentos do banco
     const result = await pool.query(
@@ -14,10 +13,17 @@ export async function GET(req: NextRequest) {
     const inventarioData = await import("@/data/inventario.json").then(m => m.default);
 
     // Criar chave única para comparação
+    const toStringValue = (value: unknown): string => {
+      if (value == null) return "";
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+      }
+      return "";
+    };
     const createKey = (eq: Record<string, unknown>) => {
-      const assetId = eq.asset_id || eq.assetId || "";
-      const equipmentId = eq.equipment_id || eq.equipmentId || "";
-      const type = eq.type || "";
+      const assetId = toStringValue(eq.asset_id ?? eq.assetId ?? "");
+      const equipmentId = toStringValue(eq.equipment_id ?? eq.equipmentId ?? "");
+      const type = toStringValue(eq.type ?? "");
       return `${assetId}|${equipmentId}|${type}`.toLowerCase().trim();
     };
 
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // 1. DUPLICATAS NO BANCO - Identificar
     const duplicatesInDB = Array.from(dbMap.entries())
-      .filter(([key, items]) => items.length > 1)
+      .filter(([, items]) => items.length > 1)
       .map(([key, items]) => ({
         key,
         count: items.length,
@@ -76,7 +82,7 @@ export async function GET(req: NextRequest) {
           updatedAt: eq.updated_at,
           isNewest: idx === 0, // O primeiro é o mais antigo, o último o mais novo
         })),
-        toKeep: items[items.length - 1].id, // Manter o mais recente
+        toKeep: items.at(-1)?.id, // Manter o mais recente
         toDelete: items.slice(0, -1).map((i: InventoryItem) => i.id),
       }));
 
