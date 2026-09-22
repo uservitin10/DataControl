@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS } from "@/lib/ui-constants";
@@ -17,7 +17,7 @@ import {
   isSemSetorValue,
 } from "@/lib/inventario";
 
-export default function InventarioPage() {
+function InventarioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loadingUser, setLoadingUser] = useState(true);
@@ -398,5 +398,13 @@ export default function InventarioPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function InventarioPage() {
+  return (
+    <Suspense fallback={null}>
+      <InventarioPageContent />
+    </Suspense>
   );
 }

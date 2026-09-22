@@ -136,9 +136,9 @@ export function useSistemas() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           const saved = raw ? (JSON.parse(raw) as Partial<Record<string, unknown>>) : null;
-          applySavedFilters(saved, clientUser.role);
+          applySavedFilters(saved, clientUserState.role);
         } catch {
-          applyDefaultFilters(clientUser.role);
+          applyDefaultFilters(clientUserState.role);
         }
       } catch (error) {
         console.error("Erro ao inicializar usuário:", error);

@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  return withAuth(req, async () => {
+  return withAuth(req, async (user) => {
     try {
       // Buscar todos os desktops do setor SAGE
       const result = await pool.query(
