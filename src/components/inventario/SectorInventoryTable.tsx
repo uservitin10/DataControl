@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { EquipmentItem } from "@/types/inventario";
 import { getLegalResponsible, getWarrantyExpiryStatus, equipmentData } from "@/lib/inventario";
 
@@ -12,12 +11,10 @@ type Props = {
   showExtendedFields?: boolean;
   showSector?: boolean;
   showEmail?: boolean;
-  showDetailsButton?: boolean;
 };
 
-export function SectorInventoryTable({ items, showExtendedFields = true, showSector = false, showEmail = false, showDetailsButton = true }: Props) {
+export function SectorInventoryTable({ items, showExtendedFields = true, showSector = false, showEmail = false }: Props) {
   const [pageIndex, setPageIndex] = useState(0);
-  const router = useRouter();
 
   const pageCount = useMemo(() => Math.ceil(items.length / PAGE_SIZE), [items.length]);
 
@@ -28,10 +25,6 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
 
   const firstItem = pageIndex * PAGE_SIZE + 1;
   const lastItem = Math.min((pageIndex + 1) * PAGE_SIZE, items.length);
-
-  function openDetails(item: EquipmentItem) {
-    router.push(`/inventario/item/${item.id}`);
-  }
 
   return (
     <div className="space-y-6">
@@ -75,7 +68,6 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
               {showExtendedFields && <th className="px-4 py-3">Responsável legal</th>}
               {showExtendedFields && <th className="px-4 py-3">Garantia</th>}
               <th className="px-4 py-3">Estado</th>
-              {showDetailsButton && <th className="px-4 py-3">Detalhes</th>}
             </tr>
           </thead>
           <tbody>
@@ -148,18 +140,6 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm text-slate-900">{item.equipmentState || "-"}</td>
-                  {showDetailsButton && (
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      <button
-                        type="button"
-                        onClick={() => openDetails(item)}
-                        className="gov-button rounded px-3 py-1 text-sm"
-                        aria-label={`Ver detalhes do item ${item.assetId}`}
-                      >
-                        +
-                      </button>
-                    </td>
-                  )}
                 </tr>
               );
             })}

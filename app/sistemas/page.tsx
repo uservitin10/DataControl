@@ -169,14 +169,14 @@ export default function SistemasPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-soft">
-            <div className="min-w-0">
+            <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
                   <col className="w-[12%]" />
-                  <col className="w-[28%]" />
-                  {isAdmin && <col className="w-[24%]" />}
+                  <col className={isAdmin ? "w-[24%]" : "w-[28%]"} />
+                  {isAdmin && <col className="w-[22%]" />}
                   <col className="w-[12%]" />
-                  <col className={isAdmin ? "w-[24%]" : "w-[48%]"} />
+                  <col className={isAdmin ? "w-[30%]" : "w-[48%]"} />
                 </colgroup>
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -233,7 +233,7 @@ export default function SistemasPage() {
                         })()}
                       </td>
                       <td className="min-w-0 px-3 py-4 align-top text-sm font-medium sm:px-6">
-                        <div className="flex min-w-0 flex-nowrap items-center gap-x-2 overflow-hidden whitespace-nowrap">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 whitespace-nowrap">
                           {canEdit && (
                             <>
                               <button

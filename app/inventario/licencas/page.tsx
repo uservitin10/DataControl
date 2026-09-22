@@ -197,7 +197,7 @@ export default function LicencasPage() {
           )}
 
           {licenses.length > 0 ? (
-            <SectorInventoryTable items={licenses} showExtendedFields={false} showEmail={true} showDetailsButton={false} />
+            <SectorInventoryTable items={licenses} showExtendedFields={false} showEmail={true} />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
               <p className="text-slate-600">Nenhuma licença Ativa encontrada no inventário.</p>
