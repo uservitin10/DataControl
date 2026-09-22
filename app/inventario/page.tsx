@@ -10,11 +10,13 @@ import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api";
 import type { EquipmentItem } from "@/types/inventario";
 import { InventoryCrud } from "@/components/inventario/InventoryCrud";
+import { SectorInventoryTable } from "@/components/inventario/SectorInventoryTable";
 import {
   getAllSectors,
   getWarrantyExpiryStatus,
   getEquipmentTypeCount,
   isSemSetorValue,
+  normalizeType,
 } from "@/lib/inventario";
 
 function InventarioPageContent() {
@@ -117,9 +119,9 @@ function InventarioPageContent() {
   }, [status, session?.user?.id, session?.user?.email, router]);
 
   const stats = useMemo(() => {
-    const selectedType = searchParams.get("tipo")?.toLocaleLowerCase("pt-BR");
+    const selectedType = normalizeType(searchParams.get("tipo") ?? "");
     const filteredEquipments = selectedType
-      ? inventoryEquipments.filter((item) => item.type?.toLocaleLowerCase("pt-BR") === selectedType)
+      ? inventoryEquipments.filter((item) => normalizeType(item.type) === selectedType)
       : inventoryEquipments;
     const filteredLicenses = selectedType ? [] : inventoryLicenses;
     const totalEquipments = filteredEquipments.length;
@@ -134,16 +136,19 @@ function InventarioPageContent() {
   }, [inventoryEquipments, inventoryLicenses, searchParams]);
 
   const filteredInventory = useMemo(() => {
-    const selectedType = searchParams.get("tipo")?.toLocaleLowerCase("pt-BR");
+    const selectedType = normalizeType(searchParams.get("tipo") ?? "");
     if (!selectedType) {
       return { equipments: inventoryEquipments, licenses: inventoryLicenses };
     }
 
     return {
-      equipments: inventoryEquipments.filter((item) => item.type?.toLocaleLowerCase("pt-BR") === selectedType),
+      equipments: inventoryEquipments.filter((item) => normalizeType(item.type) === selectedType),
       licenses: [],
     };
   }, [inventoryEquipments, inventoryLicenses, searchParams]);
+
+  const selectedType = normalizeType(searchParams.get("tipo") ?? "");
+  const selectedTypeLabel = filteredInventory.equipments[0]?.type ?? searchParams.get("tipo") ?? "Ativos";
 
   const equipmentSectorNames = useMemo(() => {
     return getAllSectors(filteredInventory.equipments);
@@ -310,6 +315,23 @@ function InventarioPageContent() {
             }}
           />
 
+          {selectedType ? (
+            <div className="mb-8">
+              <PageHeader
+                title={<h2 className="text-2xl font-bold text-gov-heading">Todos os ativos: {selectedTypeLabel}</h2>}
+                subtitle={`Lista completa de ${selectedTypeLabel.toLocaleLowerCase("pt-BR")} disponíveis no inventário.`}
+                backHref="/inventario"
+              />
+              {filteredInventory.equipments.length > 0 ? (
+                <SectorInventoryTable items={filteredInventory.equipments} showSector />
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+                  <p className="text-slate-600">Nenhum ativo desse tipo foi encontrado no inventário.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -395,6 +417,8 @@ function InventarioPageContent() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
             <p className="text-slate-600">Clique em um card de setor para navegar até a página com ativos desse setor.</p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </main>
