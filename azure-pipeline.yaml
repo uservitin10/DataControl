@@ -30,4 +30,3 @@ extends:
   template: /node/azure-pipeline.yaml@templates
   parameters:
     IS_USING_YARN: false
-    ORCA_SECURITY_SERVICE_CONNECTION: 'Orca AppSec - API Token'
