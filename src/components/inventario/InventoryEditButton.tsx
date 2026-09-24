@@ -25,6 +25,21 @@ type Props = {
   onSaved: (item: EquipmentItem) => void;
 };
 
+const FIELD_LABELS: Record<keyof FormState, string> = {
+  type: "Tipo",
+  model: "Modelo",
+  assetId: "Patrimônio / identificação",
+  equipmentId: "Identificação do equipamento",
+  serialNumber: "Número de série",
+  sector: "Setor",
+  allocatedUser: "Usuário alocado",
+  responsible: "Responsável",
+  legalResponsible: "Responsável legal",
+  equipmentState: "Estado do equipamento",
+  warranty: "Garantia / validade",
+  notes: "Observações",
+};
+
 function toForm(item: EquipmentItem): FormState {
   return {
     type: item.type ?? "Desktop",
@@ -117,7 +132,7 @@ export function InventoryEditButton({ item, onSaved }: Props) {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {(["type", "model", "assetId", "equipmentId", "serialNumber", "sector", "allocatedUser", "responsible", "legalResponsible", "equipmentState", "warranty"] as const).map((field) => (
                 <label key={field} className="text-sm font-medium text-slate-700">
-                  {field === "assetId" ? "Patrimônio / identificação" : field === "legalResponsible" ? "Responsável legal" : field}
+                  {FIELD_LABELS[field]}
                   <input value={form[field]} onChange={(event) => updateField(field, event.target.value)} className="gov-input mt-1 bg-white" />
                 </label>
               ))}
