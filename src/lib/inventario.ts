@@ -250,7 +250,7 @@ export function getAllSectors(items?: EquipmentItem[]): string[] {
 }
 
 export function getLegalResponsible(sector?: string): string {
-  const normalizedSector = sector?.toUpperCase() ?? "";
+  const normalizedSector = sector?.toString().trim().toUpperCase() ?? "";
 
   if (["COTIC", "CONTB", "DIORC", "CGTCO"].includes(normalizedSector)) {
     return "Gustavo Andrade Bruzzeguez";

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EquipmentItem } from "@/types/inventario";
 import { getLegalResponsible, getWarrantyExpiryStatus, equipmentData } from "@/lib/inventario";
+import { InventoryEditButton } from "@/components/inventario/InventoryEditButton";
 
 const PAGE_SIZE = 10;
 
@@ -15,16 +16,21 @@ type Props = {
 
 export function SectorInventoryTable({ items, showExtendedFields = true, showSector = false, showEmail = false }: Props) {
   const [pageIndex, setPageIndex] = useState(0);
+  const [tableItems, setTableItems] = useState(items);
 
-  const pageCount = useMemo(() => Math.ceil(items.length / PAGE_SIZE), [items.length]);
+  useEffect(() => {
+    setTableItems(items);
+  }, [items]);
+
+  const pageCount = useMemo(() => Math.ceil(tableItems.length / PAGE_SIZE), [tableItems.length]);
 
   const currentItems = useMemo(
-    () => items.slice(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE),
-    [items, pageIndex]
+    () => tableItems.slice(pageIndex * PAGE_SIZE, pageIndex * PAGE_SIZE + PAGE_SIZE),
+    [tableItems, pageIndex]
   );
 
   const firstItem = pageIndex * PAGE_SIZE + 1;
-  const lastItem = Math.min((pageIndex + 1) * PAGE_SIZE, items.length);
+  const lastItem = Math.min((pageIndex + 1) * PAGE_SIZE, tableItems.length);
 
   return (
     <div className="space-y-6">
@@ -32,7 +38,7 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
         <div>
           <p className="text-sm font-medium text-slate-600">Ativos</p>
           <p className="mt-1 text-sm text-slate-500">
-            Mostrando {firstItem} - {lastItem} de {items.length} ativos
+            Mostrando {firstItem} - {lastItem} de {tableItems.length} ativos
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -68,6 +74,7 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
               {showExtendedFields && <th className="px-4 py-3">Responsável legal</th>}
               {showExtendedFields && <th className="px-4 py-3">Garantia</th>}
               <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +124,7 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     <td className="px-4 py-3 text-sm text-slate-900">{item.assetId || "-"}</td>
                   )}
                   {showExtendedFields && (
-                    <td className="px-4 py-3 text-sm text-slate-900">{item.legalResponsible ?? getLegalResponsible(item.sector)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-900">{item.legalResponsible?.trim() || getLegalResponsible(item.sector)}</td>
                   )}
                   {showExtendedFields && (
                     <td className="px-4 py-3 text-sm text-slate-900">
@@ -140,6 +147,18 @@ export function SectorInventoryTable({ items, showExtendedFields = true, showSec
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm text-slate-900">{item.equipmentState || "-"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-900">
+                    <InventoryEditButton
+                      item={item}
+                      onSaved={(updatedItem) =>
+                        setTableItems((current) =>
+                          current.map((currentItem) =>
+                            currentItem.id === updatedItem.id ? updatedItem : currentItem
+                          )
+                        )
+                      }
+                    />
+                  </td>
                 </tr>
               );
             })}
