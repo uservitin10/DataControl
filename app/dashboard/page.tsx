@@ -106,13 +106,8 @@ export default function DashboardPage() {
 
   const navItems = [
     {
-      label: "Painéis",
-      onClick: () => setShowLanding(false),
-      active: !showLanding,
-    },
-    {
-      label: "Sistemas",
-      onClick: () => router.push("/sistemas"),
+      label: "Contratos",
+      onClick: () => router.push("/contratos"),
       active: false,
     },
     {
@@ -128,18 +123,32 @@ export default function DashboardPage() {
     ...(isAdmin
       ? [
           {
+            label: "Logs",
+            onClick: () => router.push("/dashboard/audit"),
+            active: false,
+          },
+          {
             label: "Notificações",
             onClick: () => router.push("/dashboard/notificacoes"),
             active: false,
           },
+        ]
+      : []),
+    {
+      label: "Painéis",
+      onClick: () => setShowLanding(false),
+      active: !showLanding,
+    },
+    {
+      label: "Sistemas",
+      onClick: () => router.push("/sistemas"),
+      active: false,
+    },
+    ...(isAdmin
+      ? [
           {
             label: "Usuários",
             onClick: () => router.push("/dashboard/usuarios"),
-            active: false,
-          },
-          {
-            label: "Logs",
-            onClick: () => router.push("/dashboard/audit"),
             active: false,
           },
         ]
