@@ -119,21 +119,16 @@ function InventarioPageContent() {
   }, [status, session?.user?.id, session?.user?.email, router]);
 
   const stats = useMemo(() => {
-    const selectedType = normalizeType(searchParams.get("tipo") ?? "");
-    const filteredEquipments = selectedType
-      ? inventoryEquipments.filter((item) => normalizeType(item.type) === selectedType)
-      : inventoryEquipments;
-    const filteredLicenses = selectedType ? [] : inventoryLicenses;
-    const totalEquipments = filteredEquipments.length;
-    const totalLicenses = filteredLicenses.length;
+    const totalEquipments = inventoryEquipments.length;
+    const totalLicenses = inventoryLicenses.length;
     return {
       total: totalEquipments + totalLicenses,
-      monitors: getEquipmentTypeCount(filteredEquipments, "Monitor"),
-      desktops: getEquipmentTypeCount(filteredEquipments, "Desktop"),
-      notebooks: getEquipmentTypeCount(filteredEquipments, "Notebook"),
-      licenses: filteredLicenses.length,
+      monitors: getEquipmentTypeCount(inventoryEquipments, "Monitor"),
+      desktops: getEquipmentTypeCount(inventoryEquipments, "Desktop"),
+      notebooks: getEquipmentTypeCount(inventoryEquipments, "Notebook"),
+      licenses: totalLicenses,
     };
-  }, [inventoryEquipments, inventoryLicenses, searchParams]);
+  }, [inventoryEquipments, inventoryLicenses]);
 
   const filteredInventory = useMemo(() => {
     const selectedType = normalizeType(searchParams.get("tipo") ?? "");
@@ -166,16 +161,19 @@ function InventarioPageContent() {
           : filteredInventory.equipments.filter(
               (item) => (item.sector ?? "").toString().trim() === sector
             );
+      const filteredItems = selectedType
+        ? items.filter((item) => (item.type ?? "").toString().toLowerCase() === selectedType.toLowerCase())
+        : items;
 
       return {
         sector,
-        total: items.length,
-        monitors: getEquipmentTypeCount(items, "Monitor"),
-        desktops: getEquipmentTypeCount(items, "Desktop"),
-        notebooks: getEquipmentTypeCount(items, "Notebook"),
+        total: filteredItems.length,
+        monitors: getEquipmentTypeCount(filteredItems, "Monitor"),
+        desktops: getEquipmentTypeCount(filteredItems, "Desktop"),
+        notebooks: getEquipmentTypeCount(filteredItems, "Notebook"),
       };
     });
-  }, [equipmentSectorNames, filteredInventory.equipments]);
+  }, [equipmentSectorNames, filteredInventory.equipments, selectedType]);
 
   const licensesSummary = useMemo(() => {
     return {
@@ -188,7 +186,9 @@ function InventarioPageContent() {
   }, [filteredInventory.licenses.length]);
 
   const activeSectorSummaries = sectorSummaries.filter((summary) => summary.total > 0);
-  const visibleSectorSummaries = [...activeSectorSummaries, licensesSummary];
+  const visibleSectorSummaries = selectedType
+    ? activeSectorSummaries
+    : [...activeSectorSummaries, licensesSummary];
   const canCreateInventory = ["admin", "editor", "inventario_editor"].includes(roleState ?? "");
 
   if (loadingUser) {
@@ -242,7 +242,7 @@ function InventarioPageContent() {
             backHref="/dashboard"
           />
 
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             <Link
               href="/inventario"
               className="block rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gov-blue focus:ring-offset-2"
@@ -292,7 +292,26 @@ function InventarioPageContent() {
               <p className="mt-2 text-3xl font-bold text-emerald-700">{stats.licenses}</p>
               <p className="mt-1 text-xs text-slate-500">{stats.total > 0 ? Math.round((stats.licenses / stats.total) * 100) : 0}% do total</p>
             </Link>
+
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+              <p className="text-sm font-medium text-slate-600">Equipamentos no Estoque</p>
+              <p className="mt-2 text-3xl font-bold text-slate-700">-</p>
+              <p className="mt-1 text-xs text-slate-500">Quantidade ainda não disponível</p>
+            </div>
           </div>
+
+          {selectedType && (
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-sm text-slate-700">Filtro selecionado: <strong>{selectedType}</strong></p>
+              <button
+                type="button"
+                onClick={() => router.push("/inventario")}
+                className="text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900"
+              >
+                Remover filtro
+              </button>
+            </div>
+          )}
 
           {expiringInventorySummary.totalExpiring > 0 && (
             <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">

@@ -13,36 +13,38 @@ export default function ForgotPasswordPage() {
   const handleSubmit = (event: { preventDefault: () => void }) => {
     event.preventDefault();
     void (async () => {
-      setStatus(null);
-      if (!email.trim()) {
-        setStatus("Por favor, informe seu email.");
+    setStatus(null);
+    if (!email.trim()) {
+      setStatus("Por favor, informe seu email.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const redirectTo = typeof window !== "undefined"
+        ? new URL("/login/reset", window.location.origin).toString()
+        : undefined;
+
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, redirectTo }),
+      });
+
+      const data = await response.json();
+
+      setLoading(false);
+      if (!response.ok) {
+        setStatus(data?.error || data?.message || "Erro ao enviar instruções de recuperação.");
         return;
       }
-
-      setLoading(true);
-      try {
-        const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-
-        const response = await fetch("/api/auth/forgot-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, redirectTo }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setStatus(data?.message || "Erro ao enviar instruções de recuperação.");
-          return;
-        }
-
-        setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
-        setEmail("");
-      } catch {
-        setStatus("Erro ao solicitar recuperação de senha.");
-      } finally {
-        setLoading(false);
-      }
+      setStatus("Se o email existe, enviamos instruções para recuperar a senha.");
+      setEmail("");
+    } catch {
+      setStatus("Erro ao solicitar recuperação de senha.");
+    } finally {
+      setLoading(false);
+    }
     })();
   };
 

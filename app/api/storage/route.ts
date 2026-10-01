@@ -6,7 +6,7 @@ import {
   PutObjectCommand,
   type GetObjectCommandOutput,
 } from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/minio";
+import { s3Client, s3PresignClient } from "@/lib/minio";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import { apiSuccess, apiValidationError, apiInternalError } from "@/lib/api-response";
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
       if (type === "signed") {
         try {
           const command = new GetObjectCommand({ Bucket: bucket, Key: path });
-          const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: expires });
+          const signedUrl = await getSignedUrl(s3PresignClient, command, { expiresIn: expires });
           return apiSuccess({ signedUrl });
         } catch (error) {
           return apiInternalError(formatStorageError(error, bucket));

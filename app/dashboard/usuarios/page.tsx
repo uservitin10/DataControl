@@ -33,6 +33,7 @@ export default function UsuariosPage() {
   const [editingPermissions, setEditingPermissions] = useState<Permissions | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
 
   const fetchUsuarios = async () => {
@@ -152,6 +153,27 @@ export default function UsuariosPage() {
       setError(getErrorMessage(deleteError));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleResetPassword = async (usuario: Profile) => {
+    if (!window.confirm(`Enviar instruções para redefinir a senha de ${usuario.display_name || usuario.email}?`)) {
+      return;
+    }
+
+    setResettingId(usuario.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await fetchJson(`/api/usuarios/${encodeURIComponent(usuario.id)}/reset-password`, {
+        method: "POST",
+      });
+      setSuccess(`Instruções de redefinição enviadas para ${usuario.email}.`);
+    } catch (resetError) {
+      setError((resetError as Error).message);
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -308,10 +330,18 @@ export default function UsuariosPage() {
                       <button
                         type="button"
                         onClick={() => handleEditRole(usuario)}
-                        disabled={deletingId === usuario.id}
+                        disabled={deletingId === usuario.id || resettingId === usuario.id}
                         className="rounded-3xl px-3 py-2 text-sm font-semibold text-slate-900 border border-slate-200/80 bg-slate-100 shadow-sm transition duration-200 hover:bg-slate-50 hover:shadow-md"
                       >
                         Editar permissões
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleResetPassword(usuario)}
+                        disabled={resettingId === usuario.id || deletingId === usuario.id}
+                        className="rounded-3xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {resettingId === usuario.id ? "Enviando..." : "Resetar senha"}
                       </button>
                       <button
                         type="button"
