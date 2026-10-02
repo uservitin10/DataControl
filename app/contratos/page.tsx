@@ -1,3 +1,5 @@
-export default function ContratosPage() {
-  return null;
+import { ContractsPage } from "@/components/contratos/ContractsPage";
+
+export default function ContratosRoute() {
+  return <ContractsPage />;
 }
