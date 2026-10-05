@@ -15,13 +15,22 @@ describe("contract payload validation", () => {
 
   it("normalizes money and month values", () => {
     const result = validateCreateContractInput({
-      serviceOrder: "OS-123",
+      name: "Keeggo",
       totalValue: "12000,5",
+      executionSummary: "Serviços de QA.",
+      initialServiceOrder: {
+        serviceOrderNumber: "OS-123",
+        internalNumber: "50465842",
+        validFrom: "2025-05-12",
+        validTo: "2025-12-31",
+        serviceDescription: "Analista de QA.",
+      },
       initialEntry: validEntry,
     });
 
     expect(result.error).toBeNull();
-    expect(result.contract).toEqual({ serviceOrder: "OS-123", totalValue: "12000.50" });
+    expect(result.contract).toEqual({ name: "Keeggo", totalValue: "12000.50", executionSummary: "Serviços de QA." });
+    expect(result.serviceOrder?.serviceOrderNumber).toBe("OS-123");
     expect(result.entry?.referenceMonth).toBe("2026-10-01");
     expect(result.entry?.glosasValue).toBe("0.00");
   });

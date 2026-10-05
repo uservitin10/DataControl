@@ -1,13 +1,18 @@
 import type { NextRequest } from "next/server";
+import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { sendPasswordResetEmail } from "@/lib/email";
 import { POST } from "../../app/api/usuarios/[id]/reset-password/route";
+
+jest.mock("bcryptjs", () => ({
+  __esModule: true,
+  default: { hash: jest.fn() },
+}));
 
 jest.mock("@/lib/db", () => ({
   __esModule: true,
-  default: { query: jest.fn() },
+  default: { query: jest.fn(), connect: jest.fn() },
 }));
 
 jest.mock("@/lib/api-guard", () => ({
@@ -15,25 +20,29 @@ jest.mock("@/lib/api-guard", () => ({
 }));
 
 jest.mock("@/lib/audit", () => ({ addAuditLog: jest.fn() }));
-jest.mock("@/lib/email", () => ({ sendPasswordResetEmail: jest.fn() }));
 
 const poolQueryMock = pool.query as jest.Mock;
+const poolConnectMock = pool.connect as jest.Mock;
 const withAuthMock = withAuth as jest.Mock;
-const sendPasswordResetEmailMock = sendPasswordResetEmail as jest.Mock;
+const bcryptHashMock = bcrypt.hash as jest.Mock;
 
 describe("app/api/usuarios/[id]/reset-password", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.AUTH_URL = "https://horus.example.gov.br";
-    sendPasswordResetEmailMock.mockResolvedValue(undefined);
+    bcryptHashMock.mockResolvedValue("hashed-new-password");
   });
 
-  it("allows only admins and sends a one-hour reset link", async () => {
-    poolQueryMock
-      .mockResolvedValueOnce({ rows: [{ id: "user-1", email: "user@example.gov.br" }] })
+  it("allows admins to set a new password without sending email", async () => {
+    poolQueryMock.mockResolvedValueOnce({ rows: [{ id: "user-1", email: "user@example.gov.br" }] });
+    const clientQueryMock = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
+    const releaseMock = jest.fn();
+    poolConnectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock });
     const request = {
-      nextUrl: { origin: "https://horus.example.gov.br" },
+      json: async () => ({ password: "new-password-123" }),
       headers: new Headers(),
     } as unknown as NextRequest;
 
@@ -41,28 +50,42 @@ describe("app/api/usuarios/[id]/reset-password", () => {
 
     expect(response.status).toBe(200);
     expect(withAuthMock).toHaveBeenCalledWith(request, expect.any(Function), ["admin"]);
-    expect(poolQueryMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining("NOW() + interval '1 hour'"),
-      ["user-1", expect.any(String)]
+    expect(bcryptHashMock).toHaveBeenCalledWith("new-password-123", 10);
+    expect(clientQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining("password_hash = $1"),
+      ["hashed-new-password", "user-1"]
     );
-    expect(sendPasswordResetEmailMock).toHaveBeenCalledWith(
-      "user@example.gov.br",
-      expect.stringMatching(/^https:\/\/horus\.example\.gov\.br\/login\/reset\?token=/)
+    expect(clientQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining("password_reset_tokens SET used = true"),
+      ["user-1"]
     );
+    expect(releaseMock).toHaveBeenCalled();
     expect(addAuditLog).toHaveBeenCalled();
+  });
+
+  it("rejects passwords shorter than six characters", async () => {
+    const request = {
+      json: async () => ({ password: "123" }),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const response = await POST(request, { params: Promise.resolve({ id: "user-1" }) });
+
+    expect(response.status).toBe(400);
+    expect(poolQueryMock).not.toHaveBeenCalled();
+    expect(poolConnectMock).not.toHaveBeenCalled();
   });
 
   it("returns not found for an unknown profile", async () => {
     poolQueryMock.mockResolvedValueOnce({ rows: [] });
     const request = {
-      nextUrl: { origin: "https://horus.example.gov.br" },
+      json: async () => ({ password: "new-password-123" }),
       headers: new Headers(),
     } as unknown as NextRequest;
 
     const response = await POST(request, { params: Promise.resolve({ id: "missing" }) });
 
     expect(response.status).toBe(404);
-    expect(sendPasswordResetEmailMock).not.toHaveBeenCalled();
+    expect(poolConnectMock).not.toHaveBeenCalled();
   });
 });

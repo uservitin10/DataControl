@@ -2,6 +2,7 @@ export type ContractMonthlyEntry = {
   id: string;
   paymentProcessNumber: string;
   monthlyPaidValue: string;
+  monthlyNetValue: string;
   glosasValue: string;
   referenceMonth: string;
   executionSummary: string;
@@ -10,13 +11,38 @@ export type ContractMonthlyEntry = {
   updatedAt: string;
 };
 
+export type ContractServiceOrder = {
+  id: string;
+  serviceOrderNumber: string;
+  internalNumber: string;
+  validFrom: string | null;
+  validTo: string | null;
+  serviceDescription: string;
+  addendumNumber: string | null;
+  addendumValidFrom: string | null;
+  addendumValidTo: string | null;
+  monthlyEntries: ContractMonthlyEntry[];
+};
+
+export type ContractFinancialDocument = {
+  id: string;
+  fiscalYear: number;
+  documentType: string;
+  documentNumber: string;
+  seiReference: string;
+  amount: string;
+  coverageDescription: string;
+};
+
 export type ContractRecord = {
   id: string;
-  serviceOrder: string;
+  name: string;
   totalValue: string;
+  executionSummary: string;
   createdAt: string;
   updatedAt: string;
-  entries: ContractMonthlyEntry[];
+  serviceOrders: ContractServiceOrder[];
+  financialDocuments: ContractFinancialDocument[];
 };
 
 export type ContractEntryInput = {
@@ -28,13 +54,24 @@ export type ContractEntryInput = {
   empenho: string;
 };
 
-export type CreateContractInput = {
-  serviceOrder: string;
+export type ContractInput = {
+  name: string;
   totalValue: string | number;
-  initialEntry: ContractEntryInput;
+  executionSummary: string;
 };
 
-export type ContractInput = {
-  serviceOrder: string;
-  totalValue: string | number;
+export type ContractServiceOrderInput = {
+  serviceOrderNumber: string;
+  internalNumber: string;
+  validFrom: string;
+  validTo: string;
+  serviceDescription: string;
+  addendumNumber?: string;
+  addendumValidFrom?: string;
+  addendumValidTo?: string;
+};
+
+export type CreateContractInput = ContractInput & {
+  initialServiceOrder: ContractServiceOrderInput;
+  initialEntry: ContractEntryInput;
 };

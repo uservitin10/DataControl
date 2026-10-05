@@ -8,9 +8,22 @@ import {
   apiSuccess,
   apiValidationError,
 } from "@/lib/api-response";
-import { validateContractInput } from "@/lib/contratos";
+import { getContractsWithDetails, validateContractInput } from "@/lib/contratos";
 
 type Params = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: Params) {
+  return withAuth(request, async () => {
+    try {
+      const { id } = await params;
+      const contracts = await getContractsWithDetails(id);
+      if (!contracts[0]) return apiNotFound("Contrato não encontrado.");
+      return apiSuccess(contracts[0]);
+    } catch (error) {
+      return apiInternalError((error as Error).message);
+    }
+  });
+}
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   return withAuth(request, async (user) => {
@@ -24,11 +37,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       const { id } = await params;
       const result = await pool.query(
         `UPDATE public.contracts
-         SET service_order = $1, total_value = $2, updated_at = NOW()
-         WHERE id = $3
-         RETURNING id, service_order AS "serviceOrder", total_value::text AS "totalValue",
+         SET name = $1, total_value = $2, execution_summary = $3, updated_at = NOW()
+         WHERE id = $4
+         RETURNING id, name, total_value::text AS "totalValue", execution_summary AS "executionSummary",
            created_at AS "createdAt", updated_at AS "updatedAt"`,
-        [validation.contract.serviceOrder, validation.contract.totalValue, id]
+        [validation.contract.name, validation.contract.totalValue, validation.contract.executionSummary, id]
       );
       if (!result.rows[0]) return apiNotFound("Contrato não encontrado.");
 
@@ -37,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         action: "update_contract",
         resource_type: "contract",
         resource_id: id,
-        details: `Contrato atualizado para a ordem de serviço ${validation.contract.serviceOrder}.`,
+        details: `Contrato ${validation.contract.name} atualizado.`,
       });
       return apiSuccess(result.rows[0]);
     } catch (error) {
@@ -51,7 +64,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     try {
       const { id } = await params;
       const result = await pool.query(
-        "DELETE FROM public.contracts WHERE id = $1 RETURNING id, service_order",
+        "DELETE FROM public.contracts WHERE id = $1 RETURNING id, name",
         [id]
       );
       if (!result.rows[0]) return apiNotFound("Contrato não encontrado.");
@@ -61,7 +74,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         action: "delete_contract",
         resource_type: "contract",
         resource_id: id,
-        details: `Contrato excluído: ${result.rows[0].service_order}.`,
+        details: `Contrato excluído: ${result.rows[0].name}.`,
       });
       return apiSuccess({ deleted: true });
     } catch (error) {
