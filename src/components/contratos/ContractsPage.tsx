@@ -8,20 +8,18 @@ import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
+import { getAvailableBalance, getDecentralizedTotal } from "@/lib/contract-calculations";
 import type { ContractRecord } from "@/types/contratos";
 
 type ContractFormState = {
   name: string;
   totalValue: string;
   executionSummary: string;
-  serviceOrderNumber: string;
-  internalNumber: string;
+  siafNumber: string;
+  seiDocumentNumber: string;
   validFrom: string;
   validTo: string;
   serviceDescription: string;
-  addendumNumber: string;
-  addendumValidFrom: string;
-  addendumValidTo: string;
   paymentProcessNumber: string;
   monthlyPaidValue: string;
   glosasValue: string;
@@ -41,14 +39,11 @@ const emptyForm = (): ContractFormState => ({
   name: "",
   totalValue: "",
   executionSummary: "",
-  serviceOrderNumber: "",
-  internalNumber: "",
+  siafNumber: "",
+  seiDocumentNumber: "",
   validFrom: "",
   validTo: "",
   serviceDescription: "",
-  addendumNumber: "",
-  addendumValidFrom: "",
-  addendumValidTo: "",
   paymentProcessNumber: "",
   monthlyPaidValue: "",
   glosasValue: "0.00",
@@ -105,8 +100,8 @@ export function ContractsPage() {
         contract.name,
         contract.executionSummary,
         ...contract.serviceOrders.flatMap((order) => [
-          order.serviceOrderNumber,
-          order.internalNumber,
+          order.siafNumber,
+          order.seiDocumentNumber,
           order.serviceDescription,
           ...order.monthlyEntries.flatMap((entry) => [entry.paymentProcessNumber, entry.empenho, entry.executionSummary]),
         ]),
@@ -115,15 +110,6 @@ export function ContractsPage() {
       return searchable.some((value) => value.toLocaleLowerCase("pt-BR").includes(normalizedQuery));
     });
   }, [contracts, query]);
-
-  const totals = useMemo(() => {
-    const entries = contracts.flatMap((contract) => contract.serviceOrders.flatMap((order) => order.monthlyEntries));
-    return {
-      contractCount: contracts.length,
-      monthlyPaid: entries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0),
-      deductions: entries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0),
-    };
-  }, [contracts]);
 
   const refreshContracts = async () => {
     const response = await fetchJson<{ data: ContractRecord[] }>("/api/contratos");
@@ -161,14 +147,11 @@ export function ContractsPage() {
           totalValue: form.totalValue,
           executionSummary: form.executionSummary,
           initialServiceOrder: {
-            serviceOrderNumber: form.serviceOrderNumber,
-            internalNumber: form.internalNumber,
+            siafNumber: form.siafNumber,
+            seiDocumentNumber: form.seiDocumentNumber,
             validFrom: form.validFrom,
             validTo: form.validTo,
             serviceDescription: form.serviceDescription,
-            addendumNumber: form.addendumNumber,
-            addendumValidFrom: form.addendumValidFrom,
-            addendumValidTo: form.addendumValidTo,
           },
           initialEntry: {
             paymentProcessNumber: form.paymentProcessNumber,
@@ -243,21 +226,6 @@ export function ContractsPage() {
 
         {error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-600">Contratos</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{totals.contractCount}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-600">Total pago mensal</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(totals.monthlyPaid)}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-600">Total de glosas</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(totals.deductions)}</p>
-          </div>
-        </div>
-
         <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <label htmlFor="contract-search" className="mb-2 block text-sm font-medium text-slate-700">Buscar contrato ou lançamento</label>
           <input id="contract-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ordem de serviço, processo SEI, empenho ou resumo" className="gov-input w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm" />
@@ -271,7 +239,9 @@ export function ContractsPage() {
                   <th className="px-5 py-4">Contrato</th>
                   <th className="px-5 py-4">Ordens de serviço</th>
                   <th className="px-5 py-4">Valor total</th>
+                  <th className="px-5 py-4">Total descentralizado</th>
                   <th className="px-5 py-4">Total pago</th>
+                  <th className="px-5 py-4">Saldo disponível</th>
                   <th className="px-5 py-4">Ações</th>
                 </tr>
               </thead>
@@ -279,6 +249,8 @@ export function ContractsPage() {
                 {filteredContracts.map((contract) => {
                   const entries = contract.serviceOrders.flatMap((order) => order.monthlyEntries);
                   const paid = entries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
+                  const decentralized = getDecentralizedTotal(contract.financialDocuments);
+                  const balance = getAvailableBalance(contract.financialDocuments, entries);
                   return <tr key={contract.id}>
                     <td className="px-5 py-4">
                       <Link href={`/contratos/${encodeURIComponent(contract.id)}`} className="font-semibold text-blue-800 underline decoration-blue-300 underline-offset-2 hover:text-blue-950">{contract.name}</Link>
@@ -286,7 +258,9 @@ export function ContractsPage() {
                     </td>
                     <td className="px-5 py-4 text-slate-700">{contract.serviceOrders.length}</td>
                     <td className="px-5 py-4 text-slate-700">{formatCurrency(contract.totalValue)}</td>
+                    <td className="px-5 py-4 text-slate-700">{formatCurrency(decentralized)}</td>
                     <td className="px-5 py-4 text-slate-700">{formatCurrency(paid)}</td>
+                    <td className="px-5 py-4 font-semibold text-slate-900">{formatCurrency(balance)}</td>
                     <td className="px-5 py-4">
                       {canManage && <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => openEditContract(contract)} className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar</button>
@@ -334,11 +308,11 @@ export function ContractsPage() {
             {creatingContract && <>
               <h3 className="mb-3 border-t border-slate-200 pt-5 text-base font-semibold text-slate-900">Primeira ordem de serviço</h3>
               <div className="mb-6 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-medium text-slate-700">Número da OS *
-                  <input required value={form.serviceOrderNumber} onChange={(event) => setForm((current) => ({ ...current, serviceOrderNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <label className="text-sm font-medium text-slate-700">Número SIAF *
+                  <input required value={form.siafNumber} onChange={(event) => setForm((current) => ({ ...current, siafNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
-                <label className="text-sm font-medium text-slate-700">Número interno *
-                  <input required value={form.internalNumber} onChange={(event) => setForm((current) => ({ ...current, internalNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <label className="text-sm font-medium text-slate-700">Número do documento SEI *
+                  <input required value={form.seiDocumentNumber} onChange={(event) => setForm((current) => ({ ...current, seiDocumentNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
                 <label className="text-sm font-medium text-slate-700">Vigência inicial *
                   <input required type="date" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
@@ -348,15 +322,6 @@ export function ContractsPage() {
                 </label>
                 <label className="text-sm font-medium text-slate-700 sm:col-span-2">Descrição do serviço *
                   <input required value={form.serviceDescription} onChange={(event) => setForm((current) => ({ ...current, serviceDescription: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
-                </label>
-                <label className="text-sm font-medium text-slate-700">Número do termo aditivo
-                  <input value={form.addendumNumber} onChange={(event) => setForm((current) => ({ ...current, addendumNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
-                </label>
-                <label className="text-sm font-medium text-slate-700">Início do aditivo
-                  <input type="date" value={form.addendumValidFrom} onChange={(event) => setForm((current) => ({ ...current, addendumValidFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
-                </label>
-                <label className="text-sm font-medium text-slate-700">Fim do aditivo
-                  <input type="date" value={form.addendumValidTo} onChange={(event) => setForm((current) => ({ ...current, addendumValidTo: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
               </div>
 

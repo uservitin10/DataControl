@@ -13,14 +13,11 @@ export type ContractMonthlyEntry = {
 
 export type ContractServiceOrder = {
   id: string;
-  serviceOrderNumber: string;
-  internalNumber: string;
+  siafNumber: string;
+  seiDocumentNumber: string;
   validFrom: string | null;
   validTo: string | null;
   serviceDescription: string;
-  addendumNumber: string | null;
-  addendumValidFrom: string | null;
-  addendumValidTo: string | null;
   monthlyEntries: ContractMonthlyEntry[];
 };
 
@@ -41,6 +38,7 @@ export type ContractRecord = {
   executionSummary: string;
   createdAt: string;
   updatedAt: string;
+  isClosed: boolean;
   serviceOrders: ContractServiceOrder[];
   financialDocuments: ContractFinancialDocument[];
 };
@@ -61,14 +59,11 @@ export type ContractInput = {
 };
 
 export type ContractServiceOrderInput = {
-  serviceOrderNumber: string;
-  internalNumber: string;
+  siafNumber: string;
+  seiDocumentNumber: string;
   validFrom: string;
   validTo: string;
   serviceDescription: string;
-  addendumNumber?: string;
-  addendumValidFrom?: string;
-  addendumValidTo?: string;
 };
 
 export type CreateContractInput = ContractInput & {

@@ -8,17 +8,15 @@ import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
+import { getAvailableBalance, getDecentralizedTotal } from "@/lib/contract-calculations";
 import type { ContractMonthlyEntry, ContractRecord, ContractServiceOrder } from "@/types/contratos";
 
 type OrderForm = {
-  serviceOrderNumber: string;
-  internalNumber: string;
+  siafNumber: string;
+  seiDocumentNumber: string;
   validFrom: string;
   validTo: string;
   serviceDescription: string;
-  addendumNumber: string;
-  addendumValidFrom: string;
-  addendumValidTo: string;
 };
 
 type EntryForm = {
@@ -36,14 +34,11 @@ type DetailModal =
   | null;
 
 const emptyOrder = (): OrderForm => ({
-  serviceOrderNumber: "",
-  internalNumber: "",
+  siafNumber: "",
+  seiDocumentNumber: "",
   validFrom: "",
   validTo: "",
   serviceDescription: "",
-  addendumNumber: "",
-  addendumValidFrom: "",
-  addendumValidTo: "",
 });
 
 const emptyEntry = (): EntryForm => {
@@ -111,6 +106,8 @@ export function ContractDetailPage() {
   const paidTotal = allEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
   const netTotal = allEntries.reduce((sum, entry) => sum + Number(entry.monthlyNetValue), 0);
   const glosasTotal = allEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
+  const decentralizedTotal = getDecentralizedTotal(contract?.financialDocuments ?? []);
+  const availableBalance = getAvailableBalance(contract?.financialDocuments ?? [], allEntries);
 
   const yearlySummary = useMemo(() => {
     if (!contract) return [];
@@ -137,14 +134,11 @@ export function ContractDetailPage() {
 
   const openEditOrder = (order: ContractServiceOrder) => {
     setOrderForm({
-      serviceOrderNumber: order.serviceOrderNumber,
-      internalNumber: order.internalNumber,
+      siafNumber: order.siafNumber,
+      seiDocumentNumber: order.seiDocumentNumber,
       validFrom: order.validFrom ?? "",
       validTo: order.validTo ?? "",
       serviceDescription: order.serviceDescription,
-      addendumNumber: order.addendumNumber ?? "",
-      addendumValidFrom: order.addendumValidFrom ?? "",
-      addendumValidTo: order.addendumValidTo ?? "",
     });
     setError("");
     setModal({ type: "order", order });
@@ -194,7 +188,7 @@ export function ContractDetailPage() {
   };
 
   const handleDeleteOrder = async (order: ContractServiceOrder) => {
-    if (!window.confirm(`Excluir a OS ${order.serviceOrderNumber} e seus lançamentos mensais?`)) return;
+    if (!window.confirm(`Excluir a OS ${order.siafNumber} e seus lançamentos mensais?`)) return;
     setDeletingId(order.id);
     setError("");
     try {
@@ -208,7 +202,7 @@ export function ContractDetailPage() {
   };
 
   const handleDeleteEntry = async (order: ContractServiceOrder, entry: ContractMonthlyEntry) => {
-    if (!window.confirm(`Excluir o pagamento de ${formatMonth(entry.referenceMonth)} da OS ${order.serviceOrderNumber}?`)) return;
+    if (!window.confirm(`Excluir o pagamento de ${formatMonth(entry.referenceMonth)} da OS ${order.siafNumber}?`)) return;
     setDeletingId(entry.id);
     setError("");
     try {
@@ -250,12 +244,16 @@ export function ContractDetailPage() {
           title={contract.name}
           subtitle={contract.executionSummary}
           backHref="/contratos"
-          actions={canManage ? <button type="button" onClick={openCreateOrder} className="gov-button rounded-lg px-4 py-2 text-sm font-semibold">+ Nova OS</button> : null}
+          actions={canManage && !contract.isClosed ? <button type="button" onClick={openCreateOrder} className="gov-button rounded-lg px-4 py-2 text-sm font-semibold">+ Nova OS</button> : null}
         />
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo financeiro do contrato">
+        {contract.isClosed && <div aria-live="polite" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Contrato encerrado. Não é possível adicionar novas informações.</div>}
+
+        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Resumo financeiro do contrato">
           <Summary label="Valor total do contrato" value={formatCurrency(contract.totalValue)} />
+          <Summary label="Total descentralizado" value={formatCurrency(decentralizedTotal)} />
           <Summary label="Total pago" value={formatCurrency(paidTotal)} />
+          <Summary label="Saldo disponível" value={formatCurrency(availableBalance)} />
           <Summary label="Total líquido após glosas" value={formatCurrency(netTotal)} />
           <Summary label="Glosas acumuladas" value={formatCurrency(glosasTotal)} />
         </section>
@@ -272,11 +270,11 @@ export function ContractDetailPage() {
               return <article key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 p-5">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">OS {order.serviceOrderNumber}</h3>
-                    <p className="mt-1 text-sm text-slate-600">Controle interno: {order.internalNumber}</p>
+                    <h3 className="text-lg font-semibold text-slate-900">OS {order.siafNumber}</h3>
+                    <p className="mt-1 text-sm text-slate-600">Documento SEI: {order.seiDocumentNumber}</p>
                   </div>
                   {canManage && <div className="flex gap-2">
-                    <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>
+                    {!contract.isClosed && <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>}
                     <button type="button" onClick={() => openEditOrder(order)} className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar OS</button>
                     <button type="button" onClick={() => void handleDeleteOrder(order)} disabled={deletingId === order.id} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Excluir OS</button>
                   </div>}
@@ -284,8 +282,6 @@ export function ContractDetailPage() {
 
                 <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 xl:grid-cols-4">
                   <Info label="Vigência" value={`${formatDate(order.validFrom)} a ${formatDate(order.validTo)}`} />
-                  <Info label="Termo aditivo" value={order.addendumNumber || "Sem aditivo"} />
-                  <Info label="Vigência do aditivo" value={order.addendumNumber ? `${formatDate(order.addendumValidFrom)} a ${formatDate(order.addendumValidTo)}` : "-"} />
                   <Info label="Total pago / glosas" value={`${formatCurrency(orderPaid)} / ${formatCurrency(orderGlosas)}`} />
                   <Info label="Resumo da execução" value={order.serviceDescription} wide />
                 </div>
@@ -372,14 +368,11 @@ function DetailFormModal({
     <form onSubmit={onSubmit} className="my-auto w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
       <div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{isOrder ? (order ? "Editar ordem de serviço" : "Nova ordem de serviço") : entry ? "Editar pagamento mensal" : "Novo pagamento mensal"}</h2><p className="mt-1 text-sm text-slate-600">Todos os campos marcados com * são obrigatórios.</p></div><button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">Fechar</button></div>
       {isOrder ? <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Número da OS *"><input required value={orderForm.serviceOrderNumber} onChange={(event) => setOrderForm((current) => ({ ...current, serviceOrderNumber: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Número interno *"><input required value={orderForm.internalNumber} onChange={(event) => setOrderForm((current) => ({ ...current, internalNumber: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Número SIAF *"><input required value={orderForm.siafNumber} onChange={(event) => setOrderForm((current) => ({ ...current, siafNumber: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Número do documento SEI *"><input required value={orderForm.seiDocumentNumber} onChange={(event) => setOrderForm((current) => ({ ...current, seiDocumentNumber: event.target.value }))} className={inputClass} /></Field>
         <Field label="Vigência inicial *"><input required type="date" value={orderForm.validFrom} onChange={(event) => setOrderForm((current) => ({ ...current, validFrom: event.target.value }))} className={inputClass} /></Field>
         <Field label="Vigência final *"><input required type="date" value={orderForm.validTo} onChange={(event) => setOrderForm((current) => ({ ...current, validTo: event.target.value }))} className={inputClass} /></Field>
         <Field label="Descrição do serviço *" wide><input required value={orderForm.serviceDescription} onChange={(event) => setOrderForm((current) => ({ ...current, serviceDescription: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Número do termo aditivo"><input value={orderForm.addendumNumber} onChange={(event) => setOrderForm((current) => ({ ...current, addendumNumber: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Início do aditivo"><input type="date" value={orderForm.addendumValidFrom} onChange={(event) => setOrderForm((current) => ({ ...current, addendumValidFrom: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Fim do aditivo"><input type="date" value={orderForm.addendumValidTo} onChange={(event) => setOrderForm((current) => ({ ...current, addendumValidTo: event.target.value }))} className={inputClass} /></Field>
       </div> : <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Processo de pagamento (SEI) *"><input required value={entryForm.paymentProcessNumber} onChange={(event) => setEntryForm((current) => ({ ...current, paymentProcessNumber: event.target.value }))} className={inputClass} /></Field>
         <Field label="Mês de referência *"><input required type="month" value={entryForm.referenceMonth} onChange={(event) => setEntryForm((current) => ({ ...current, referenceMonth: event.target.value }))} className={inputClass} /></Field>

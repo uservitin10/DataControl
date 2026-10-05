@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { apiCreated, apiInternalError, apiNotFound, apiValidationError } from "@/lib/api-response";
-import { validateContractEntryInput } from "@/lib/contratos";
+import { apiCreated, apiError, apiInternalError, apiNotFound, apiValidationError } from "@/lib/api-response";
+import { getContractClosureStatus, validateContractEntryInput } from "@/lib/contratos";
 
 type Params = { params: Promise<{ id: string; ordemId: string }> };
 
@@ -18,13 +18,16 @@ export async function POST(request: NextRequest, { params }: Params) {
     try {
       const { id, ordemId } = await params;
       const orderResult = await pool.query(
-        `SELECT so.id, so.contract_id, so.service_order_number
+        `SELECT so.id, so.contract_id, so.siaf_number
          FROM public.contract_service_orders so
          WHERE so.id = $1 AND so.contract_id = $2`,
         [ordemId, id]
       );
       const order = orderResult.rows[0];
       if (!order) return apiNotFound("Ordem de serviço não encontrada.");
+      if (await getContractClosureStatus(id)) {
+        return apiError("Não é possível adicionar informações a um contrato encerrado.", 409);
+      }
 
       const entry = validation.entry;
       const result = await pool.query(
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         action: "create_contract_monthly_entry",
         resource_type: "contract",
         resource_id: id,
-        details: `Lançamento de ${entry.referenceMonth.slice(0, 7)} criado para a OS ${order.service_order_number}.`,
+        details: `Lançamento de ${entry.referenceMonth.slice(0, 7)} criado para a OS ${order.siaf_number}.`,
       });
       return apiCreated(result.rows[0]);
     } catch (error) {

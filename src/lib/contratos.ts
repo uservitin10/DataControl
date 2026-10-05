@@ -23,14 +23,11 @@ export type ValidatedContract = {
 };
 
 export type ValidatedContractServiceOrder = {
-  serviceOrderNumber: string;
-  internalNumber: string;
+  siafNumber: string;
+  seiDocumentNumber: string;
   validFrom: string;
   validTo: string;
   serviceDescription: string;
-  addendumNumber: string | null;
-  addendumValidFrom: string | null;
-  addendumValidTo: string | null;
 };
 
 const readRequiredText = (value: unknown) =>
@@ -83,47 +80,49 @@ export function validateContractServiceOrderInput(body: unknown): {
   }
 
   const input = body as ContractServiceOrderInput;
-  const serviceOrderNumber = readRequiredText(input.serviceOrderNumber);
-  const internalNumber = readRequiredText(input.internalNumber);
+  const siafNumber = readRequiredText(input.siafNumber);
+  const seiDocumentNumber = readRequiredText(input.seiDocumentNumber);
   const validFrom = readDate(input.validFrom);
   const validTo = readDate(input.validTo);
   const serviceDescription = readRequiredText(input.serviceDescription);
-  const addendumNumber = readRequiredText(input.addendumNumber);
-  const rawAddendumFrom = readRequiredText(input.addendumValidFrom);
-  const rawAddendumTo = readRequiredText(input.addendumValidTo);
-  const addendumValidFrom = rawAddendumFrom ? readDate(rawAddendumFrom) : null;
-  const addendumValidTo = rawAddendumTo ? readDate(rawAddendumTo) : null;
 
   if (
-    !serviceOrderNumber ||
-    !internalNumber ||
+    !siafNumber ||
+    !seiDocumentNumber ||
     !validFrom ||
     !validTo ||
     validFrom > validTo ||
-    !serviceDescription ||
-    (addendumNumber && (!addendumValidFrom || !addendumValidTo)) ||
-    (!addendumNumber && (rawAddendumFrom || rawAddendumTo)) ||
-    (addendumValidFrom && addendumValidTo && addendumValidFrom > addendumValidTo)
+    !serviceDescription
   ) {
     return {
       serviceOrder: null,
-      error: "Preencha os campos obrigatórios da ordem de serviço e confira as vigências.",
+      error: "Preencha os campos obrigatórios da ordem de serviço e confira a vigência.",
     };
   }
 
   return {
     serviceOrder: {
-      serviceOrderNumber,
-      internalNumber,
+      siafNumber,
+      seiDocumentNumber,
       validFrom,
       validTo,
       serviceDescription,
-      addendumNumber: addendumNumber || null,
-      addendumValidFrom,
-      addendumValidTo,
     },
     error: null,
   };
+}
+
+export async function getContractClosureStatus(contractId: string) {
+  const result = await pool.query(
+    `SELECT COALESCE(
+       BOOL_AND(valid_to IS NOT NULL AND valid_to < CURRENT_DATE) AND COUNT(*) > 0,
+       false
+     ) AS "isClosed"
+     FROM public.contract_service_orders
+     WHERE contract_id = $1`,
+    [contractId]
+  );
+  return result.rows[0]?.isClosed === true;
 }
 
 export function validateCreateContractInput(body: unknown): {
@@ -205,11 +204,17 @@ export function validateContractEntryInput(body: unknown): {
 
 export async function getContractsWithDetails(contractId?: string): Promise<ContractRecord[]> {
   const contractResult = await pool.query(
-    `SELECT id, name, total_value::text AS "totalValue",
-       execution_summary AS "executionSummary", created_at AS "createdAt", updated_at AS "updatedAt"
-     FROM public.contracts
-     ${contractId ? "WHERE id = $1" : ""}
-     ORDER BY name ASC`,
+     `SELECT c.id, c.name, c.total_value::text AS "totalValue",
+       c.execution_summary AS "executionSummary", c.created_at AS "createdAt", c.updated_at AS "updatedAt",
+       (SELECT COALESCE(
+         BOOL_AND(so.valid_to IS NOT NULL AND so.valid_to < CURRENT_DATE) AND COUNT(*) > 0,
+         false
+        )
+        FROM public.contract_service_orders so
+        WHERE so.contract_id = c.id) AS "isClosed"
+      FROM public.contracts c
+      ${contractId ? "WHERE c.id = $1" : ""}
+      ORDER BY c.name ASC`,
     contractId ? [contractId] : []
   );
   const contracts = contractResult.rows;
@@ -217,15 +222,12 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
 
   const contractIds = contracts.map((contract) => contract.id as string);
   const orderResult = await pool.query(
-    `SELECT id, contract_id AS "contractId", service_order_number AS "serviceOrderNumber",
-       internal_number AS "internalNumber", to_char(valid_from, 'YYYY-MM-DD') AS "validFrom",
-       to_char(valid_to, 'YYYY-MM-DD') AS "validTo", service_description AS "serviceDescription",
-       addendum_number AS "addendumNumber",
-       to_char(addendum_valid_from, 'YYYY-MM-DD') AS "addendumValidFrom",
-       to_char(addendum_valid_to, 'YYYY-MM-DD') AS "addendumValidTo"
+    `SELECT id, contract_id AS "contractId", siaf_number AS "siafNumber",
+       sei_document_number AS "seiDocumentNumber", to_char(valid_from, 'YYYY-MM-DD') AS "validFrom",
+       to_char(valid_to, 'YYYY-MM-DD') AS "validTo", service_description AS "serviceDescription"
      FROM public.contract_service_orders
      WHERE contract_id = ANY($1::uuid[])
-     ORDER BY valid_from ASC, service_order_number ASC`,
+    ORDER BY valid_from ASC, siaf_number ASC`,
     [contractIds]
   );
   const orders = orderResult.rows;
@@ -273,14 +275,11 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
     const contractOrders = ordersByContract.get(contractKey) ?? [];
     contractOrders.push({
       id: order.id,
-      serviceOrderNumber: order.serviceOrderNumber,
-      internalNumber: order.internalNumber,
+      siafNumber: order.siafNumber,
+      seiDocumentNumber: order.seiDocumentNumber,
       validFrom: order.validFrom,
       validTo: order.validTo,
       serviceDescription: order.serviceDescription,
-      addendumNumber: order.addendumNumber,
-      addendumValidFrom: order.addendumValidFrom,
-      addendumValidTo: order.addendumValidTo,
       monthlyEntries: entriesByOrder.get(order.id as string) ?? [],
     });
     ordersByContract.set(contractKey, contractOrders);
@@ -309,6 +308,7 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
     executionSummary: contract.executionSummary,
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
+    isClosed: contract.isClosed === true,
     serviceOrders: ordersByContract.get(contract.id) ?? [],
     financialDocuments: documentsByContract.get(contract.id) ?? [],
   }));

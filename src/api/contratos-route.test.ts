@@ -44,18 +44,16 @@ describe("app/api/contratos", () => {
         executionSummary: "Execução contratual.",
         createdAt: "2026-10-01T00:00:00.000Z",
         updatedAt: "2026-10-01T00:00:00.000Z",
+        isClosed: false,
       }] })
       .mockResolvedValueOnce({ rows: [{
         id: "order-1",
         contractId: "contract-1",
-        serviceOrderNumber: "OS-123",
-        internalNumber: "INT-123",
+        siafNumber: "OS-123",
+        seiDocumentNumber: "50465842",
         validFrom: "2026-01-01",
         validTo: "2026-12-31",
         serviceDescription: "Serviços de teste.",
-        addendumNumber: null,
-        addendumValidFrom: null,
-        addendumValidTo: null,
       }] })
       .mockResolvedValueOnce({ rows: [{
         id: "entry-1",
@@ -77,8 +75,8 @@ describe("app/api/contratos", () => {
         totalValue: "12000.50",
         executionSummary: "Execução contratual.",
         initialServiceOrder: {
-          serviceOrderNumber: "OS-123",
-          internalNumber: "INT-123",
+          siafNumber: "OS-123",
+          seiDocumentNumber: "50465842",
           validFrom: "2026-01-01",
           validTo: "2026-12-31",
           serviceDescription: "Serviços de teste.",

@@ -46,20 +46,16 @@ export async function POST(request: NextRequest) {
       const order = validation.serviceOrder;
       const orderResult = await client.query(
         `INSERT INTO public.contract_service_orders (
-           contract_id, service_order_number, internal_number, valid_from, valid_to,
-           service_description, addendum_number, addendum_valid_from, addendum_valid_to
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           contract_id, siaf_number, sei_document_number, valid_from, valid_to, service_description
+         ) VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
         [
           contractId,
-          order.serviceOrderNumber,
-          order.internalNumber,
+          order.siafNumber,
+          order.seiDocumentNumber,
           order.validFrom,
           order.validTo,
           order.serviceDescription,
-          order.addendumNumber,
-          order.addendumValidFrom,
-          order.addendumValidTo,
         ]
       );
       const orderId = orderResult.rows[0].id as string;

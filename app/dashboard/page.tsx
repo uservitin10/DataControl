@@ -292,6 +292,20 @@ export default function DashboardPage() {
 
                 <button
                   type="button"
+                  onClick={() => router.push("/contratos")}
+                  className="group rounded-[2rem] border border-slate-200/80 bg-white p-8 text-left shadow-[0_20px_50px_-30px_rgba(15,23,42,0.18)] transition duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-gov-muted">
+                    Contratos
+                  </p>
+                  <h2 className="mt-4 text-2xl font-bold text-gov-heading">Gestão de contratos</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    Consulte contratos, ordens de serviço e saldos financeiros.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => router.push("/sistemas")}
                   className="group rounded-[2rem] border border-slate-200/80 bg-white p-8 text-left shadow-[0_20px_50px_-30px_rgba(15,23,42,0.18)] transition duration-200 hover:-translate-y-1 hover:shadow-lg"
                 >

@@ -20,24 +20,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       const order = validation.serviceOrder;
       const result = await pool.query(
         `UPDATE public.contract_service_orders
-         SET service_order_number = $1, internal_number = $2, valid_from = $3, valid_to = $4,
-           service_description = $5, addendum_number = $6, addendum_valid_from = $7,
-           addendum_valid_to = $8, updated_at = NOW()
-         WHERE id = $9 AND contract_id = $10
-         RETURNING id, service_order_number AS "serviceOrderNumber", internal_number AS "internalNumber",
+         SET siaf_number = $1, sei_document_number = $2, valid_from = $3, valid_to = $4,
+           service_description = $5, updated_at = NOW()
+         WHERE id = $6 AND contract_id = $7
+         RETURNING id, siaf_number AS "siafNumber", sei_document_number AS "seiDocumentNumber",
            to_char(valid_from, 'YYYY-MM-DD') AS "validFrom", to_char(valid_to, 'YYYY-MM-DD') AS "validTo",
-           service_description AS "serviceDescription", addendum_number AS "addendumNumber",
-           to_char(addendum_valid_from, 'YYYY-MM-DD') AS "addendumValidFrom",
-           to_char(addendum_valid_to, 'YYYY-MM-DD') AS "addendumValidTo"`,
+           service_description AS "serviceDescription"`,
         [
-          order.serviceOrderNumber,
-          order.internalNumber,
+          order.siafNumber,
+          order.seiDocumentNumber,
           order.validFrom,
           order.validTo,
           order.serviceDescription,
-          order.addendumNumber,
-          order.addendumValidFrom,
-          order.addendumValidTo,
           ordemId,
           id,
         ]
@@ -49,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         action: "update_contract_service_order",
         resource_type: "contract",
         resource_id: id,
-        details: `Ordem de serviço ${order.serviceOrderNumber} atualizada.`,
+        details: `Ordem de serviço ${order.siafNumber} atualizada.`,
       });
       return apiSuccess(result.rows[0]);
     } catch (error) {
@@ -65,7 +59,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       const result = await pool.query(
         `DELETE FROM public.contract_service_orders
          WHERE id = $1 AND contract_id = $2
-         RETURNING id, service_order_number`,
+         RETURNING id, siaf_number`,
         [ordemId, id]
       );
       if (!result.rows[0]) return apiNotFound("Ordem de serviço não encontrada.");
@@ -75,7 +69,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         action: "delete_contract_service_order",
         resource_type: "contract",
         resource_id: id,
-        details: `Ordem de serviço ${result.rows[0].service_order_number} excluída.`,
+        details: `Ordem de serviço ${result.rows[0].siaf_number} excluída.`,
       });
       return apiSuccess({ deleted: true });
     } catch (error) {
