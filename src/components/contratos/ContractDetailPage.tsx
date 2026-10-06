@@ -80,7 +80,9 @@ export function ContractDetailPage() {
   const [modal, setModal] = useState<DetailModal>(null);
   const [orderForm, setOrderForm] = useState<OrderForm>(emptyOrder);
   const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntry);
+  const [collapsedOrderIds, setCollapsedOrderIds] = useState<Set<string>>(() => new Set());
   const canManage = ["admin", "editor"].includes(session?.user?.role ?? "");
+  const isAdmin = session?.user?.role === "admin";
 
   const loadContract = useCallback(async () => {
     const response = await fetchJson<{ data: ContractRecord }>(`/api/contratos/${encodeURIComponent(contractId)}`);
@@ -226,6 +228,8 @@ export function ContractDetailPage() {
     return <main className="gov-page-bg min-h-screen p-8"><PageHeader title="Contrato não encontrado" backHref="/contratos" />{error && <p role="alert" className="text-red-700">{error}</p>}</main>;
   }
 
+  const canAddInformation = canManage && (!contract.isClosed || isAdmin);
+
   return (
     <main className="gov-page-bg min-h-screen">
       <nav className="gov-header px-6 py-4 shadow-soft">
@@ -244,10 +248,10 @@ export function ContractDetailPage() {
           title={contract.name}
           subtitle={contract.executionSummary}
           backHref="/contratos"
-          actions={canManage && !contract.isClosed ? <button type="button" onClick={openCreateOrder} className="gov-button rounded-lg px-4 py-2 text-sm font-semibold">+ Nova OS</button> : null}
+          actions={canAddInformation ? <button type="button" onClick={openCreateOrder} className="gov-button rounded-lg px-4 py-2 text-sm font-semibold">+ Nova OS</button> : null}
         />
 
-        {contract.isClosed && <div aria-live="polite" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Contrato encerrado. Não é possível adicionar novas informações.</div>}
+        {contract.isClosed && <div aria-live="polite" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Contrato encerrado. {isAdmin ? "Administradores podem adicionar OS e lançamentos para completar o cadastro." : "Somente administradores podem adicionar novas informações."}</div>}
 
         <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Resumo financeiro do contrato">
           <Summary label="Valor total do contrato" value={formatCurrency(contract.totalValue)} />
@@ -267,6 +271,7 @@ export function ContractDetailPage() {
             {contract.serviceOrders.map((order) => {
               const orderPaid = order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
               const orderGlosas = order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
+              const isOrderCollapsed = collapsedOrderIds.has(order.id);
               return <article key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 p-5">
                   <div>
@@ -274,32 +279,48 @@ export function ContractDetailPage() {
                     <p className="mt-1 text-sm text-slate-600">Documento SEI: {order.seiDocumentNumber}</p>
                   </div>
                   {canManage && <div className="flex gap-2">
-                    {!contract.isClosed && <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>}
+                    {canAddInformation && <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>}
                     <button type="button" onClick={() => openEditOrder(order)} className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar OS</button>
                     <button type="button" onClick={() => void handleDeleteOrder(order)} disabled={deletingId === order.id} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Excluir OS</button>
                   </div>}
+                  <button
+                    type="button"
+                    aria-expanded={!isOrderCollapsed}
+                    aria-controls={`order-details-${order.id}`}
+                    onClick={() => setCollapsedOrderIds((current) => {
+                      const next = new Set(current);
+                      if (next.has(order.id)) next.delete(order.id);
+                      else next.add(order.id);
+                      return next;
+                    })}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-white"
+                  >
+                    {isOrderCollapsed ? "Expandir OS" : "Minimizar OS"}
+                  </button>
                 </header>
 
-                <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 xl:grid-cols-4">
-                  <Info label="Vigência" value={`${formatDate(order.validFrom)} a ${formatDate(order.validTo)}`} />
-                  <Info label="Total pago / glosas" value={`${formatCurrency(orderPaid)} / ${formatCurrency(orderGlosas)}`} />
-                  <Info label="Resumo da execução" value={order.serviceDescription} wide />
-                </div>
+                {!isOrderCollapsed && <div id={`order-details-${order.id}`}>
+                  <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 xl:grid-cols-4">
+                    <Info label="Vigência" value={`${formatDate(order.validFrom)} a ${formatDate(order.validTo)}`} />
+                    <Info label="Total pago / glosas" value={`${formatCurrency(orderPaid)} / ${formatCurrency(orderGlosas)}`} />
+                    <Info label="Resumo da execução" value={order.serviceDescription} wide />
+                  </div>
 
-                <div className="p-5">
-                  <h4 className="mb-3 text-sm font-semibold text-slate-800">Pagamentos mensais</h4>
-                  {order.monthlyEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="min-w-full text-left text-xs">
-                      <thead className="bg-slate-50 uppercase text-slate-500"><tr>
-                        <th className="px-4 py-3">Mês de referência</th><th className="px-4 py-3">Processo de pagamento (SEI)</th><th className="px-4 py-3">Empenho</th><th className="px-4 py-3">Valor pago</th><th className="px-4 py-3">Glosas</th><th className="px-4 py-3">Valor líquido</th><th className="px-4 py-3">Resumo da execução</th>{canManage && <th className="px-4 py-3">Ações</th>}
-                      </tr></thead>
-                      <tbody className="divide-y divide-slate-100">{order.monthlyEntries.map((entry) => <tr key={entry.id}>
-                        <td className="whitespace-nowrap px-4 py-3">{formatMonth(entry.referenceMonth)}</td><td className="whitespace-nowrap px-4 py-3">{entry.paymentProcessNumber}</td><td className="whitespace-nowrap px-4 py-3">{entry.empenho}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.monthlyPaidValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.glosasValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.monthlyNetValue)}</td><td className="min-w-56 px-4 py-3">{entry.executionSummary}</td>
-                        {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => openEntryForm(order, entry)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void handleDeleteEntry(order, entry)} disabled={deletingId === entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
-                      </tr>)}</tbody>
-                    </table>
-                  </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum pagamento registrado para esta OS.</p>}
-                </div>
+                  <div className="p-5">
+                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Pagamentos mensais</h4>
+                    {order.monthlyEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="min-w-full text-left text-xs">
+                        <thead className="bg-slate-50 uppercase text-slate-500"><tr>
+                          <th className="px-4 py-3">Mês de referência</th><th className="px-4 py-3">Processo de pagamento (SEI)</th><th className="px-4 py-3">Empenho</th><th className="px-4 py-3">Valor pago</th><th className="px-4 py-3">Glosas</th><th className="px-4 py-3">Valor líquido</th><th className="px-4 py-3">Resumo da execução</th>{canManage && <th className="px-4 py-3">Ações</th>}
+                        </tr></thead>
+                        <tbody className="divide-y divide-slate-100">{order.monthlyEntries.map((entry) => <tr key={entry.id}>
+                          <td className="whitespace-nowrap px-4 py-3">{formatMonth(entry.referenceMonth)}</td><td className="whitespace-nowrap px-4 py-3">{entry.paymentProcessNumber}</td><td className="whitespace-nowrap px-4 py-3">{entry.empenho}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.monthlyPaidValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.glosasValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.monthlyNetValue)}</td><td className="min-w-56 px-4 py-3">{entry.executionSummary}</td>
+                          {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => openEntryForm(order, entry)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void handleDeleteEntry(order, entry)} disabled={deletingId === entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
+                        </tr>)}</tbody>
+                      </table>
+                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum pagamento registrado para esta OS.</p>}
+                  </div>
+                </div>}
               </article>;
             })}
           </div>

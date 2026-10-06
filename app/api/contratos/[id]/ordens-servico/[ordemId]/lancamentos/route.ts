@@ -25,8 +25,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
       const order = orderResult.rows[0];
       if (!order) return apiNotFound("Ordem de serviço não encontrada.");
-      if (await getContractClosureStatus(id)) {
-        return apiError("Não é possível adicionar informações a um contrato encerrado.", 409);
+      if (user.role !== "admin" && await getContractClosureStatus(id)) {
+        return apiError("Somente administradores podem adicionar informações a um contrato encerrado.", 409);
       }
 
       const entry = validation.entry;
