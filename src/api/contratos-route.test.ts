@@ -68,6 +68,7 @@ describe("app/api/contratos", () => {
         createdAt: "2026-10-01T00:00:00.000Z",
         updatedAt: "2026-10-01T00:00:00.000Z",
       }] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     const request = {
       json: async () => ({
@@ -100,6 +101,64 @@ describe("app/api/contratos", () => {
     expect(clientQuery).toHaveBeenNthCalledWith(5, "COMMIT");
     expect(release).toHaveBeenCalled();
     expect(addAuditLogMock).toHaveBeenCalled();
+  });
+
+  it("cria contrato anual sem inserir lançamento mensal", async () => {
+    const clientQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: "gartner-1" }] })
+      .mockResolvedValueOnce({ rows: [{ id: "order-11" }] })
+      .mockResolvedValueOnce({ rows: [] });
+    poolConnectMock.mockResolvedValue({ query: clientQuery, release: jest.fn() });
+    poolQueryMock
+      .mockResolvedValueOnce({ rows: [{
+        id: "gartner-1",
+        name: "Gartner",
+        totalValue: "2296200.00",
+        executionSummary: "Execução anual Gartner.",
+        paymentFrequency: "annual",
+        validFrom: "2024-12-30",
+        validTo: "2026-12-30",
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+        isClosed: false,
+      }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: "order-11",
+        contractId: "gartner-1",
+        siafNumber: "11",
+        seiDocumentNumber: "47320218",
+        validFrom: null,
+        validTo: null,
+        serviceDescription: "Ordem de serviço Gartner 11.",
+      }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const request = {
+      json: async () => ({
+        name: "Gartner",
+        totalValue: "2296200.00",
+        executionSummary: "Execução anual Gartner.",
+        paymentFrequency: "annual",
+        validFrom: "2024-12-30",
+        validTo: "2026-12-30",
+        initialServiceOrder: {
+          siafNumber: "11",
+          seiDocumentNumber: "47320218",
+          validFrom: "",
+          validTo: "",
+          serviceDescription: "Ordem de serviço Gartner 11.",
+        },
+      }),
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(clientQuery).toHaveBeenCalledTimes(4);
+    expect(clientQuery.mock.calls.some(([query]) => String(query).includes("contract_monthly_entries"))).toBe(false);
+    expect(clientQuery).toHaveBeenLastCalledWith("COMMIT");
   });
 
   it("rejects incomplete input without opening a database transaction", async () => {

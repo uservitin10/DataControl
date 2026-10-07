@@ -1,6 +1,7 @@
 import pool from "@/lib/db";
 import type {
   ContractEntryInput,
+  ContractAnnualEntryInput,
   ContractInput,
   ContractRecord,
   ContractServiceOrderInput,
@@ -16,17 +17,28 @@ export type ValidatedContractEntry = {
   empenho: string;
 };
 
+export type ValidatedContractAnnualEntry = {
+  paymentProcessNumber: string;
+  annualPaidValue: string;
+  glosasValue: string;
+  fiscalYear: number;
+  executionSummary: string;
+};
+
 export type ValidatedContract = {
   name: string;
   totalValue: string;
   executionSummary: string;
+  paymentFrequency: "monthly" | "annual";
+  validFrom: string | null;
+  validTo: string | null;
 };
 
 export type ValidatedContractServiceOrder = {
   siafNumber: string;
   seiDocumentNumber: string;
-  validFrom: string;
-  validTo: string;
+  validFrom: string | null;
+  validTo: string | null;
   serviceDescription: string;
 };
 
@@ -48,6 +60,14 @@ const readDate = (value: unknown) => {
   return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== raw ? null : raw;
 };
 
+const readOptionalDate = (value: unknown) => {
+  if (value === undefined || value === null || value === "") {
+    return { date: null, valid: true };
+  }
+  const date = readDate(value);
+  return { date, valid: date !== null };
+};
+
 export function validateContractInput(body: unknown): {
   contract: ValidatedContract | null;
   error: string | null;
@@ -60,15 +80,37 @@ export function validateContractInput(body: unknown): {
   const name = readRequiredText(input.name);
   const totalValue = readAmount(input.totalValue);
   const executionSummary = readRequiredText(input.executionSummary);
+  const paymentFrequency = name.toLocaleLowerCase("pt-BR") === "gartner" ? "annual" : "monthly";
+  const requestedFrequency = input.paymentFrequency ?? paymentFrequency;
+  const validFrom = readOptionalDate(input.validFrom);
+  const validTo = readOptionalDate(input.validTo);
 
-  if (!name || !totalValue || !executionSummary) {
+  if (
+    !name ||
+    !totalValue ||
+    !executionSummary ||
+    requestedFrequency !== paymentFrequency ||
+    !validFrom.valid ||
+    !validTo.valid ||
+    (validFrom.date && validTo.date && validFrom.date > validTo.date)
+  ) {
     return {
       contract: null,
-      error: "Nome, valor total válido e resumo da execução são obrigatórios.",
+      error: "Informe nome, valor, resumo, periodicidade e datas de vigência válidas.",
     };
   }
 
-  return { contract: { name, totalValue, executionSummary }, error: null };
+  return {
+    contract: {
+      name,
+      totalValue,
+      executionSummary,
+      paymentFrequency,
+      validFrom: validFrom.date,
+      validTo: validTo.date,
+    },
+    error: null,
+  };
 }
 
 export function validateContractServiceOrderInput(body: unknown): {
@@ -82,16 +124,16 @@ export function validateContractServiceOrderInput(body: unknown): {
   const input = body as ContractServiceOrderInput;
   const siafNumber = readRequiredText(input.siafNumber);
   const seiDocumentNumber = readRequiredText(input.seiDocumentNumber);
-  const validFrom = readDate(input.validFrom);
-  const validTo = readDate(input.validTo);
+  const validFrom = readOptionalDate(input.validFrom);
+  const validTo = readOptionalDate(input.validTo);
   const serviceDescription = readRequiredText(input.serviceDescription);
 
   if (
     !siafNumber ||
     !seiDocumentNumber ||
-    !validFrom ||
-    !validTo ||
-    validFrom > validTo ||
+    !validFrom.valid ||
+    !validTo.valid ||
+    (validFrom.date && validTo.date && validFrom.date > validTo.date) ||
     !serviceDescription
   ) {
     return {
@@ -104,8 +146,8 @@ export function validateContractServiceOrderInput(body: unknown): {
     serviceOrder: {
       siafNumber,
       seiDocumentNumber,
-      validFrom,
-      validTo,
+      validFrom: validFrom.date,
+      validTo: validTo.date,
       serviceDescription,
     },
     error: null,
@@ -114,12 +156,16 @@ export function validateContractServiceOrderInput(body: unknown): {
 
 export async function getContractClosureStatus(contractId: string) {
   const result = await pool.query(
-    `SELECT COALESCE(
-       BOOL_AND(valid_to IS NOT NULL AND valid_to < CURRENT_DATE) AND COUNT(*) > 0,
-       false
-     ) AS "isClosed"
-     FROM public.contract_service_orders
-     WHERE contract_id = $1`,
+    `SELECT CASE
+       WHEN c.valid_to IS NOT NULL THEN c.valid_to < CURRENT_DATE
+       ELSE COALESCE((
+         SELECT BOOL_AND(valid_to IS NOT NULL AND valid_to < CURRENT_DATE) AND COUNT(*) > 0
+         FROM public.contract_service_orders
+         WHERE contract_id = c.id
+       ), false)
+     END AS "isClosed"
+     FROM public.contracts c
+     WHERE c.id = $1`,
     [contractId]
   );
   return result.rows[0]?.isClosed === true;
@@ -144,6 +190,24 @@ export function validateCreateContractInput(body: unknown): {
   const orderResult = validateContractServiceOrderInput(input.initialServiceOrder);
   if (!orderResult.serviceOrder) {
     return { contract: null, serviceOrder: null, entry: null, error: orderResult.error };
+  }
+
+  if (contractResult.contract.paymentFrequency === "annual" && input.initialEntry) {
+    return {
+      contract: null,
+      serviceOrder: null,
+      entry: null,
+      error: "Contratos com baixa anual não aceitam lançamento mensal inicial.",
+    };
+  }
+
+  if (contractResult.contract.paymentFrequency === "annual") {
+    return {
+      contract: contractResult.contract,
+      serviceOrder: orderResult.serviceOrder,
+      entry: null,
+      error: null,
+    };
   }
 
   const entryResult = validateContractEntryInput(input.initialEntry);
@@ -202,16 +266,58 @@ export function validateContractEntryInput(body: unknown): {
   };
 }
 
+export function validateContractAnnualEntryInput(body: unknown): {
+  annualEntry: ValidatedContractAnnualEntry | null;
+  error: string | null;
+} {
+  if (!body || typeof body !== "object") {
+    return { annualEntry: null, error: "Dados da baixa anual inválidos." };
+  }
+
+  const input = body as ContractAnnualEntryInput;
+  const paymentProcessNumber = readRequiredText(input.paymentProcessNumber);
+  const annualPaidValue = readAmount(input.annualPaidValue);
+  const glosasValue = readAmount(input.glosasValue);
+  const fiscalYearText = String(input.fiscalYear ?? "").trim();
+  const fiscalYear = Number(fiscalYearText);
+  const executionSummary = readRequiredText(input.executionSummary);
+
+  if (
+    !paymentProcessNumber ||
+    !annualPaidValue ||
+    !glosasValue ||
+    !/^\d{4}$/.test(fiscalYearText) ||
+    fiscalYear < 1900 ||
+    fiscalYear > 9999 ||
+    !executionSummary
+  ) {
+    return {
+      annualEntry: null,
+      error: "Informe processo, exercício, valores válidos e resumo da execução.",
+    };
+  }
+
+  return {
+    annualEntry: { paymentProcessNumber, annualPaidValue, glosasValue, fiscalYear, executionSummary },
+    error: null,
+  };
+}
+
 export async function getContractsWithDetails(contractId?: string): Promise<ContractRecord[]> {
   const contractResult = await pool.query(
      `SELECT c.id, c.name, c.total_value::text AS "totalValue",
-       c.execution_summary AS "executionSummary", c.created_at AS "createdAt", c.updated_at AS "updatedAt",
-       (SELECT COALESCE(
-         BOOL_AND(so.valid_to IS NOT NULL AND so.valid_to < CURRENT_DATE) AND COUNT(*) > 0,
-         false
-        )
-        FROM public.contract_service_orders so
-        WHERE so.contract_id = c.id) AS "isClosed"
+       c.execution_summary AS "executionSummary", c.payment_frequency AS "paymentFrequency",
+       to_char(c.valid_from, 'YYYY-MM-DD') AS "validFrom",
+       to_char(c.valid_to, 'YYYY-MM-DD') AS "validTo",
+       c.created_at AS "createdAt", c.updated_at AS "updatedAt",
+       CASE
+         WHEN c.valid_to IS NOT NULL THEN c.valid_to < CURRENT_DATE
+         ELSE COALESCE((
+           SELECT BOOL_AND(so.valid_to IS NOT NULL AND so.valid_to < CURRENT_DATE) AND COUNT(*) > 0
+           FROM public.contract_service_orders so
+           WHERE so.contract_id = c.id
+         ), false)
+       END AS "isClosed"
       FROM public.contracts c
       ${contractId ? "WHERE c.id = $1" : ""}
       ORDER BY c.name ASC`,
@@ -250,6 +356,23 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
       )
     : { rows: [] };
 
+  const annualEntryResult = orderIds.length
+    ? await pool.query(
+        `SELECT id, service_order_id AS "serviceOrderId",
+           payment_process_number AS "paymentProcessNumber",
+           annual_paid_value::text AS "annualPaidValue",
+           annual_net_value::text AS "annualNetValue",
+           glosas_value::text AS "glosasValue",
+           fiscal_year AS "fiscalYear",
+           execution_summary AS "executionSummary",
+           created_at AS "createdAt", updated_at AS "updatedAt"
+         FROM public.contract_annual_entries
+         WHERE service_order_id = ANY($1::uuid[])
+         ORDER BY fiscal_year DESC`,
+        [orderIds]
+      )
+    : { rows: [] };
+
   const financialResult = await pool.query(
     `SELECT id, contract_id AS "contractId", fiscal_year AS "fiscalYear",
        document_type AS "documentType", document_number AS "documentNumber",
@@ -269,6 +392,14 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
     entriesByOrder.set(orderId, entries);
   }
 
+  const annualEntriesByOrder = new Map<string, ContractRecord["serviceOrders"][number]["annualEntries"]>();
+  for (const entry of annualEntryResult.rows) {
+    const orderId = entry.serviceOrderId as string;
+    const entries = annualEntriesByOrder.get(orderId) ?? [];
+    entries.push({ ...entry, fiscalYear: Number(entry.fiscalYear) });
+    annualEntriesByOrder.set(orderId, entries);
+  }
+
   const ordersByContract = new Map<string, ContractRecord["serviceOrders"]>();
   for (const order of orders) {
     const contractKey = order.contractId as string;
@@ -281,6 +412,7 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
       validTo: order.validTo,
       serviceDescription: order.serviceDescription,
       monthlyEntries: entriesByOrder.get(order.id as string) ?? [],
+      annualEntries: annualEntriesByOrder.get(order.id as string) ?? [],
     });
     ordersByContract.set(contractKey, contractOrders);
   }
@@ -306,6 +438,9 @@ export async function getContractsWithDetails(contractId?: string): Promise<Cont
     name: contract.name,
     totalValue: contract.totalValue,
     executionSummary: contract.executionSummary,
+    paymentFrequency: contract.paymentFrequency,
+    validFrom: contract.validFrom,
+    validTo: contract.validTo,
     createdAt: contract.createdAt,
     updatedAt: contract.updatedAt,
     isClosed: contract.isClosed === true,

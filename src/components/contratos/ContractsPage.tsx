@@ -15,6 +15,9 @@ type ContractFormState = {
   name: string;
   totalValue: string;
   executionSummary: string;
+  paymentFrequency: "monthly" | "annual";
+  contractValidFrom: string;
+  contractValidTo: string;
   siafNumber: string;
   seiDocumentNumber: string;
   validFrom: string;
@@ -39,6 +42,9 @@ const emptyForm = (): ContractFormState => ({
   name: "",
   totalValue: "",
   executionSummary: "",
+  paymentFrequency: "monthly",
+  contractValidFrom: "",
+  contractValidTo: "",
   siafNumber: "",
   seiDocumentNumber: "",
   validFrom: "",
@@ -104,6 +110,7 @@ export function ContractsPage() {
           order.seiDocumentNumber,
           order.serviceDescription,
           ...order.monthlyEntries.flatMap((entry) => [entry.paymentProcessNumber, entry.empenho, entry.executionSummary]),
+          ...order.annualEntries.map((entry) => `${entry.paymentProcessNumber} ${entry.fiscalYear} ${entry.executionSummary}`),
         ]),
         ...contract.financialDocuments.flatMap((document) => [document.documentNumber, document.seiReference, document.coverageDescription]),
       ];
@@ -123,7 +130,15 @@ export function ContractsPage() {
   };
 
   const openEditContract = (contract: ContractRecord) => {
-    setForm({ ...emptyForm(), name: contract.name, totalValue: contract.totalValue, executionSummary: contract.executionSummary });
+    setForm({
+      ...emptyForm(),
+      name: contract.name,
+      totalValue: contract.totalValue,
+      executionSummary: contract.executionSummary,
+      paymentFrequency: contract.paymentFrequency,
+      contractValidFrom: contract.validFrom ?? "",
+      contractValidTo: contract.validTo ?? "",
+    });
     setError("");
     setModal({ type: "contract", contract });
   };
@@ -140,12 +155,18 @@ export function ContractsPage() {
           name: form.name,
           totalValue: form.totalValue,
           executionSummary: form.executionSummary,
+          paymentFrequency: form.paymentFrequency,
+          validFrom: form.contractValidFrom || null,
+          validTo: form.contractValidTo || null,
         });
       } else {
         await postJson("/api/contratos", {
           name: form.name,
           totalValue: form.totalValue,
           executionSummary: form.executionSummary,
+          paymentFrequency: form.paymentFrequency,
+          validFrom: form.contractValidFrom || null,
+          validTo: form.contractValidTo || null,
           initialServiceOrder: {
             siafNumber: form.siafNumber,
             seiDocumentNumber: form.seiDocumentNumber,
@@ -153,14 +174,14 @@ export function ContractsPage() {
             validTo: form.validTo,
             serviceDescription: form.serviceDescription,
           },
-          initialEntry: {
+          ...(form.paymentFrequency === "monthly" ? { initialEntry: {
             paymentProcessNumber: form.paymentProcessNumber,
             monthlyPaidValue: form.monthlyPaidValue,
             glosasValue: form.glosasValue,
             referenceMonth: form.referenceMonth,
             executionSummary: form.monthlyExecutionSummary,
             empenho: form.empenho,
-          },
+          } } : {}),
         });
       }
 
@@ -247,7 +268,12 @@ export function ContractsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredContracts.map((contract) => {
-                  const entries = contract.serviceOrders.flatMap((order) => order.monthlyEntries);
+                  const monthlyEntries = contract.serviceOrders.flatMap((order) => order.monthlyEntries);
+                  const annualEntries = contract.serviceOrders.flatMap((order) => order.annualEntries);
+                  const entries = [
+                    ...monthlyEntries.map((entry) => ({ monthlyPaidValue: entry.monthlyPaidValue })),
+                    ...annualEntries.map((entry) => ({ monthlyPaidValue: entry.annualPaidValue })),
+                  ];
                   const paid = entries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
                   const decentralized = getDecentralizedTotal(contract.financialDocuments);
                   const balance = getAvailableBalance(contract.financialDocuments, entries);
@@ -295,10 +321,24 @@ export function ContractsPage() {
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium text-slate-700">Nome do contrato *
-                <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <input required value={form.name} onChange={(event) => setForm((current) => {
+                  const name = event.target.value;
+                  const paymentFrequency = name.trim().toLocaleLowerCase("pt-BR") === "gartner" ? "annual" : "monthly";
+                  return { ...current, name, paymentFrequency };
+                })} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
               </label>
               <label className="text-sm font-medium text-slate-700">Valor total (R$) *
                 <input required type="number" min="0" step="0.01" value={form.totalValue} onChange={(event) => setForm((current) => ({ ...current, totalValue: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+              </label>
+              <div className="text-sm font-medium text-slate-700">
+                <p>Periodicidade das baixas</p>
+                <p className="mt-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5">{form.paymentFrequency === "annual" ? "Anual" : "Mensal"}</p>
+              </div>
+              <label className="text-sm font-medium text-slate-700">Início da vigência do contrato
+                <input type="date" value={form.contractValidFrom} onChange={(event) => setForm((current) => ({ ...current, contractValidFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+              </label>
+              <label className="text-sm font-medium text-slate-700">Fim da vigência do contrato
+                <input type="date" value={form.contractValidTo} onChange={(event) => setForm((current) => ({ ...current, contractValidTo: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
               </label>
               <label className="text-sm font-medium text-slate-700 sm:col-span-2">Resumo da execução do contrato *
                 <textarea required rows={3} value={form.executionSummary} onChange={(event) => setForm((current) => ({ ...current, executionSummary: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
@@ -314,17 +354,18 @@ export function ContractsPage() {
                 <label className="text-sm font-medium text-slate-700">Número do documento SEI *
                   <input required value={form.seiDocumentNumber} onChange={(event) => setForm((current) => ({ ...current, seiDocumentNumber: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
-                <label className="text-sm font-medium text-slate-700">Vigência inicial *
-                  <input required type="date" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <label className="text-sm font-medium text-slate-700">Vigência inicial da OS
+                  <input type="date" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
-                <label className="text-sm font-medium text-slate-700">Vigência final *
-                  <input required type="date" value={form.validTo} onChange={(event) => setForm((current) => ({ ...current, validTo: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <label className="text-sm font-medium text-slate-700">Vigência final da OS
+                  <input type="date" value={form.validTo} onChange={(event) => setForm((current) => ({ ...current, validTo: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
                 <label className="text-sm font-medium text-slate-700 sm:col-span-2">Descrição do serviço *
                   <input required value={form.serviceDescription} onChange={(event) => setForm((current) => ({ ...current, serviceDescription: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
                 </label>
               </div>
 
+              {form.paymentFrequency === "monthly" && <>
               <h3 className="mb-3 border-t border-slate-200 pt-5 text-base font-semibold text-slate-900">Primeiro lançamento mensal</h3>
               <div className="mb-4 grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium text-slate-700">Processo de pagamento (SEI) *
@@ -347,6 +388,7 @@ export function ContractsPage() {
                 </label>
               </div>
               <p className="mb-4 text-xs text-slate-500">Os campos marcados com * são obrigatórios. Glosas devem ser preenchidas com 0,00 quando não houver. Não há anexos nesta versão.</p>
+              </>}
             </>}
 
             {error && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}

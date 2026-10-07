@@ -5,7 +5,11 @@ import {
   isContractClosed,
   isServiceOrderExpired,
 } from "./contract-calculations";
-import { validateContractEntryInput, validateCreateContractInput } from "./contratos";
+import {
+  validateContractAnnualEntryInput,
+  validateContractEntryInput,
+  validateCreateContractInput,
+} from "./contratos";
 
 describe("contract payload validation", () => {
   const validEntry = {
@@ -33,7 +37,14 @@ describe("contract payload validation", () => {
     });
 
     expect(result.error).toBeNull();
-    expect(result.contract).toEqual({ name: "Keeggo", totalValue: "12000.50", executionSummary: "Serviços de QA." });
+    expect(result.contract).toEqual({
+      name: "Keeggo",
+      totalValue: "12000.50",
+      executionSummary: "Serviços de QA.",
+      paymentFrequency: "monthly",
+      validFrom: null,
+      validTo: null,
+    });
     expect(result.serviceOrder?.siafNumber).toBe("OS-123");
     expect(result.entry?.referenceMonth).toBe("2026-10-01");
     expect(result.entry?.glosasValue).toBe("0.00");
@@ -43,6 +54,65 @@ describe("contract payload validation", () => {
     expect(validateContractEntryInput({ ...validEntry, empenho: "" }).error).toContain("obrigatórios");
     expect(validateContractEntryInput({ ...validEntry, monthlyPaidValue: "-20" }).error).toContain("obrigatórios");
     expect(validateContractEntryInput({ ...validEntry, referenceMonth: "2026-13" }).error).toContain("obrigatórios");
+  });
+
+  it("validates annual payment entries by fiscal year", () => {
+    expect(validateContractAnnualEntryInput({
+      paymentProcessNumber: "03101.003275/2025-11",
+      annualPaidValue: "1170200.00",
+      glosasValue: "0",
+      fiscalYear: 2026,
+      executionSummary: "Execução anual Gartner.",
+    })).toEqual({
+      annualEntry: {
+        paymentProcessNumber: "03101.003275/2025-11",
+        annualPaidValue: "1170200.00",
+        glosasValue: "0.00",
+        fiscalYear: 2026,
+        executionSummary: "Execução anual Gartner.",
+      },
+      error: null,
+    });
+  });
+
+  it("allows creating an annual contract without a monthly initial entry", () => {
+    const result = validateCreateContractInput({
+      name: "Gartner",
+      totalValue: "2296200.00",
+      executionSummary: "Serviços Gartner conforme as OS cadastradas.",
+      paymentFrequency: "annual",
+      validFrom: "2024-12-30",
+      validTo: "2026-12-30",
+      initialServiceOrder: {
+        siafNumber: "11",
+        seiDocumentNumber: "47320218",
+        validFrom: "",
+        validTo: "",
+        serviceDescription: "OS Gartner 11.",
+      },
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.contract?.paymentFrequency).toBe("annual");
+    expect(result.serviceOrder?.validFrom).toBeNull();
+    expect(result.entry).toBeNull();
+  });
+
+  it("keeps annual frequency exclusive to Gartner", () => {
+    expect(validateCreateContractInput({
+      name: "Outro contrato",
+      totalValue: "1000",
+      executionSummary: "Execução mensal.",
+      paymentFrequency: "annual",
+      initialServiceOrder: {
+        siafNumber: "OS-1",
+        seiDocumentNumber: "SEI-1",
+        validFrom: "2026-01-01",
+        validTo: "2026-12-31",
+        serviceDescription: "Serviços mensais.",
+      },
+      initialEntry: validEntry,
+    }).error).toContain("periodicidade");
   });
 });
 

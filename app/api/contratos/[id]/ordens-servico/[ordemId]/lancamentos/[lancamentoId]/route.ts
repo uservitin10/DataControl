@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
-import { apiInternalError, apiNotFound, apiSuccess, apiValidationError } from "@/lib/api-response";
+import { apiError, apiInternalError, apiNotFound, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { validateContractEntryInput } from "@/lib/contratos";
 
 type Params = { params: Promise<{ id: string; ordemId: string; lancamentoId: string }> };
@@ -17,6 +17,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     try {
       const { id, ordemId, lancamentoId } = await params;
+      const contractResult = await pool.query(
+        "SELECT payment_frequency AS \"paymentFrequency\" FROM public.contracts WHERE id = $1",
+        [id]
+      );
+      if (!contractResult.rows[0]) return apiNotFound("Contrato não encontrado.");
+      if (contractResult.rows[0].paymentFrequency === "annual") {
+        return apiError("Este contrato aceita baixas anuais, não mensais.", 409);
+      }
       const entry = validation.entry;
       const result = await pool.query(
         `UPDATE public.contract_monthly_entries
@@ -60,6 +68,14 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   return withAuth(request, async (user) => {
     try {
       const { id, ordemId, lancamentoId } = await params;
+      const contractResult = await pool.query(
+        "SELECT payment_frequency AS \"paymentFrequency\" FROM public.contracts WHERE id = $1",
+        [id]
+      );
+      if (!contractResult.rows[0]) return apiNotFound("Contrato não encontrado.");
+      if (contractResult.rows[0].paymentFrequency === "annual") {
+        return apiError("Este contrato aceita baixas anuais, não mensais.", 409);
+      }
       const result = await pool.query(
         `DELETE FROM public.contract_monthly_entries
          WHERE id = $1 AND service_order_id = $2 AND contract_id = $3

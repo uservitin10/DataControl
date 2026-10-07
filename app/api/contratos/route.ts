@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
   return withAuth(request, async (user) => {
     const body = await request.json().catch(() => null);
     const validation = validateCreateContractInput(body);
-    if (!validation.contract || !validation.serviceOrder || !validation.entry) {
+    if (
+      !validation.contract ||
+      !validation.serviceOrder ||
+      (validation.contract.paymentFrequency === "monthly" && !validation.entry)
+    ) {
       return apiValidationError(validation.error || "Dados do contrato inválidos.");
     }
 
@@ -32,13 +36,17 @@ export async function POST(request: NextRequest) {
     try {
       await client.query("BEGIN");
       const contractResult = await client.query(
-        `INSERT INTO public.contracts (name, total_value, execution_summary, created_by)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO public.contracts (
+           name, total_value, execution_summary, payment_frequency, valid_from, valid_to, created_by
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
         [
           validation.contract.name,
           validation.contract.totalValue,
           validation.contract.executionSummary,
+          validation.contract.paymentFrequency,
+          validation.contract.validFrom,
+          validation.contract.validTo,
           user.id,
         ]
       );
@@ -60,23 +68,25 @@ export async function POST(request: NextRequest) {
       );
       const orderId = orderResult.rows[0].id as string;
       const entry = validation.entry;
-      await client.query(
-        `INSERT INTO public.contract_monthly_entries (
-           contract_id, service_order_id, payment_process_number, monthly_paid_value,
-           glosas_value, reference_month, execution_summary, empenho, created_by
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          contractId,
-          orderId,
-          entry.paymentProcessNumber,
-          entry.monthlyPaidValue,
-          entry.glosasValue,
-          entry.referenceMonth,
-          entry.executionSummary,
-          entry.empenho,
-          user.id,
-        ]
-      );
+      if (entry) {
+        await client.query(
+          `INSERT INTO public.contract_monthly_entries (
+             contract_id, service_order_id, payment_process_number, monthly_paid_value,
+             glosas_value, reference_month, execution_summary, empenho, created_by
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            contractId,
+            orderId,
+            entry.paymentProcessNumber,
+            entry.monthlyPaidValue,
+            entry.glosasValue,
+            entry.referenceMonth,
+            entry.executionSummary,
+            entry.empenho,
+            user.id,
+          ]
+        );
+      }
       await client.query("COMMIT");
 
       await addAuditLog({

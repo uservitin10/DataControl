@@ -3,6 +3,7 @@ import pool from "@/lib/db";
 import { withAuth } from "@/lib/api-guard";
 import { addAuditLog } from "@/lib/audit";
 import {
+  apiError,
   apiInternalError,
   apiNotFound,
   apiSuccess,
@@ -35,13 +36,40 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     try {
       const { id } = await params;
+      const existingContract = await pool.query(
+        `SELECT c.payment_frequency AS "paymentFrequency",
+           EXISTS (SELECT 1 FROM public.contract_monthly_entries e WHERE e.contract_id = c.id)
+           OR EXISTS (SELECT 1 FROM public.contract_annual_entries e WHERE e.contract_id = c.id) AS "hasEntries"
+         FROM public.contracts c
+         WHERE c.id = $1`,
+        [id]
+      );
+      if (!existingContract.rows[0]) return apiNotFound("Contrato não encontrado.");
+      if (
+        existingContract.rows[0].paymentFrequency !== validation.contract.paymentFrequency &&
+        existingContract.rows[0].hasEntries
+      ) {
+        return apiError("A periodicidade não pode ser alterada após a inclusão de lançamentos.", 409);
+      }
+
       const result = await pool.query(
         `UPDATE public.contracts
-         SET name = $1, total_value = $2, execution_summary = $3, updated_at = NOW()
-         WHERE id = $4
+         SET name = $1, total_value = $2, execution_summary = $3,
+           payment_frequency = $4, valid_from = $5, valid_to = $6, updated_at = NOW()
+         WHERE id = $7
          RETURNING id, name, total_value::text AS "totalValue", execution_summary AS "executionSummary",
+           payment_frequency AS "paymentFrequency", to_char(valid_from, 'YYYY-MM-DD') AS "validFrom",
+           to_char(valid_to, 'YYYY-MM-DD') AS "validTo",
            created_at AS "createdAt", updated_at AS "updatedAt"`,
-        [validation.contract.name, validation.contract.totalValue, validation.contract.executionSummary, id]
+        [
+          validation.contract.name,
+          validation.contract.totalValue,
+          validation.contract.executionSummary,
+          validation.contract.paymentFrequency,
+          validation.contract.validFrom,
+          validation.contract.validTo,
+          id,
+        ]
       );
       if (!result.rows[0]) return apiNotFound("Contrato não encontrado.");
 

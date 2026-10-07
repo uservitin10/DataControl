@@ -9,7 +9,7 @@ import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
 import { getAvailableBalance, getDecentralizedTotal, getFinancialDocumentSignedAmount } from "@/lib/contract-calculations";
-import type { ContractMonthlyEntry, ContractRecord, ContractServiceOrder } from "@/types/contratos";
+import type { ContractAnnualEntry, ContractMonthlyEntry, ContractRecord, ContractServiceOrder } from "@/types/contratos";
 
 type OrderForm = {
   siafNumber: string;
@@ -28,9 +28,18 @@ type EntryForm = {
   empenho: string;
 };
 
+type AnnualEntryForm = {
+  paymentProcessNumber: string;
+  annualPaidValue: string;
+  glosasValue: string;
+  fiscalYear: string;
+  executionSummary: string;
+};
+
 type DetailModal =
   | { type: "order"; order: ContractServiceOrder | null }
   | { type: "entry"; order: ContractServiceOrder; entry: ContractMonthlyEntry | null }
+  | { type: "annualEntry"; order: ContractServiceOrder; entry: ContractAnnualEntry | null }
   | null;
 
 const emptyOrder = (): OrderForm => ({
@@ -52,6 +61,14 @@ const emptyEntry = (): EntryForm => {
     empenho: "",
   };
 };
+
+const emptyAnnualEntry = (): AnnualEntryForm => ({
+  paymentProcessNumber: "",
+  annualPaidValue: "",
+  glosasValue: "0.00",
+  fiscalYear: String(new Date().getFullYear()),
+  executionSummary: "",
+});
 
 const formatCurrency = (value: string | number) =>
   Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -80,6 +97,7 @@ export function ContractDetailPage() {
   const [modal, setModal] = useState<DetailModal>(null);
   const [orderForm, setOrderForm] = useState<OrderForm>(emptyOrder);
   const [entryForm, setEntryForm] = useState<EntryForm>(emptyEntry);
+  const [annualEntryForm, setAnnualEntryForm] = useState<AnnualEntryForm>(emptyAnnualEntry);
   const [collapsedOrderIds, setCollapsedOrderIds] = useState<Set<string>>(() => new Set());
   const canManage = ["admin", "editor"].includes(session?.user?.role ?? "");
   const isAdmin = session?.user?.role === "admin";
@@ -105,28 +123,46 @@ export function ContractDetailPage() {
     () => contract?.serviceOrders.flatMap((order) => order.monthlyEntries) ?? [],
     [contract]
   );
-  const paidTotal = allEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
-  const netTotal = allEntries.reduce((sum, entry) => sum + Number(entry.monthlyNetValue), 0);
-  const glosasTotal = allEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
+  const allAnnualEntries = useMemo(
+    () => contract?.serviceOrders.flatMap((order) => order.annualEntries) ?? [],
+    [contract]
+  );
+  const paidTotal =
+    allEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0) +
+    allAnnualEntries.reduce((sum, entry) => sum + Number(entry.annualPaidValue), 0);
+  const netTotal =
+    allEntries.reduce((sum, entry) => sum + Number(entry.monthlyNetValue), 0) +
+    allAnnualEntries.reduce((sum, entry) => sum + Number(entry.annualNetValue), 0);
+  const glosasTotal =
+    allEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0) +
+    allAnnualEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
   const decentralizedTotal = getDecentralizedTotal(contract?.financialDocuments ?? []);
-  const availableBalance = getAvailableBalance(contract?.financialDocuments ?? [], allEntries);
+  const availableBalance = getAvailableBalance(contract?.financialDocuments ?? [], [
+    ...allEntries,
+    ...allAnnualEntries.map((entry) => ({ monthlyPaidValue: entry.annualPaidValue })),
+  ]);
 
   const yearlySummary = useMemo(() => {
     if (!contract) return [];
     const years = new Set<number>([
       ...contract.financialDocuments.map((document) => document.fiscalYear),
       ...allEntries.map((entry) => Number(entry.referenceMonth.slice(0, 4))),
+      ...allAnnualEntries.map((entry) => entry.fiscalYear),
     ]);
     return [...years].sort((left, right) => right - left).map((year) => {
       const allocated = getDecentralizedTotal(
         contract.financialDocuments.filter((document) => document.fiscalYear === year)
       );
-      const paid = allEntries
+      const monthlyPaid = allEntries
         .filter((entry) => Number(entry.referenceMonth.slice(0, 4)) === year)
         .reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
+      const annualPaid = allAnnualEntries
+        .filter((entry) => entry.fiscalYear === year)
+        .reduce((sum, entry) => sum + Number(entry.annualPaidValue), 0);
+      const paid = monthlyPaid + annualPaid;
       return { year, allocated, paid, balance: allocated - paid };
     });
-  }, [allEntries, contract]);
+  }, [allAnnualEntries, allEntries, contract]);
 
   const openCreateOrder = () => {
     setOrderForm(emptyOrder());
@@ -159,6 +195,18 @@ export function ContractDetailPage() {
     setModal({ type: "entry", order, entry });
   };
 
+  const openAnnualEntryForm = (order: ContractServiceOrder, entry: ContractAnnualEntry | null = null) => {
+    setAnnualEntryForm({
+      paymentProcessNumber: entry?.paymentProcessNumber ?? "",
+      annualPaidValue: entry?.annualPaidValue ?? "",
+      glosasValue: entry?.glosasValue ?? "0.00",
+      fiscalYear: String(entry?.fiscalYear ?? new Date().getFullYear()),
+      executionSummary: entry?.executionSummary ?? order.serviceDescription,
+    });
+    setError("");
+    setModal({ type: "annualEntry", order, entry });
+  };
+
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!modal) return;
@@ -172,6 +220,14 @@ export function ContractDetailPage() {
         const payload = orderForm;
         if (modal.order) await patchJson(url, payload);
         else await postJson(url, payload);
+      } else if (modal.type === "annualEntry") {
+        const baseUrl = `/api/contratos/${encodeURIComponent(contractId)}/ordens-servico/${encodeURIComponent(modal.order.id)}/baixas-anuais`;
+        const payload = { ...annualEntryForm, fiscalYear: Number(annualEntryForm.fiscalYear) };
+        if (modal.entry) {
+          await patchJson(`${baseUrl}/${encodeURIComponent(modal.entry.id)}`, payload);
+        } else {
+          await postJson(baseUrl, payload);
+        }
       } else {
         const baseUrl = `/api/contratos/${encodeURIComponent(contractId)}/ordens-servico/${encodeURIComponent(modal.order.id)}/lancamentos`;
         if (modal.entry) {
@@ -220,6 +276,23 @@ export function ContractDetailPage() {
     }
   };
 
+  const handleDeleteAnnualEntry = async (order: ContractServiceOrder, entry: ContractAnnualEntry) => {
+    if (!window.confirm(`Excluir a baixa de ${entry.fiscalYear} da OS ${order.siafNumber}?`)) return;
+    setDeletingId(entry.id);
+    setError("");
+    try {
+      await fetchJson(
+        `/api/contratos/${encodeURIComponent(contractId)}/ordens-servico/${encodeURIComponent(order.id)}/baixas-anuais/${encodeURIComponent(entry.id)}`,
+        { method: "DELETE" }
+      );
+      await loadContract();
+    } catch (deleteError) {
+      setError((deleteError as Error).message || "Não foi possível excluir a baixa anual.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (status === "loading" || loading) {
     return <main className="gov-page-bg flex min-h-screen items-center justify-center"><p className="text-gov-muted">Carregando contrato...</p></main>;
   }
@@ -255,6 +328,7 @@ export function ContractDetailPage() {
 
         <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Resumo financeiro do contrato">
           <Summary label="Valor total do contrato" value={formatCurrency(contract.totalValue)} />
+          <Summary label="Vigência do contrato" value={`${formatDate(contract.validFrom)} a ${formatDate(contract.validTo)}`} />
           <Summary label="Total descentralizado" value={formatCurrency(decentralizedTotal)} />
           <Summary label="Total pago" value={formatCurrency(paidTotal)} />
           <Summary label="Saldo disponível" value={formatCurrency(availableBalance)} />
@@ -269,8 +343,12 @@ export function ContractDetailPage() {
           </div>
           <div className="space-y-6">
             {contract.serviceOrders.map((order) => {
-              const orderPaid = order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
-              const orderGlosas = order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
+              const orderPaid =
+                order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0) +
+                order.annualEntries.reduce((sum, entry) => sum + Number(entry.annualPaidValue), 0);
+              const orderGlosas =
+                order.monthlyEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0) +
+                order.annualEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
               const isOrderCollapsed = collapsedOrderIds.has(order.id);
               return <article key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 p-5">
@@ -279,7 +357,9 @@ export function ContractDetailPage() {
                     <p className="mt-1 text-sm text-slate-600">Documento SEI: {order.seiDocumentNumber}</p>
                   </div>
                   {canManage && <div className="flex gap-2">
-                    {canAddInformation && <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>}
+                    {canAddInformation && (contract.paymentFrequency === "annual"
+                      ? <button type="button" onClick={() => openAnnualEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Baixa anual</button>
+                      : <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>)}
                     <button type="button" onClick={() => openEditOrder(order)} className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar OS</button>
                     <button type="button" onClick={() => void handleDeleteOrder(order)} disabled={deletingId === order.id} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Excluir OS</button>
                   </div>}
@@ -301,12 +381,27 @@ export function ContractDetailPage() {
 
                 {!isOrderCollapsed && <div id={`order-details-${order.id}`}>
                   <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 xl:grid-cols-4">
-                    <Info label="Vigência" value={`${formatDate(order.validFrom)} a ${formatDate(order.validTo)}`} />
+                    <Info label="Vigência" value={contract.paymentFrequency === "annual"
+                      ? `${formatDate(contract.validFrom)} a ${formatDate(contract.validTo)}`
+                      : `${formatDate(order.validFrom)} a ${formatDate(order.validTo)}`} />
                     <Info label="Total pago / glosas" value={`${formatCurrency(orderPaid)} / ${formatCurrency(orderGlosas)}`} />
                     <Info label="Resumo da execução" value={order.serviceDescription} wide />
                   </div>
 
-                  <div className="p-5">
+                  {contract.paymentFrequency === "annual" ? <div className="p-5">
+                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Baixas anuais</h4>
+                    {order.annualEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="min-w-full text-left text-xs">
+                        <thead className="bg-slate-50 uppercase text-slate-500"><tr>
+                          <th className="px-4 py-3">Exercício</th><th className="px-4 py-3">Processo de pagamento (SEI)</th><th className="px-4 py-3">Valor pago</th><th className="px-4 py-3">Glosas</th><th className="px-4 py-3">Valor líquido</th><th className="px-4 py-3">Resumo da execução</th>{canManage && <th className="px-4 py-3">Ações</th>}
+                        </tr></thead>
+                        <tbody className="divide-y divide-slate-100">{order.annualEntries.map((entry) => <tr key={entry.id}>
+                          <td className="whitespace-nowrap px-4 py-3">{entry.fiscalYear}</td><td className="whitespace-nowrap px-4 py-3">{entry.paymentProcessNumber}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.annualPaidValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.glosasValue)}</td><td className="whitespace-nowrap px-4 py-3">{formatCurrency(entry.annualNetValue)}</td><td className="min-w-56 px-4 py-3">{entry.executionSummary}</td>
+                          {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => openAnnualEntryForm(order, entry)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void handleDeleteAnnualEntry(order, entry)} disabled={deletingId === entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
+                        </tr>)}</tbody>
+                      </table>
+                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhuma baixa anual registrada para esta OS.</p>}
+                  </div> : <div className="p-5">
                     <h4 className="mb-3 text-sm font-semibold text-slate-800">Pagamentos mensais</h4>
                     {order.monthlyEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="min-w-full text-left text-xs">
@@ -319,7 +414,7 @@ export function ContractDetailPage() {
                         </tr>)}</tbody>
                       </table>
                     </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum pagamento registrado para esta OS.</p>}
-                  </div>
+                  </div>}
                 </div>}
               </article>;
             })}
@@ -346,6 +441,8 @@ export function ContractDetailPage() {
         setOrderForm={setOrderForm}
         entryForm={entryForm}
         setEntryForm={setEntryForm}
+        annualEntryForm={annualEntryForm}
+        setAnnualEntryForm={setAnnualEntryForm}
         onClose={() => setModal(null)}
         onSubmit={handleSave}
       />}
@@ -369,6 +466,8 @@ function DetailFormModal({
   setOrderForm,
   entryForm,
   setEntryForm,
+  annualEntryForm,
+  setAnnualEntryForm,
   onClose,
   onSubmit,
 }: {
@@ -379,21 +478,30 @@ function DetailFormModal({
   setOrderForm: Dispatch<SetStateAction<OrderForm>>;
   entryForm: EntryForm;
   setEntryForm: Dispatch<SetStateAction<EntryForm>>;
+  annualEntryForm: AnnualEntryForm;
+  setAnnualEntryForm: Dispatch<SetStateAction<AnnualEntryForm>>;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const isOrder = modal?.type === "order";
   const order = modal?.type === "order" ? modal.order : null;
   const entry = modal?.type === "entry" ? modal.entry : null;
+  const annualEntry = modal?.type === "annualEntry" ? modal.entry : null;
   return <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
     <form onSubmit={onSubmit} className="my-auto w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
-      <div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{isOrder ? (order ? "Editar ordem de serviço" : "Nova ordem de serviço") : entry ? "Editar pagamento mensal" : "Novo pagamento mensal"}</h2><p className="mt-1 text-sm text-slate-600">Todos os campos marcados com * são obrigatórios.</p></div><button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">Fechar</button></div>
+      <div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{isOrder ? (order ? "Editar ordem de serviço" : "Nova ordem de serviço") : modal?.type === "annualEntry" ? (annualEntry ? "Editar baixa anual" : "Nova baixa anual") : entry ? "Editar pagamento mensal" : "Novo pagamento mensal"}</h2><p className="mt-1 text-sm text-slate-600">Todos os campos marcados com * são obrigatórios.</p></div><button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">Fechar</button></div>
       {isOrder ? <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Número SIAF *"><input required value={orderForm.siafNumber} onChange={(event) => setOrderForm((current) => ({ ...current, siafNumber: event.target.value }))} className={inputClass} /></Field>
         <Field label="Número do documento SEI *"><input required value={orderForm.seiDocumentNumber} onChange={(event) => setOrderForm((current) => ({ ...current, seiDocumentNumber: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Vigência inicial *"><input required type="date" value={orderForm.validFrom} onChange={(event) => setOrderForm((current) => ({ ...current, validFrom: event.target.value }))} className={inputClass} /></Field>
-        <Field label="Vigência final *"><input required type="date" value={orderForm.validTo} onChange={(event) => setOrderForm((current) => ({ ...current, validTo: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Vigência inicial da OS"><input type="date" value={orderForm.validFrom} onChange={(event) => setOrderForm((current) => ({ ...current, validFrom: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Vigência final da OS"><input type="date" value={orderForm.validTo} onChange={(event) => setOrderForm((current) => ({ ...current, validTo: event.target.value }))} className={inputClass} /></Field>
         <Field label="Descrição do serviço *" wide><input required value={orderForm.serviceDescription} onChange={(event) => setOrderForm((current) => ({ ...current, serviceDescription: event.target.value }))} className={inputClass} /></Field>
+      </div> : modal?.type === "annualEntry" ? <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Exercício *"><input required type="number" min="1900" max="9999" step="1" value={annualEntryForm.fiscalYear} onChange={(event) => setAnnualEntryForm((current) => ({ ...current, fiscalYear: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Processo de pagamento (SEI) *"><input required value={annualEntryForm.paymentProcessNumber} onChange={(event) => setAnnualEntryForm((current) => ({ ...current, paymentProcessNumber: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Valor pago no exercício (R$) *"><input required type="number" min="0" step="0.01" value={annualEntryForm.annualPaidValue} onChange={(event) => setAnnualEntryForm((current) => ({ ...current, annualPaidValue: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Glosas (R$; use 0 se não houver) *"><input required type="number" min="0" step="0.01" value={annualEntryForm.glosasValue} onChange={(event) => setAnnualEntryForm((current) => ({ ...current, glosasValue: event.target.value }))} className={inputClass} /></Field>
+        <Field label="Resumo da execução *" wide><textarea required rows={4} value={annualEntryForm.executionSummary} onChange={(event) => setAnnualEntryForm((current) => ({ ...current, executionSummary: event.target.value }))} className={inputClass} /></Field>
       </div> : <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Processo de pagamento (SEI) *"><input required value={entryForm.paymentProcessNumber} onChange={(event) => setEntryForm((current) => ({ ...current, paymentProcessNumber: event.target.value }))} className={inputClass} /></Field>
         <Field label="Mês de referência *"><input required type="month" value={entryForm.referenceMonth} onChange={(event) => setEntryForm((current) => ({ ...current, referenceMonth: event.target.value }))} className={inputClass} /></Field>
