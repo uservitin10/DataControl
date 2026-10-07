@@ -254,16 +254,25 @@ export function ContractsPage() {
 
         {filteredContracts.length > 0 ? (
           <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <table className="min-w-full text-left text-sm">
+            <table className="w-full min-w-[820px] table-fixed text-left text-xs lg:min-w-0">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[8%]" />
+                <col className="w-[10%]" />
+                <col className="w-[14%]" />
+                <col className="w-[11%]" />
+                <col className="w-[21%]" />
+                <col className="w-[8%]" />
+              </colgroup>
               <thead className="bg-slate-50 text-xs uppercase text-slate-600">
                 <tr>
-                  <th className="px-5 py-4">Contrato</th>
-                  <th className="px-5 py-4">Ordens de serviço</th>
-                  <th className="px-5 py-4">Valor total</th>
-                  <th className="px-5 py-4">Total descentralizado</th>
-                  <th className="px-5 py-4">Total pago</th>
-                  <th className="px-5 py-4">Saldos por ano</th>
-                  <th className="px-5 py-4">Ações</th>
+                  <th className="px-2.5 py-3">Contrato</th>
+                  <th className="px-2.5 py-3">Ordens de serviço</th>
+                  <th className="px-2.5 py-3">Valor total</th>
+                  <th className="px-2.5 py-3">Total descentralizado</th>
+                  <th className="px-2.5 py-3">Total pago</th>
+                  <th className="px-2.5 py-3">Saldos por ano</th>
+                  <th className="px-2.5 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -294,16 +303,16 @@ export function ContractsPage() {
                     return { year, balance: allocated - monthlyPaid - annualPaid };
                   });
                   return <tr key={contract.id}>
-                    <td className="px-5 py-4">
+                    <td className="px-2.5 py-3">
                       <Link href={`/contratos/${encodeURIComponent(contract.id)}`} className="font-semibold text-blue-800 underline decoration-blue-300 underline-offset-2 hover:text-blue-950">{contract.name}</Link>
                       <p className="mt-1 max-w-md truncate text-xs text-slate-500">{contract.executionSummary}</p>
                     </td>
-                    <td className="px-5 py-4 text-slate-700">{contract.serviceOrders.length}</td>
-                    <td className="px-5 py-4 text-slate-700">{formatCurrency(contract.totalValue)}</td>
-                    <td className="px-5 py-4 text-slate-700">{formatCurrency(decentralized)}</td>
-                    <td className="px-5 py-4 text-slate-700">{formatCurrency(paid)}</td>
-                    <td className="px-5 py-4 text-slate-900"><div className="space-y-1">{yearlyBalances.map(({ year, balance }) => <p key={year} className="whitespace-nowrap"><span className="font-medium">Saldo ano {year}:</span> {formatCurrency(balance)}</p>)}</div></td>
-                    <td className="px-5 py-4">
+                    <td className="px-2.5 py-3 text-slate-700">{contract.serviceOrders.length}</td>
+                    <td className="px-2.5 py-3 text-slate-700">{formatCurrency(contract.totalValue)}</td>
+                    <td className="px-2.5 py-3 text-slate-700">{formatCurrency(decentralized)}</td>
+                    <td className="px-2.5 py-3 text-slate-700">{formatCurrency(paid)}</td>
+                    <td className="px-2.5 py-3 text-slate-900"><div className="space-y-1">{yearlyBalances.map(({ year, balance }) => <p key={year} className="text-xs leading-4"><span className="whitespace-nowrap font-medium">Saldo ano {year}:</span>{" "}<span className="whitespace-nowrap">{formatCurrency(balance)}</span></p>)}</div></td>
+                    <td className="px-2.5 py-3">
                       {canManage && <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => openEditContract(contract)} className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar</button>
                         <button type="button" onClick={() => void handleDeleteContract(contract)} disabled={deletingId === contract.id} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Excluir</button>
