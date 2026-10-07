@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
-import { getAvailableBalance, getDecentralizedTotal } from "@/lib/contract-calculations";
+import { getDecentralizedTotal } from "@/lib/contract-calculations";
 import type { ContractRecord } from "@/types/contratos";
 
 type ContractFormState = {
@@ -262,7 +262,7 @@ export function ContractsPage() {
                   <th className="px-5 py-4">Valor total</th>
                   <th className="px-5 py-4">Total descentralizado</th>
                   <th className="px-5 py-4">Total pago</th>
-                  <th className="px-5 py-4">Saldo disponível</th>
+                  <th className="px-5 py-4">Saldos por ano</th>
                   <th className="px-5 py-4">Ações</th>
                 </tr>
               </thead>
@@ -276,7 +276,23 @@ export function ContractsPage() {
                   ];
                   const paid = entries.reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
                   const decentralized = getDecentralizedTotal(contract.financialDocuments);
-                  const balance = getAvailableBalance(contract.financialDocuments, entries);
+                  const years = new Set([
+                    ...contract.financialDocuments.map((document) => document.fiscalYear),
+                    ...monthlyEntries.map((entry) => Number(entry.referenceMonth.slice(0, 4))),
+                    ...annualEntries.map((entry) => entry.fiscalYear),
+                  ]);
+                  const yearlyBalances = [...years].sort((left, right) => right - left).map((year) => {
+                    const allocated = getDecentralizedTotal(
+                      contract.financialDocuments.filter((document) => document.fiscalYear === year)
+                    );
+                    const monthlyPaid = monthlyEntries
+                      .filter((entry) => Number(entry.referenceMonth.slice(0, 4)) === year)
+                      .reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);
+                    const annualPaid = annualEntries
+                      .filter((entry) => entry.fiscalYear === year)
+                      .reduce((sum, entry) => sum + Number(entry.annualPaidValue), 0);
+                    return { year, balance: allocated - monthlyPaid - annualPaid };
+                  });
                   return <tr key={contract.id}>
                     <td className="px-5 py-4">
                       <Link href={`/contratos/${encodeURIComponent(contract.id)}`} className="font-semibold text-blue-800 underline decoration-blue-300 underline-offset-2 hover:text-blue-950">{contract.name}</Link>
@@ -286,7 +302,7 @@ export function ContractsPage() {
                     <td className="px-5 py-4 text-slate-700">{formatCurrency(contract.totalValue)}</td>
                     <td className="px-5 py-4 text-slate-700">{formatCurrency(decentralized)}</td>
                     <td className="px-5 py-4 text-slate-700">{formatCurrency(paid)}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-900">{formatCurrency(balance)}</td>
+                    <td className="px-5 py-4 text-slate-900"><div className="space-y-1">{yearlyBalances.map(({ year, balance }) => <p key={year} className="whitespace-nowrap"><span className="font-medium">Saldo ano {year}:</span> {formatCurrency(balance)}</p>)}</div></td>
                     <td className="px-5 py-4">
                       {canManage && <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => openEditContract(contract)} className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar</button>

@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 import PageHeader from "@/components/PageHeader";
 import UserBadge from "@/components/UserBadge";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
-import { getAvailableBalance, getDecentralizedTotal, getFinancialDocumentSignedAmount } from "@/lib/contract-calculations";
+import { getDecentralizedTotal, getFinancialDocumentSignedAmount } from "@/lib/contract-calculations";
 import type { ContractAnnualEntry, ContractMonthlyEntry, ContractRecord, ContractServiceOrder } from "@/types/contratos";
 
 type OrderForm = {
@@ -137,11 +137,6 @@ export function ContractDetailPage() {
     allEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0) +
     allAnnualEntries.reduce((sum, entry) => sum + Number(entry.glosasValue), 0);
   const decentralizedTotal = getDecentralizedTotal(contract?.financialDocuments ?? []);
-  const availableBalance = getAvailableBalance(contract?.financialDocuments ?? [], [
-    ...allEntries,
-    ...allAnnualEntries.map((entry) => ({ monthlyPaidValue: entry.annualPaidValue })),
-  ]);
-
   const yearlySummary = useMemo(() => {
     if (!contract) return [];
     const years = new Set<number>([
@@ -331,7 +326,10 @@ export function ContractDetailPage() {
           <Summary label="Vigência do contrato" value={`${formatDate(contract.validFrom)} a ${formatDate(contract.validTo)}`} />
           <Summary label="Total descentralizado" value={formatCurrency(decentralizedTotal)} />
           <Summary label="Total pago" value={formatCurrency(paidTotal)} />
-          <Summary label="Saldo disponível" value={formatCurrency(availableBalance)} />
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm text-slate-600">Saldos por ano</p>
+            <div className="mt-2 space-y-1">{yearlySummary.map(({ year, balance }) => <p key={year} className="text-sm font-semibold text-slate-900">Saldo ano {year}: {formatCurrency(balance)}</p>)}</div>
+          </div>
           <Summary label="Total líquido após glosas" value={formatCurrency(netTotal)} />
           <Summary label="Glosas acumuladas" value={formatCurrency(glosasTotal)} />
         </section>
@@ -426,7 +424,7 @@ export function ContractDetailPage() {
           {yearlySummary.map(({ year, allocated, paid, balance }) => {
             const documents = contract.financialDocuments.filter((document) => document.fiscalYear === year);
             return <article key={year} className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <header className="grid gap-3 bg-slate-50 p-5 sm:grid-cols-3"><Info label={`Total descentralizado em ${year}`} value={formatCurrency(allocated)} /><Info label={`Total pago em ${year}`} value={formatCurrency(paid)} /><Info label={`Saldo em ${year}`} value={formatCurrency(balance)} /></header>
+              <header className="grid gap-3 bg-slate-50 p-5 sm:grid-cols-3"><Info label={`Total descentralizado em ${year}`} value={formatCurrency(allocated)} /><Info label={`Total pago em ${year}`} value={formatCurrency(paid)} /><Info label={`Saldo ano ${year}`} value={formatCurrency(balance)} /></header>
               <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-white text-xs uppercase text-slate-500"><tr><th className="px-5 py-3">Documento SEI</th><th className="px-5 py-3">Tipo / número</th><th className="px-5 py-3">Valor descentralizado</th><th className="px-5 py-3">Cobertura</th></tr></thead><tbody className="divide-y divide-slate-100">{documents.map((document) => <tr key={document.id}><td className="whitespace-nowrap px-5 py-3">{document.seiReference}</td><td className="px-5 py-3">{document.documentType} {document.documentNumber}</td><td className="whitespace-nowrap px-5 py-3">{formatCurrency(getFinancialDocumentSignedAmount(document))}</td><td className="px-5 py-3">{document.coverageDescription}</td></tr>)}</tbody></table></div>
             </article>;
           })}
