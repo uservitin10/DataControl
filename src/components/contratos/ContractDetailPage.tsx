@@ -118,9 +118,9 @@ export function ContractDetailPage() {
       ...allEntries.map((entry) => Number(entry.referenceMonth.slice(0, 4))),
     ]);
     return [...years].sort((left, right) => right - left).map((year) => {
-      const allocated = contract.financialDocuments
-        .filter((document) => document.fiscalYear === year)
-        .reduce((sum, document) => sum + Number(document.amount), 0);
+      const allocated = getDecentralizedTotal(
+        contract.financialDocuments.filter((document) => document.fiscalYear === year)
+      );
       const paid = allEntries
         .filter((entry) => Number(entry.referenceMonth.slice(0, 4)) === year)
         .reduce((sum, entry) => sum + Number(entry.monthlyPaidValue), 0);

@@ -74,20 +74,20 @@ describe("contract closure", () => {
 describe("contract financial balance", () => {
   it("includes every decentralized document, including credit notes", () => {
     expect(getDecentralizedTotal([
-      { amount: "58005.00" },
-      { amount: "58005.00" },
-      { amount: "2575.44" },
-      { amount: "60580.44" },
+      { documentType: "Nota de Empenho", amount: "58005.00" },
+      { documentType: "Nota de Empenho", amount: "58005.00" },
+      { documentType: "Registro de Reforço", amount: "2575.44" },
+      { documentType: "Nota de Crédito", amount: "60580.44" },
     ])).toBe(179165.88);
   });
 
   it("shows the remaining balance from the annual financial control example", () => {
     expect(getAvailableBalance(
       [
-        { amount: "58005.00" },
-        { amount: "58005.00" },
-        { amount: "2575.44" },
-        { amount: "60580.44" },
+        { documentType: "Nota de Empenho", amount: "58005.00" },
+        { documentType: "Nota de Empenho", amount: "58005.00" },
+        { documentType: "Registro de Reforço", amount: "2575.44" },
+        { documentType: "Nota de Crédito", amount: "60580.44" },
       ],
       [
         { monthlyPaidValue: "14501.25" },
@@ -99,5 +99,21 @@ describe("contract financial balance", () => {
         { monthlyPaidValue: "15145.11" },
       ]
     )).toBeCloseTo(75725.55, 2);
+  });
+
+  it("subtracts partial annulments and preserves negative balances from the spreadsheet", () => {
+    const documents2025 = [
+      { documentType: "Nota de Empenho", amount: "259570.08" },
+    ];
+    const documents2026 = [
+      { documentType: "Nota de Empenho", amount: "151787.00" },
+      { documentType: "Nota de Empenho", amount: "151787.64" },
+      { documentType: "Registro de Reforço", amount: "125634.61" },
+      { documentType: "Registro Anulação Parcial", amount: "118895.15" },
+    ];
+
+    expect(getAvailableBalance(documents2025, [{ monthlyPaidValue: "259570.16" }])).toBeCloseTo(-0.08, 2);
+    expect(getDecentralizedTotal(documents2026)).toBeCloseTo(310314.10, 2);
+    expect(getAvailableBalance(documents2026, [{ monthlyPaidValue: "270682.89" }])).toBeCloseTo(39631.21, 2);
   });
 });
