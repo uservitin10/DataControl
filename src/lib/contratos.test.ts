@@ -1,6 +1,7 @@
 import {
   getAvailableBalance,
   getDecentralizedTotal,
+  getFinancialDocumentSignedAmount,
   isContractClosed,
   isServiceOrderExpired,
 } from "./contract-calculations";
@@ -113,7 +114,12 @@ describe("contract financial balance", () => {
     ];
 
     expect(getAvailableBalance(documents2025, [{ monthlyPaidValue: "259570.16" }])).toBeCloseTo(-0.08, 2);
+    expect(getFinancialDocumentSignedAmount(documents2026[3])).toBe(-118895.15);
     expect(getDecentralizedTotal(documents2026)).toBeCloseTo(310314.10, 2);
     expect(getAvailableBalance(documents2026, [{ monthlyPaidValue: "270682.89" }])).toBeCloseTo(39631.21, 2);
+    expect(getAvailableBalance(
+      [...documents2025, ...documents2026],
+      [{ monthlyPaidValue: "259570.16" }, { monthlyPaidValue: "270682.89" }]
+    )).toBeCloseTo(39631.13, 2);
   });
 });

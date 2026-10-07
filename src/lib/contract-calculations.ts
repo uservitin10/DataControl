@@ -9,15 +9,17 @@ export function isContractClosed(
   return serviceOrders.length > 0 && serviceOrders.every((order) => isServiceOrderExpired(order.validTo, today));
 }
 
+export function getFinancialDocumentSignedAmount(document: { documentType: string; amount: string | number }) {
+  const normalizedType = document.documentType
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
+  const direction = normalizedType.includes("anulacao") ? -1 : 1;
+  return direction * Number(document.amount);
+}
+
 export function getDecentralizedTotal(documents: Array<{ documentType: string; amount: string | number }>) {
-  return documents.reduce((sum, document) => {
-    const normalizedType = document.documentType
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR");
-    const direction = normalizedType.includes("anulacao") ? -1 : 1;
-    return sum + direction * Number(document.amount);
-  }, 0);
+  return documents.reduce((sum, document) => sum + getFinancialDocumentSignedAmount(document), 0);
 }
 
 export function getAvailableBalance(
