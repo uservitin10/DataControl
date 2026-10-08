@@ -13,6 +13,7 @@ import {
   fetchSignedUrl,
   fetchPublicUrl,
   buildStorageProxyUrl,
+  buildStorageDownloadUrl,
   generateStoragePath,
   ALLOWED_PREVIEW_TYPES,
   ALLOWED_DOCUMENT_EXTENSIONS,
@@ -270,7 +271,7 @@ export function useDashboard() {
     const proxyUrl = buildStorageProxyUrl(DOCUMENTS_BUCKET, arquivoPath);
     let fileUrl: string | null;
 
-    setDownloadUrl(proxyUrl);
+    setDownloadUrl(buildStorageDownloadUrl(DOCUMENTS_BUCKET, arquivoPath, nome));
     setViewingNome(nome);
 
     if (ext === "pbix") {

@@ -29,6 +29,15 @@ const getMinioPublicUrl = (bucket: string, path: string) => {
   return `${base}/${bucket}/${path}`;
 };
 
+const buildContentDisposition = (disposition: string, filename: string) => {
+  const safeFilename = filename.replace(/[\r\n]/g, "").trim() || "file";
+  const fallbackFilename = safeFilename.replace(/[^\x20-\x7E]|["\\]/g, "_");
+  const encodedFilename = encodeURIComponent(safeFilename).replace(/['()*]/g, (character) =>
+    `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `${disposition}; filename="${fallbackFilename}"; filename*=UTF-8''${encodedFilename}`;
+};
+
 async function getObjectBodyBytes(response: GetObjectCommandOutput) {
   const body = response.Body;
   if (!body) {
@@ -71,6 +80,7 @@ export async function GET(req: NextRequest) {
       const bucket = url.searchParams.get("bucket");
       const path = url.searchParams.get("path");
       const expires = Number(url.searchParams.get("expires") ?? 3600);
+      const disposition = url.searchParams.get("disposition") === "attachment" ? "attachment" : "inline";
 
       if (!type || !bucket || !path) {
         return apiValidationError("Parâmetros de storage inválidos.");
@@ -99,22 +109,30 @@ export async function GET(req: NextRequest) {
           }
 
           const contentType = (response.ContentType as string) || "application/octet-stream";
+          const headers: Record<string, string> = {
+            "Content-Type": contentType,
+            "Cache-Control": "private, max-age=0, no-store",
+          };
+          if (disposition === "attachment") {
+            const filename = url.searchParams.get("filename") || path.split("/").pop() || "file";
+            headers["Content-Disposition"] = buildContentDisposition(disposition, filename);
+          } else if (isBinaryContentType(contentType)) {
+            headers["Content-Disposition"] = buildContentDisposition(
+              disposition,
+              path.split("/").pop() ?? "file"
+            );
+          }
+
           return new NextResponse(buffer, {
             status: 200,
-            headers: {
-              "Content-Type": contentType,
-              "Cache-Control": "private, max-age=0, no-store",
-              ...(isBinaryContentType(contentType)
-                ? { "Content-Disposition": `inline; filename="${path.split("/").pop() ?? "file"}"` }
-                : {}),
-            },
+            headers,
           });
         } catch (error) {
           return apiInternalError(formatStorageError(error, bucket));
         }
       }
 
-      return apiValidationError("Tipo de storage inválido. Use 'public' ou 'signed'.");
+      return apiValidationError("Tipo de storage inválido. Use 'public', 'signed' ou 'proxy'.");
     } catch (err) {
       return apiInternalError((err as Error).message);
     }

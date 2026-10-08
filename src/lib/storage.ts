@@ -139,6 +139,17 @@ export const buildStorageProxyUrl = (bucket: string, path: string) => {
   return `${STORAGE_API}?type=proxy&bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
 };
 
+export const buildStorageDownloadUrl = (bucket: string, path: string, filename: string) => {
+  const params = new URLSearchParams({
+    type: "proxy",
+    bucket,
+    path,
+    disposition: "attachment",
+    filename,
+  });
+  return `${STORAGE_API}?${params.toString()}`;
+};
+
 export const fetchSignedUrl = async (
   bucket: string,
   path: string,

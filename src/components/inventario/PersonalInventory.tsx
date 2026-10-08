@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { fetchJson, patchJson, postJson } from "@/lib/api";
 import {
   DOCUMENTS_BUCKET,
+  buildStorageDownloadUrl,
   buildStorageProxyUrl,
   deleteEquipmentFile,
   deleteLicenseFile,
@@ -364,6 +365,7 @@ export function PersonalInventory() {
 
   const canModify = userRole === "admin" || userRole === "editor";
   const isLicense = formState.type === "Licença";
+  const selectedFile = itemFiles.find((file) => file.id === selectedFileId) ?? null;
 
   const formatInventoryError = useCallback((error: unknown, fallbackMessage: string): string => {
     if (!(error instanceof Error)) {
@@ -1318,8 +1320,8 @@ export function PersonalInventory() {
                               Abrir
                             </a>
                           )}
-                          {viewingFileUrl && viewingFileType !== "application/pdf" && (
-                            <a href={viewingFileUrl} download={viewingFileName ?? undefined} className="rounded-2xl border border-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10">
+                          {viewingFileUrl && selectedFile && (
+                            <a href={buildStorageDownloadUrl(DOCUMENTS_BUCKET, selectedFile.file_url, selectedFile.file_name)} className="rounded-2xl border border-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10">
                               Baixar
                             </a>
                           )}
