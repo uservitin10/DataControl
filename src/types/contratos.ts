@@ -82,7 +82,7 @@ export type ContractInput = {
   name: string;
   totalValue: string | number;
   executionSummary: string;
-  paymentFrequency?: ContractPaymentFrequency;
+  paymentFrequency: ContractPaymentFrequency;
   validFrom?: string | null;
   validTo?: string | null;
 };

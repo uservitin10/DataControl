@@ -80,8 +80,7 @@ export function validateContractInput(body: unknown): {
   const name = readRequiredText(input.name);
   const totalValue = readAmount(input.totalValue);
   const executionSummary = readRequiredText(input.executionSummary);
-  const paymentFrequency = name.toLocaleLowerCase("pt-BR") === "gartner" ? "annual" : "monthly";
-  const requestedFrequency = input.paymentFrequency ?? paymentFrequency;
+  const paymentFrequency = readRequiredText(input.paymentFrequency).toLowerCase();
   const validFrom = readOptionalDate(input.validFrom);
   const validTo = readOptionalDate(input.validTo);
 
@@ -89,7 +88,7 @@ export function validateContractInput(body: unknown): {
     !name ||
     !totalValue ||
     !executionSummary ||
-    requestedFrequency !== paymentFrequency ||
+    (paymentFrequency !== "monthly" && paymentFrequency !== "annual") ||
     !validFrom.valid ||
     !validTo.valid ||
     (validFrom.date && validTo.date && validFrom.date > validTo.date)

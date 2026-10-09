@@ -74,6 +74,9 @@ export function ContractsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const canManage = ["admin", "editor"].includes(session?.user?.role ?? "");
+  const frequencyLocked = Boolean(modal?.contract?.serviceOrders.some(
+    (order) => order.monthlyEntries.length > 0 || order.annualEntries.length > 0
+  ));
 
   useEffect(() => {
     if (status === "loading") return;
@@ -346,19 +349,18 @@ export function ContractsPage() {
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium text-slate-700">Nome do contrato *
-                <input required value={form.name} onChange={(event) => setForm((current) => {
-                  const name = event.target.value;
-                  const paymentFrequency = name.trim().toLocaleLowerCase("pt-BR") === "gartner" ? "annual" : "monthly";
-                  return { ...current, name, paymentFrequency };
-                })} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
+                <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
               </label>
               <label className="text-sm font-medium text-slate-700">Valor total (R$) *
                 <input required type="number" min="0" step="0.01" value={form.totalValue} onChange={(event) => setForm((current) => ({ ...current, totalValue: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
               </label>
-              <div className="text-sm font-medium text-slate-700">
-                <p>Periodicidade das baixas</p>
-                <p className="mt-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5">{form.paymentFrequency === "annual" ? "Anual" : "Mensal"}</p>
-              </div>
+              <label className="text-sm font-medium text-slate-700">Periodicidade das baixas *
+                <select required value={form.paymentFrequency} disabled={frequencyLocked} onChange={(event) => setForm((current) => ({ ...current, paymentFrequency: event.target.value === "annual" ? "annual" : "monthly" }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5">
+                  <option value="monthly">Mensal</option>
+                  <option value="annual">Anual</option>
+                </select>
+                {frequencyLocked && <span className="mt-1 block text-xs font-normal text-slate-500">A periodicidade não pode ser alterada após incluir baixas.</span>}
+              </label>
               <label className="text-sm font-medium text-slate-700">Início da vigência do contrato
                 <input type="date" value={form.contractValidFrom} onChange={(event) => setForm((current) => ({ ...current, contractValidFrom: event.target.value }))} className="gov-input mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" />
               </label>

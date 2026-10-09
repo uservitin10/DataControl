@@ -75,6 +75,7 @@ describe("app/api/contratos", () => {
         name: "Contrato de teste",
         totalValue: "12000.50",
         executionSummary: "Execução contratual.",
+        paymentFrequency: "monthly",
         initialServiceOrder: {
           siafNumber: "OS-123",
           seiDocumentNumber: "50465842",

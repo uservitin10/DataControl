@@ -26,6 +26,7 @@ describe("contract payload validation", () => {
       name: "Keeggo",
       totalValue: "12000,5",
       executionSummary: "Serviços de QA.",
+      paymentFrequency: "monthly",
       initialServiceOrder: {
         siafNumber: "OS-123",
         seiDocumentNumber: "50465842",
@@ -75,11 +76,11 @@ describe("contract payload validation", () => {
     });
   });
 
-  it("allows creating an annual contract without a monthly initial entry", () => {
+  it("allows selecting annual frequency for any contract name without a monthly initial entry", () => {
     const result = validateCreateContractInput({
-      name: "Gartner",
+      name: "Outro contrato",
       totalValue: "2296200.00",
-      executionSummary: "Serviços Gartner conforme as OS cadastradas.",
+      executionSummary: "Serviços conforme as OS cadastradas.",
       paymentFrequency: "annual",
       validFrom: "2024-12-30",
       validTo: "2026-12-30",
@@ -98,12 +99,12 @@ describe("contract payload validation", () => {
     expect(result.entry).toBeNull();
   });
 
-  it("keeps annual frequency exclusive to Gartner", () => {
-    expect(validateCreateContractInput({
-      name: "Outro contrato",
+  it("allows monthly frequency for Gartner when explicitly selected", () => {
+    const result = validateCreateContractInput({
+      name: "Gartner",
       totalValue: "1000",
       executionSummary: "Execução mensal.",
-      paymentFrequency: "annual",
+      paymentFrequency: "monthly",
       initialServiceOrder: {
         siafNumber: "OS-1",
         seiDocumentNumber: "SEI-1",
@@ -112,7 +113,28 @@ describe("contract payload validation", () => {
         serviceDescription: "Serviços mensais.",
       },
       initialEntry: validEntry,
-    }).error).toContain("periodicidade");
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.contract?.paymentFrequency).toBe("monthly");
+  });
+
+  it("rejects a missing or unsupported payment frequency", () => {
+    const payload = {
+      name: "Outro contrato",
+      totalValue: "1000",
+      executionSummary: "Execução mensal.",
+      initialServiceOrder: {
+        siafNumber: "OS-1",
+        seiDocumentNumber: "SEI-1",
+        validFrom: "2026-01-01",
+        validTo: "2026-12-31",
+        serviceDescription: "Serviços mensais.",
+      },
+    };
+
+    expect(validateCreateContractInput(payload).error).toContain("periodicidade");
+    expect(validateCreateContractInput({ ...payload, paymentFrequency: "quarterly" }).error).toContain("periodicidade");
   });
 });
 

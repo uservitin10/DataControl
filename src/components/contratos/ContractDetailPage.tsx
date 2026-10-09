@@ -159,6 +159,39 @@ export function ContractDetailPage() {
     });
   }, [allAnnualEntries, allEntries, contract]);
 
+  const yearlyEntriesByYear = useMemo(() => {
+    if (!contract) return new Map<number, Array<{ kind: "monthly" | "annual"; order: ContractServiceOrder; entry: ContractMonthlyEntry | ContractAnnualEntry; paidValue: number; glosasValue: number; label: string }>>();
+    const grouped = new Map<number, Array<{ kind: "monthly" | "annual"; order: ContractServiceOrder; entry: ContractMonthlyEntry | ContractAnnualEntry; paidValue: number; glosasValue: number; label: string }>>();
+    for (const order of contract.serviceOrders) {
+      for (const entry of order.monthlyEntries) {
+        const year = Number(entry.referenceMonth.slice(0, 4));
+        const rows = grouped.get(year) ?? [];
+        rows.push({
+          kind: "monthly",
+          order,
+          entry,
+          paidValue: Number(entry.monthlyPaidValue),
+          glosasValue: Number(entry.glosasValue),
+          label: formatMonth(entry.referenceMonth),
+        });
+        grouped.set(year, rows);
+      }
+      for (const entry of order.annualEntries) {
+        const rows = grouped.get(entry.fiscalYear) ?? [];
+        rows.push({
+          kind: "annual",
+          order,
+          entry,
+          paidValue: Number(entry.annualPaidValue),
+          glosasValue: Number(entry.glosasValue),
+          label: String(entry.fiscalYear),
+        });
+        grouped.set(entry.fiscalYear, rows);
+      }
+    }
+    return grouped;
+  }, [contract]);
+
   const openCreateOrder = () => {
     setOrderForm(emptyOrder());
     setError("");
@@ -241,7 +274,7 @@ export function ContractDetailPage() {
   };
 
   const handleDeleteOrder = async (order: ContractServiceOrder) => {
-    if (!window.confirm(`Excluir a OS ${order.siafNumber} e seus lançamentos mensais?`)) return;
+    if (!window.confirm(`Excluir a OS ${order.siafNumber} e seus lançamentos?`)) return;
     setDeletingId(order.id);
     setError("");
     try {
@@ -282,10 +315,63 @@ export function ContractDetailPage() {
       );
       await loadContract();
     } catch (deleteError) {
-      setError((deleteError as Error).message || "Não foi possível excluir a baixa anual.");
+      setError((deleteError as Error).message || "Não foi possível excluir o lançamento.");
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const openYearEntryForm = (year: number) => {
+    const candidateOrder = contract?.serviceOrders.find((order) => {
+      if (contract.paymentFrequency === "annual") {
+        return order.annualEntries.some((entry) => entry.fiscalYear === year);
+      }
+      return order.monthlyEntries.some((entry) => Number(entry.referenceMonth.slice(0, 4)) === year);
+    }) ?? contract?.serviceOrders[0];
+
+    if (!candidateOrder) {
+      setError("Nenhuma ordem de serviço disponível para adicionar um lançamento.");
+      return;
+    }
+
+    setError("");
+    if (contract?.paymentFrequency === "annual") {
+      setAnnualEntryForm({
+        paymentProcessNumber: "",
+        annualPaidValue: "",
+        glosasValue: "0.00",
+        fiscalYear: String(year),
+        executionSummary: candidateOrder.serviceDescription,
+      });
+      setModal({ type: "annualEntry", order: candidateOrder, entry: null });
+      return;
+    }
+
+    setEntryForm({
+      paymentProcessNumber: "",
+      monthlyPaidValue: "",
+      glosasValue: "0.00",
+      referenceMonth: `${year}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+      executionSummary: candidateOrder.serviceDescription,
+      empenho: "",
+    });
+    setModal({ type: "entry", order: candidateOrder, entry: null });
+  };
+
+  const editYearEntry = (row: { kind: "monthly" | "annual"; order: ContractServiceOrder; entry: ContractMonthlyEntry | ContractAnnualEntry }) => {
+    if (row.kind === "annual") {
+      openAnnualEntryForm(row.order, row.entry as ContractAnnualEntry);
+      return;
+    }
+    openEntryForm(row.order, row.entry as ContractMonthlyEntry);
+  };
+
+  const deleteYearEntry = async (row: { kind: "monthly" | "annual"; order: ContractServiceOrder; entry: ContractMonthlyEntry | ContractAnnualEntry }) => {
+    if (row.kind === "annual") {
+      await handleDeleteAnnualEntry(row.order, row.entry as ContractAnnualEntry);
+      return;
+    }
+    await handleDeleteEntry(row.order, row.entry as ContractMonthlyEntry);
   };
 
   if (status === "loading" || loading) {
@@ -356,8 +442,8 @@ export function ContractDetailPage() {
                   </div>
                   {canManage && <div className="flex gap-2">
                     {canAddInformation && (contract.paymentFrequency === "annual"
-                      ? <button type="button" onClick={() => openAnnualEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Baixa anual</button>
-                      : <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Pagamento mensal</button>)}
+                      ? <button type="button" onClick={() => openAnnualEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Lançamentos</button>
+                      : <button type="button" onClick={() => openEntryForm(order)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Lançamento</button>)}
                     <button type="button" onClick={() => openEditOrder(order)} className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100">Editar OS</button>
                     <button type="button" onClick={() => void handleDeleteOrder(order)} disabled={deletingId === order.id} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Excluir OS</button>
                   </div>}
@@ -387,7 +473,7 @@ export function ContractDetailPage() {
                   </div>
 
                   {contract.paymentFrequency === "annual" ? <div className="p-5">
-                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Baixas anuais</h4>
+                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Lançamentos</h4>
                     {order.annualEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="min-w-full text-left text-xs">
                         <thead className="bg-slate-50 uppercase text-slate-500"><tr>
@@ -398,9 +484,9 @@ export function ContractDetailPage() {
                           {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => openAnnualEntryForm(order, entry)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void handleDeleteAnnualEntry(order, entry)} disabled={deletingId === entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
                         </tr>)}</tbody>
                       </table>
-                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhuma baixa anual registrada para esta OS.</p>}
+                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum lançamento registrado para esta OS.</p>}
                   </div> : <div className="p-5">
-                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Pagamentos mensais</h4>
+                    <h4 className="mb-3 text-sm font-semibold text-slate-800">Lançamentos</h4>
                     {order.monthlyEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="min-w-full text-left text-xs">
                         <thead className="bg-slate-50 uppercase text-slate-500"><tr>
@@ -411,7 +497,7 @@ export function ContractDetailPage() {
                           {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => openEntryForm(order, entry)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void handleDeleteEntry(order, entry)} disabled={deletingId === entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
                         </tr>)}</tbody>
                       </table>
-                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum pagamento registrado para esta OS.</p>}
+                    </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum lançamento registrado para esta OS.</p>}
                   </div>}
                 </div>}
               </article>;
@@ -423,8 +509,35 @@ export function ContractDetailPage() {
           <div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Descentralização e saldo</p><h2 className="mt-1 text-xl font-semibold text-slate-900">Controle financeiro por exercício</h2></div>
           {yearlySummary.map(({ year, allocated, paid, balance }) => {
             const documents = contract.financialDocuments.filter((document) => document.fiscalYear === year);
+            const yearEntries = yearlyEntriesByYear.get(year) ?? [];
             return <article key={year} className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <header className="grid gap-3 bg-slate-50 p-5 sm:grid-cols-3"><Info label={`Total descentralizado em ${year}`} value={formatCurrency(allocated)} /><Info label={`Total pago em ${year}`} value={formatCurrency(paid)} /><Info label={`Saldo ano ${year}`} value={formatCurrency(balance)} /></header>
+              <header className="grid gap-3 bg-slate-50 p-5 sm:grid-cols-3">
+                <Info label={`Total descentralizado em ${year}`} value={formatCurrency(allocated)} />
+                <Info label={`Total pago em ${year}`} value={formatCurrency(paid)} />
+                <Info label={`Saldo ano ${year}`} value={formatCurrency(balance)} />
+              </header>
+              <div className="border-t border-slate-200 p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-slate-800">Lançamentos do exercício</h3>
+                  {canManage && <button type="button" onClick={() => openYearEntryForm(year)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Lançamento</button>}
+                </div>
+                {yearEntries.length ? <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="bg-slate-50 uppercase text-slate-500"><tr>
+                      <th className="px-4 py-3">Tipo</th><th className="px-4 py-3">Período</th><th className="px-4 py-3">Processo</th><th className="px-4 py-3">Valor</th><th className="px-4 py-3">Glosas</th><th className="px-4 py-3">Resumo</th>{canManage && <th className="px-4 py-3">Ações</th>}
+                    </tr></thead>
+                    <tbody className="divide-y divide-slate-100">{yearEntries.map((row) => <tr key={`${row.kind}-${row.order.id}-${row.entry.id}`}>
+                      <td className="whitespace-nowrap px-4 py-3">{row.kind === "annual" ? "Anual" : "Mensal"}</td>
+                      <td className="whitespace-nowrap px-4 py-3">{row.label}</td>
+                      <td className="whitespace-nowrap px-4 py-3">{row.entry.paymentProcessNumber}</td>
+                      <td className="whitespace-nowrap px-4 py-3">{formatCurrency(row.paidValue)}</td>
+                      <td className="whitespace-nowrap px-4 py-3">{formatCurrency(row.glosasValue)}</td>
+                      <td className="min-w-56 px-4 py-3">{row.entry.executionSummary}</td>
+                      {canManage && <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => editYearEntry(row)} className="font-semibold text-amber-800 hover:underline">Editar</button><button type="button" onClick={() => void deleteYearEntry(row)} disabled={deletingId === row.entry.id} className="font-semibold text-red-700 hover:underline disabled:opacity-50">Excluir</button></div></td>}
+                    </tr>)}</tbody>
+                  </table>
+                </div> : <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum lançamento registrado para este exercício.</p>}
+              </div>
               <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="bg-white text-xs uppercase text-slate-500"><tr><th className="px-5 py-3">Documento SEI</th><th className="px-5 py-3">Tipo / número</th><th className="px-5 py-3">Valor descentralizado</th><th className="px-5 py-3">Cobertura</th></tr></thead><tbody className="divide-y divide-slate-100">{documents.map((document) => <tr key={document.id}><td className="whitespace-nowrap px-5 py-3">{document.seiReference}</td><td className="px-5 py-3">{document.documentType} {document.documentNumber}</td><td className="whitespace-nowrap px-5 py-3">{formatCurrency(getFinancialDocumentSignedAmount(document))}</td><td className="px-5 py-3">{document.coverageDescription}</td></tr>)}</tbody></table></div>
             </article>;
           })}
@@ -487,7 +600,7 @@ function DetailFormModal({
   const annualEntry = modal?.type === "annualEntry" ? modal.entry : null;
   return <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 py-8 backdrop-blur-sm">
     <form onSubmit={onSubmit} className="my-auto w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
-      <div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{isOrder ? (order ? "Editar ordem de serviço" : "Nova ordem de serviço") : modal?.type === "annualEntry" ? (annualEntry ? "Editar baixa anual" : "Nova baixa anual") : entry ? "Editar pagamento mensal" : "Novo pagamento mensal"}</h2><p className="mt-1 text-sm text-slate-600">Todos os campos marcados com * são obrigatórios.</p></div><button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">Fechar</button></div>
+      <div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{isOrder ? (order ? "Editar ordem de serviço" : "Nova ordem de serviço") : modal?.type === "annualEntry" ? (annualEntry ? "Editar lançamento" : "Novo lançamento") : entry ? "Editar lançamento" : "Novo lançamento"}</h2><p className="mt-1 text-sm text-slate-600">Todos os campos marcados com * são obrigatórios.</p></div><button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">Fechar</button></div>
       {isOrder ? <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Número SIAF *"><input required value={orderForm.siafNumber} onChange={(event) => setOrderForm((current) => ({ ...current, siafNumber: event.target.value }))} className={inputClass} /></Field>
         <Field label="Número do documento SEI *"><input required value={orderForm.seiDocumentNumber} onChange={(event) => setOrderForm((current) => ({ ...current, seiDocumentNumber: event.target.value }))} className={inputClass} /></Field>

@@ -13,4 +13,16 @@ describe("resolveMinioPresignEndpoint", () => {
       MINIO_ENDPOINT: "http://minio.internal:9000",
     })).toBe("http://minio.internal:9000");
   });
+
+  it("ignores blank public URLs and empty values", () => {
+    expect(resolveMinioPresignEndpoint({
+      MINIO_PUBLIC_URL: "   ",
+      MINIO_ENDPOINT: "http://minio.internal:9000",
+    })).toBe("http://minio.internal:9000");
+
+    expect(resolveMinioPresignEndpoint({
+      MINIO_PUBLIC_URL: "",
+      MINIO_ENDPOINT: "",
+    })).toBe("");
+  });
 });
